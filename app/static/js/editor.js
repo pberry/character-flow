@@ -75,13 +75,43 @@ export function showEditor(container, chartRecord) {
             title: c.name,
             "aria-label": c.name,
             style: { background: c.value },
-            onclick: () => { canvas.setColor(c.value); renderToolbar(canvas.selection); },
+            onclick: () => canvas.setColor(c.value),
           }),
         ),
         h("span", { class: "sep" }),
         h("button", { class: "btn", onclick: () => canvas.startEdit(selection.id) }, "Edit text"),
         h("button", { class: "btn danger", onclick: () => canvas.deleteSelection() }, "Delete box"),
         h("span", { class: "hint" }, "Faint dashed arrows are suggestions — click one to keep it."),
+      );
+    } else if (selection?.type === "lane") {
+      const lane = canvas.selectedLane();
+      const i = chart.lanes.indexOf(lane);
+      const name = h("input", { class: "lane-name-input", value: lane.name, "aria-label": "Lane name" });
+      // Commit on Enter/blur: re-rendering the toolbar on every keystroke would steal focus.
+      name.addEventListener("change", () => {
+        if (name.value.trim()) { lane.name = name.value.trim(); canvas.changed(); }
+      });
+      name.addEventListener("keydown", (e) => { if (e.key === "Enter") name.blur(); });
+      items.push(
+        h("span", { class: "label" }, "Lane"),
+        name,
+        h("span", { class: "sep" }),
+        h("span", { class: "label" }, "Color"),
+        COLORS.map((c) =>
+          h("button", {
+            class: `swatch${lane.color === c.value ? " active" : ""}`,
+            title: c.name,
+            "aria-label": c.name,
+            style: { background: c.value },
+            onclick: () => canvas.setColor(c.value),
+          }),
+        ),
+        h("span", { class: "sep" }),
+        h("button", { class: "btn icon", title: "Move lane up", "aria-label": "Move lane up", disabled: i === 0, onclick: () => canvas.moveLane(-1) }, "↑"),
+        h("button", { class: "btn icon", title: "Move lane down", "aria-label": "Move lane down", disabled: i === chart.lanes.length - 1, onclick: () => canvas.moveLane(1) }, "↓"),
+        h("button", { class: "btn", onclick: () => canvas.addLane(lane.id) }, "Add lane below"),
+        h("button", { class: "btn danger", disabled: chart.lanes.length <= 1, onclick: () => canvas.deleteSelection() }, "Delete lane"),
+        h("span", { class: "hint" }, "Click palette cards to add them to this lane."),
       );
     } else if (selection?.type === "edge") {
       items.push(
@@ -91,7 +121,7 @@ export function showEditor(container, chartRecord) {
     } else {
       items.push(
         h("span", { class: "hint" },
-          "Drag cards from the left · double-click the canvas for a blank box · drag from a box's side dots to connect · select a box to see suggested arrows"),
+          "Click a lane header to edit it or fill it from the palette · drag cards into a lane · double-click a lane for a blank box · drag from a box's side dots to connect"),
       );
     }
     toolbar.replaceChildren(...items.flat());

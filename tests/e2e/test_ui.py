@@ -37,84 +37,144 @@ def create_character(page: Page, base):
     return int(page.url.rsplit("/", 1)[-1])
 
 
+def lane_header(page, lane_id):
+    return page.locator(f'[data-lane="{lane_id}"]')
+
+
+def drag(page, start, end):
+    page.mouse.move(*start)
+    page.mouse.down()
+    page.mouse.move(*end, steps=8)
+    page.mouse.up()
+
+
 def test_full_flow(page: Page, live_server):
     chart_id = create_character(page, live_server)
+    page.on("dialog", lambda d: d.accept())
+
+    # New charts start with the five default swim lanes, top to bottom.
+    expect(page.locator(".lane-name")).to_have_text(
+        ["Start of turn", "Attack", "Bonus Actions", "Reactions", "Other Actions"]
+    )
 
     # Palette came from the questionnaire.
     expect(page.locator(".card", has_text="Greataxe")).to_be_visible()
     expect(page.locator(".summary")).to_contain_text("STR +4")
 
-    # Click-to-add three cards; each lands right of the selected box.
-    page.locator(".card", has_text="Start of turn").click()
-    page.locator(".card", has_text="Rage").click()
+    # Select the Attack lane and click cards into it; the second card lands
+    # to the right of the first (which is selected after it's added).
+    lane_header(page, "l2").click()
+    expect(page.get_by_label("Lane name")).to_have_value("Attack")
     page.locator(".card", has_text="Greataxe").click()
-    expect(page.locator("[data-box]")).to_have_count(3)
+    page.locator(".card", has_text="Decision?").click()
+    # Bonus Actions lane: a blank card takes the lane's color.
+    lane_header(page, "l3").click()
+    page.locator(".card", has_text="Rage").click()
+    page.locator(".card", has_text="Blank box").click()
+    expect(page.locator("[data-box]")).to_have_count(4)
 
-    # Selecting the middle box suggests arrows; clicking one makes it real.
-    x, y = box_center(page, "b2")
-    page.mouse.click(x, y)
-    expect(page.locator("[data-ghost]")).not_to_have_count(0)
-    page.locator("[data-ghost] .ghost-hit").first.click(force=True)
+    page.get_by_role("button", name="Save").click()
+    expect(page.locator(".status")).to_have_text("Saved")
+    data = chart_data(live_server, chart_id)
+    lanes = {b["id"]: b["lane"] for b in data["boxes"]}
+    assert lanes == {"b1": "l2", "b2": "l2", "b3": "l3", "b4": "l3"}
+    b2 = next(b for b in data["boxes"] if b["id"] == "b2")
+    b1 = next(b for b in data["boxes"] if b["id"] == "b1")
+    assert b2["x"] > b1["x"] + b1["w"]
+    assert next(b for b in data["boxes"] if b["id"] == "b4")["color"] == "#bfdbfe"
+
+    # Selecting b1 suggests arrows to its right-hand neighbour (b2) and the box
+    # below it in the next lane (b3); clicking one makes it real.
+    page.mouse.click(*box_center(page, "b1"))
+    expect(page.locator('[data-ghost][data-from="b1"][data-to="b2"]')).to_have_count(1)
+    expect(page.locator('[data-ghost][data-from="b1"][data-to="b3"]')).to_have_count(1)
+    # Overlapping suggestions can share screen points, so target this one directly.
+    page.locator('[data-ghost][data-to="b2"] .ghost-hit').dispatch_event("pointerdown", {"button": 0})
     expect(page.locator("[data-edge]")).to_have_count(1)
 
-    # Manually connect b2 -> b3 by dragging from b2's right anchor.
-    anchor = page.locator('[data-box="b2"] [data-anchor="right"]').bounding_box()
-    tx, ty = box_center(page, "b3")
-    page.mouse.move(anchor["x"] + 6, anchor["y"] + 6)
-    page.mouse.down()
-    page.mouse.move(tx, ty, steps=5)
-    page.mouse.up()
+    # Manual arrow across lanes: Rage (Bonus Actions) top -> Decision (Attack).
+    anchor = page.locator('[data-box="b3"] [data-anchor="top"]').bounding_box()
+    drag(page, (anchor["x"] + 6, anchor["y"] + 6), box_center(page, "b2"))
     expect(page.locator("[data-edge]")).to_have_count(2)
 
-    # Moving a box keeps the arrow attached to its new left midpoint.
-    x, y = box_center(page, "b3")
-    page.mouse.move(x, y)
-    page.mouse.down()
-    page.mouse.move(x + 40, y + 120, steps=5)
-    page.mouse.up()
+    # Drag Decision (b2) down into the Reactions lane.
+    reactions = lane_header(page, "l4").bounding_box()
+    x, y = box_center(page, "b2")
+    drag(page, (x, y), (x, reactions["y"] + reactions["height"] / 2))
+
+    # Resizing b1 taller grows the Attack lane and pushes later lanes down.
+    page.mouse.click(*box_center(page, "b1"))
+    before = lane_header(page, "l3").bounding_box()["y"]
+    handle = page.locator('[data-box="b1"] [data-resize]').bounding_box()
+    hx, hy = handle["x"] + 5, handle["y"] + 5
+    drag(page, (hx, hy), (hx, hy + 150))
+    assert lane_header(page, "l3").bounding_box()["y"] > before + 100
 
     # Recolor and edit text.
-    page.get_by_role("button", name="Blue").click()
-    page.mouse.dblclick(*box_center(page, "b3"))
-    page.locator(".box-editor").fill("Greataxe\nReckless Attack")
+    page.get_by_role("button", name="Indigo").click()
+    page.mouse.dblclick(*box_center(page, "b1"))
+    page.locator(".box-editor").fill("Greataxe\n+5/1d12+4")
     page.keyboard.press("Control+Enter")
-    expect(page.locator('[data-box="b3"]')).to_contain_text("Reckless Attack")
+    expect(page.locator('[data-box="b1"]')).to_contain_text("+5/1d12+4")
+
+    # Rename a lane from the toolbar, add one, move it up, then delete it.
+    lane_header(page, "l5").click()
+    page.get_by_label("Lane name").fill("Movement & Other")
+    page.keyboard.press("Enter")
+    expect(lane_header(page, "l5")).to_contain_text("Movement & Other")
+    page.get_by_role("button", name="Add lane below").click()
+    expect(page.locator(".lane-name")).to_have_count(6)
+    page.get_by_role("button", name="Move lane up").click()
+    expect(page.locator(".lane-name").nth(4)).to_have_text("New lane")
+    page.get_by_role("button", name="Delete lane").click()
+    expect(page.locator(".lane-name")).to_have_count(5)
 
     page.get_by_role("button", name="Save").click()
     expect(page.locator(".status")).to_have_text("Saved")
 
     data = chart_data(live_server, chart_id)
-    b3 = next(b for b in data["boxes"] if b["id"] == "b3")
-    assert b3["color"] == "#bfdbfe"
-    assert b3["text"] == "Greataxe\nReckless Attack"
+    boxes = {b["id"]: b for b in data["boxes"]}
+    assert boxes["b2"]["lane"] == "l4"
+    assert boxes["b1"]["color"] == "#a5b4fc"
+    assert boxes["b1"]["text"] == "Greataxe\n+5/1d12+4"
+    assert boxes["b1"]["h"] >= 200
+    assert [l["name"] for l in data["lanes"]][-1] == "Movement & Other"
     assert len(data["edges"]) == 2
-    edge_to_b3 = next(e for e in data["edges"] if e["to"]["box"] == "b3")
-    assert edge_to_b3["from"] == {"box": "b2", "side": "right"}
 
-    # The rendered arrow ends at b3's left midpoint after the move.
+    # The arrow into b2 still ends at b2's left midpoint in its new lane.
+    edge = next(e for e in data["edges"] if e["from"]["box"] == "b1")
+    b2_rect = page.locator('[data-box="b2"] .box-rect').bounding_box()
     end = page.evaluate(
-        """() => {
-          const p = document.querySelector('[data-edge="%s"] .edge-line').getAttribute('d');
-          return p.trim().split(/[ML ]+/).filter(Boolean).slice(-2).map(Number);
-        }""" % edge_to_b3["id"]
+        """id => {
+          const path = document.querySelector(`[data-edge="${id}"] .edge-line`);
+          const p = path.getPointAtLength(path.getTotalLength());
+          const m = path.getScreenCTM();
+          return [p.x * m.a + m.e, p.y * m.d + m.f];
+        }""",
+        edge["id"],
     )
-    assert end == [b3["x"], b3["y"] + b3["h"] / 2]
+    assert abs(end[0] - b2_rect["x"]) < 2
+    assert abs(end[1] - (b2_rect["y"] + b2_rect["height"] / 2)) < 2
 
     # Reload: everything persisted.
     page.reload()
-    expect(page.locator("[data-box]")).to_have_count(3)
+    expect(page.locator("[data-box]")).to_have_count(4)
     expect(page.locator("[data-edge]")).to_have_count(2)
+    expect(page.locator(".lane-name").last).to_have_text("Movement & Other")
 
-    # Delete selected edge with the keyboard.
-    page.locator(f'[data-edge="{edge_to_b3["id"]}"] .edge-hit').click(force=True)
+    # Deleting a lane removes its boxes and their arrows (confirm is accepted).
+    lane_header(page, "l3").click()
     page.keyboard.press("Delete")
+    expect(page.locator("[data-box]")).to_have_count(2)
     expect(page.locator("[data-edge]")).to_have_count(1)
 
 
 def test_print_sheet_fits_page(page: Page, live_server):
     create_character(page, live_server)
-    page.locator(".card", has_text="Start of turn").click()
+    lane_header(page, "l2").click()
     page.locator(".card", has_text="Greataxe").click()
+    lane_header(page, "l3").click()
+    page.locator(".card", has_text="Rage").click()
     page.evaluate("window.print = () => {}")
     page.get_by_role("button", name="Print").click()
     page.emulate_media(media="print")
@@ -123,6 +183,7 @@ def test_print_sheet_fits_page(page: Page, live_server):
     expect(page.locator("#app")).to_be_hidden()
     expect(page.locator("#print-sheet")).to_contain_text("Barbarian")
     expect(page.locator("#print-sheet [data-box]")).to_have_count(2)
+    expect(page.locator("#print-sheet .lane-name")).to_have_count(5)
     pdf = page.pdf(format="Letter", landscape=True, print_background=True, prefer_css_page_size=True)
     assert len(re.findall(rb"/Type\s*/Page(?!s)", pdf)) == 1
     if out := os.environ.get("CHARFLOW_PDF_OUT"):

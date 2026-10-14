@@ -1,16 +1,18 @@
-// SVG flowchart rendering and pointer interactions.
+// SVG swim-lane flowchart rendering and pointer interactions.
 
 import { h, s } from "./dom.js";
 import {
-  SIDES, anchor, boxAt, boundingBox, edgePoints, nearestSide, pathD,
+  SIDES, anchor, boxAt, edgePoints, nearestSide, pathD,
   polylineMidpoint, routePoints, suggestEdges,
 } from "./geometry.js";
+import { HEADER_W, layoutBounds, layoutChart, laneAt } from "./layout.js";
 import * as M from "./model.js";
 
 const DOUBLE_CLICK_MS = 400;
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 3;
 const GRID_PX = 20;
+const ADD_LANE_H = 36;
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 
@@ -46,14 +48,53 @@ function boxText(text) {
   );
 }
 
-// Draw the chart into group `g`. Used both by the interactive canvas and print.
-export function drawChart(g, chart, opts = {}) {
-  const { prefix = "c", selection = null, ghosts = [], connect = null, interactive = false } = opts;
+function drawLanes(layout, { selection, dropLane, interactive }) {
+  const g = s("g", { class: "lanes" });
+  const right = layout.left + layout.width;
+  layout.lanes.forEach((lane, i) => {
+    const selected = selection?.type === "lane" && selection.id === lane.id;
+    const lg = s("g", { class: `lane${selected ? " selected" : ""}${dropLane === lane.id ? " drop-target" : ""}` });
+    lg.append(s("rect", { class: "lane-band", x: layout.left, y: lane.top, width: layout.width, height: lane.height }));
+    const header = s("g", { class: "lane-header", "data-lane": lane.id });
+    const hx = layout.left + 10, hy = lane.top + 10, hw = HEADER_W - 30, hh = lane.height - 20;
+    header.append(
+      s("rect", { class: "lane-header-rect", x: hx, y: hy, width: hw, height: hh, rx: 8, fill: lane.color }),
+      s("foreignObject", { x: hx, y: hy, width: hw, height: hh }, h("div", { class: "lane-name" }, lane.name)),
+    );
+    if (interactive) header.append(s("title", {}, "Click to edit this lane"));
+    lg.append(header);
+    if (i < layout.lanes.length - 1) {
+      const y = lane.top + lane.height;
+      lg.append(s("line", { class: "lane-divider", x1: layout.left, y1: y, x2: right, y2: y }));
+    }
+    g.append(lg);
+  });
+  if (interactive) {
+    const y = layout.height + 10;
+    g.append(
+      s(
+        "g",
+        { class: "add-lane", "data-add-lane": "1" },
+        s("rect", { x: layout.left + 10, y, width: HEADER_W - 30, height: ADD_LANE_H - 10, rx: 6 }),
+        s("text", { x: layout.left + 10 + (HEADER_W - 30) / 2, y: y + (ADD_LANE_H - 10) / 2, "text-anchor": "middle", "dominant-baseline": "central" }, "+ Add lane"),
+      ),
+    );
+  }
+  return g;
+}
+
+// Draw the chart into group `g` using a precomputed layout (absolute boxes).
+// Used both by the interactive canvas and print.
+export function drawChart(g, chart, layout, opts = {}) {
+  const { prefix = "c", selection = null, ghosts = [], connect = null, dropLane = null, interactive = false } = opts;
+  const boxes = layout.boxes;
+  const byId = new Map(boxes.map((b) => [b.id, b]));
   g.replaceChildren();
 
   const edgesG = s("g", { class: "edges" });
+  const labelsG = s("g", { class: "edge-labels" });
   for (const edge of chart.edges) {
-    const pts = edgePoints(chart.boxes, edge);
+    const pts = edgePoints(boxes, edge);
     if (!pts) continue;
     const selected = selection?.type === "edge" && selection.id === edge.id;
     const d = pathD(pts);
@@ -62,13 +103,13 @@ export function drawChart(g, chart, opts = {}) {
     eg.append(s("path", { class: "edge-line", d, "marker-end": `url(#${prefix}-arrow${selected ? "-sel" : ""})` }));
     if (edge.label) {
       const m = polylineMidpoint(pts);
-      eg.append(s("text", { class: "edge-label", x: m.x, y: m.y, "text-anchor": "middle", "dominant-baseline": "central" }, edge.label));
+      labelsG.append(s("text", { class: "edge-label", x: m.x, y: m.y, "text-anchor": "middle", "dominant-baseline": "central" }, edge.label));
     }
     edgesG.append(eg);
   }
 
   const boxesG = s("g", { class: "boxes" });
-  for (const box of chart.boxes) {
+  for (const box of boxes) {
     const selected = selection?.type === "box" && selection.id === box.id;
     const target = connect?.target === box.id;
     const bg = s("g", {
@@ -93,13 +134,13 @@ export function drawChart(g, chart, opts = {}) {
 
   const ghostsG = s("g", { class: "ghosts" });
   ghosts.forEach((ghost, i) => {
-    const from = M.getBox(chart, ghost.from.box);
-    const to = M.getBox(chart, ghost.to.box);
+    const from = byId.get(ghost.from.box);
+    const to = byId.get(ghost.to.box);
     const d = pathD(routePoints(anchor(from, ghost.from.side), ghost.from.side, anchor(to, ghost.to.side), ghost.to.side));
     ghostsG.append(
       s(
         "g",
-        { class: "ghost", "data-ghost": i },
+        { class: "ghost", "data-ghost": i, "data-from": ghost.from.box, "data-to": ghost.to.box },
         s("title", {}, "Click to add this arrow"),
         s("path", { class: "ghost-hit", d }),
         s("path", { class: "ghost-line", d, "marker-end": `url(#${prefix}-arrow-ghost)` }),
@@ -107,14 +148,14 @@ export function drawChart(g, chart, opts = {}) {
     );
   });
 
-  // Ghosts sit under boxes so they never steal clicks meant for a box.
-  g.append(edgesG, ghostsG, boxesG);
+  // Ghosts sit under boxes so they never steal clicks meant for a box; arrow
+  // labels sit above boxes so short arrows don't hide them.
+  g.append(drawLanes(layout, { selection, dropLane, interactive }), edgesG, ghostsG, boxesG, labelsG);
 
   if (connect) {
-    const fromBox = M.getBox(chart, connect.from.box);
-    const p1 = anchor(fromBox, connect.from.side);
+    const p1 = anchor(byId.get(connect.from.box), connect.from.side);
     let d;
-    const targetBox = connect.target && M.getBox(chart, connect.target);
+    const targetBox = connect.target && byId.get(connect.target);
     if (targetBox) {
       const side = nearestSide(targetBox, connect.pt);
       d = pathD(routePoints(p1, connect.from.side, anchor(targetBox, side), side));
@@ -131,12 +172,13 @@ export class Canvas {
     this.chart = chart;
     this.onChange = onChange;
     this.onSelect = onSelect;
-    this.view = { x: 40, y: 40, k: 1 };
+    this.view = { x: HEADER_W + 20, y: 20, k: 1 };
     this.selection = null;
     this.drag = null;
     this.lastDown = null;
     this.editing = null;
     this.ghosts = [];
+    this.layout = layoutChart(chart);
 
     this.svg = createSvg("cv");
     this.svg.classList.add("interactive");
@@ -167,15 +209,18 @@ export class Canvas {
     return this.toWorld(r.left + r.width / 2, r.top + r.height / 2);
   }
 
+  absBox(id) {
+    return this.layout.boxes.find((b) => b.id === id) || null;
+  }
+
   fitView() {
-    const bb = boundingBox(this.chart.boxes);
+    const bb = layoutBounds(this.layout);
+    bb.h += ADD_LANE_H;
     const r = this.svg.getBoundingClientRect();
-    if (!bb || !r.width) {
-      this.view = { x: 40, y: 40, k: 1 };
-    } else {
-      const k = clamp(Math.min((r.width - 80) / bb.w, (r.height - 80) / bb.h), MIN_ZOOM, 1.25);
-      this.view = { k, x: (r.width - bb.w * k) / 2 - bb.x * k, y: (r.height - bb.h * k) / 2 - bb.y * k };
-    }
+    if (!r.width) return;
+    const k = clamp(Math.min((r.width - 40) / bb.w, (r.height - 40) / bb.h), MIN_ZOOM, 1);
+    // Keep the chart pinned to the top-left so lane headers stay in view.
+    this.view = { k, x: 20 - bb.x * k, y: 20 - bb.y * k };
     this.render();
   }
 
@@ -195,48 +240,86 @@ export class Canvas {
     return this.selection?.type === "box" ? M.getBox(this.chart, this.selection.id) : null;
   }
 
-  selectedEdge() {
-    return this.selection?.type === "edge" ? this.chart.edges.find((e) => e.id === this.selection.id) : null;
+  selectedLane() {
+    return this.selection?.type === "lane" ? M.getLane(this.chart, this.selection.id) : null;
   }
 
   deleteSelection() {
-    if (!this.selection) return;
-    if (this.selection.type === "box") M.deleteBox(this.chart, this.selection.id);
-    else M.deleteEdge(this.chart, this.selection.id);
+    const sel = this.selection;
+    if (!sel) return;
+    if (sel.type === "box") M.deleteBox(this.chart, sel.id);
+    else if (sel.type === "edge") M.deleteEdge(this.chart, sel.id);
+    else if (sel.type === "lane") {
+      const lane = M.getLane(this.chart, sel.id);
+      if (this.chart.lanes.length <= 1) {
+        window.alert("A chart needs at least one lane.");
+        return;
+      }
+      const n = M.boxesInLane(this.chart, sel.id).length;
+      const msg = n ? `Delete lane "${lane.name}" and its ${n} box${n === 1 ? "" : "es"}?` : `Delete lane "${lane.name}"?`;
+      if (!window.confirm(msg)) return;
+      M.deleteLane(this.chart, sel.id);
+    }
     this.select(null);
     this.changed();
   }
 
   setColor(color) {
-    const box = this.selectedBox();
-    if (!box) return;
-    box.color = color;
+    const target = this.selectedBox() || this.selectedLane();
+    if (!target) return;
+    target.color = color;
     this.changed();
   }
 
-  // Add a box from a palette card. Without a drop point it goes to the right
-  // of the selected box (the natural next step) or the middle of the view.
+  // Lane-relative y for a box whose top-left would be at absolute y.
+  relativeY(lane, absY) {
+    return absY - lane.top;
+  }
+
+  // Next free spot at the right end of a lane.
+  endOfLane(laneId) {
+    const right = this.layout.boxes.filter((b) => b.lane === laneId).reduce((m, b) => Math.max(m, b.x + b.w), 0);
+    return { x: right ? right + 40 : 20, y: 10 };
+  }
+
+  // Add a box from a palette card. With a drop point it lands there. Otherwise
+  // it goes right of the selected box, at the end of the selected lane, or into
+  // the lane in the middle of the view. Cards without a color take the lane's.
   addCard(card, at = null) {
-    let x, y;
+    let lane, x, y;
     if (at) {
+      lane = laneAt(this.layout, at.y);
       x = at.x - M.BOX_W / 2;
-      y = at.y - M.BOX_H / 2;
+      y = this.relativeY(lane, at.y - M.BOX_H / 2);
+    } else if (this.selectedBox()) {
+      const sel = this.absBox(this.selection.id);
+      lane = this.layout.lanes.find((l) => l.id === sel.lane);
+      x = sel.x + sel.w + 60;
+      y = this.relativeY(lane, sel.y);
     } else {
-      const sel = this.selectedBox();
-      if (sel) {
-        x = sel.x + sel.w + 60;
-        y = sel.y;
-      } else {
-        const c = this.visibleCenter();
-        x = c.x - M.BOX_W / 2;
-        y = c.y - M.BOX_H / 2;
-      }
-      while (boxAt(this.chart.boxes, { x: x + 10, y: y + 10 })) y += M.BOX_H + 30;
+      const laneSel = this.selectedLane();
+      lane = laneSel ? this.layout.lanes.find((l) => l.id === laneSel.id) : laneAt(this.layout, this.visibleCenter().y);
+      ({ x, y } = this.endOfLane(lane.id));
     }
-    const box = M.addBox(this.chart, { x, y, text: card.text, color: card.color });
+    if (!at) {
+      while (boxAt(this.layout.boxes, { x: x + 10, y: lane.top + y + 10 })) y += M.BOX_H + 20;
+    }
+    const box = M.addBox(this.chart, { lane: lane.id, x, y, text: card.text, color: card.color || lane.color });
     this.select({ type: "box", id: box.id });
     this.changed();
     return box;
+  }
+
+  addLane(afterId = null) {
+    const lane = M.addLane(this.chart, afterId);
+    this.select({ type: "lane", id: lane.id });
+    this.changed();
+    return lane;
+  }
+
+  moveLane(delta) {
+    const lane = this.selectedLane();
+    if (lane && M.moveLane(this.chart, lane.id, delta)) this.changed();
   }
 
   // ---- text editing ------------------------------------------------------
@@ -281,7 +364,7 @@ export class Canvas {
 
   positionEditor() {
     if (!this.editing) return;
-    const box = M.getBox(this.chart, this.editing.id);
+    const box = this.absBox(this.editing.id);
     if (!box) return;
     const { x, y, k } = this.view;
     Object.assign(this.editing.ta.style, {
@@ -303,6 +386,15 @@ export class Canvas {
     this.changed();
   }
 
+  renameLane(id) {
+    const lane = M.getLane(this.chart, id);
+    if (!lane) return;
+    const name = window.prompt("Lane name:", lane.name);
+    if (name === null || !name.trim()) return;
+    lane.name = name.trim();
+    this.changed();
+  }
+
   // ---- pointer handling --------------------------------------------------
 
   pointerDown(e) {
@@ -315,12 +407,15 @@ export class Canvas {
     const resizeEl = t.closest("[data-resize]");
     const boxEl = t.closest("[data-box]");
     const edgeEl = t.closest("[data-edge]");
+    const laneEl = t.closest("[data-lane]");
+    const addLaneEl = t.closest("[data-add-lane]");
 
     // Our own double-click detection: rendering replaces elements between
     // clicks, which makes native dblclick unreliable.
     const key = boxEl && !anchorEl && !resizeEl ? `box:${boxEl.dataset.box}`
       : edgeEl ? `edge:${edgeEl.dataset.edge}`
-      : !ghostEl && !anchorEl && !resizeEl ? "empty" : null;
+      : laneEl ? `lane:${laneEl.dataset.lane}`
+      : !ghostEl && !anchorEl && !resizeEl && !addLaneEl ? "empty" : null;
     const now = performance.now();
     const last = this.lastDown;
     this.lastDown = key ? { key, time: now, x: e.clientX, y: e.clientY } : null;
@@ -339,6 +434,10 @@ export class Canvas {
       this.changed();
       return;
     }
+    if (addLaneEl) {
+      this.addLane();
+      return;
+    }
 
     if (anchorEl && boxEl) {
       this.drag = { type: "connect", from: { box: boxEl.dataset.box, side: anchorEl.dataset.anchor }, pt, target: null };
@@ -346,12 +445,17 @@ export class Canvas {
       const box = M.getBox(this.chart, boxEl.dataset.box);
       this.drag = { type: "resize", id: box.id, start: pt, w: box.w, h: box.h, moved: false };
     } else if (boxEl) {
-      const box = M.getBox(this.chart, boxEl.dataset.box);
+      const box = this.absBox(boxEl.dataset.box);
       this.select({ type: "box", id: box.id });
       M.bringToFront(this.chart, box.id);
-      this.drag = { type: "move", id: box.id, dx: pt.x - box.x, dy: pt.y - box.y, moved: false };
+      this.drag = {
+        type: "move", id: box.id, dx: pt.x - box.x, dy: pt.y - box.y,
+        x: box.x, y: box.y, h: box.h, lanes: this.layout.lanes, moved: false,
+      };
     } else if (edgeEl) {
       this.select({ type: "edge", id: edgeEl.dataset.edge });
+    } else if (laneEl) {
+      this.select({ type: "lane", id: laneEl.dataset.lane });
     } else {
       this.select(null);
       this.drag = { type: "pan", sx: e.clientX, sy: e.clientY, vx: this.view.x, vy: this.view.y };
@@ -366,10 +470,17 @@ export class Canvas {
       this.startEdit(id);
     } else if (kind === "edge") {
       this.editEdgeLabel(id);
+    } else if (kind === "lane") {
+      this.renameLane(id);
     } else {
-      const box = this.addCard({ text: "", color: M.CATEGORY_COLORS.action }, pt);
+      const box = this.addCard({ text: "", color: null }, pt);
       this.startEdit(box.id);
     }
+  }
+
+  // Lane a moving box would land in: where its vertical center is.
+  dropLaneFor(d) {
+    return laneAt({ lanes: d.lanes }, d.y + d.h / 2);
   }
 
   pointerMove(e) {
@@ -377,17 +488,17 @@ export class Canvas {
     if (!d) return;
     const pt = this.toWorld(e.clientX, e.clientY);
     if (d.type === "move") {
-      const box = M.getBox(this.chart, d.id);
-      const nx = M.snap(pt.x - d.dx), ny = M.snap(pt.y - d.dy);
-      if (nx === box.x && ny === box.y) return;
-      M.moveBox(this.chart, d.id, nx, ny);
+      const nx = Math.max(M.snap(pt.x - d.dx), 20), ny = M.snap(pt.y - d.dy);
+      if (nx === d.x && ny === d.y) return;
+      d.x = nx;
+      d.y = ny;
       d.moved = true;
     } else if (d.type === "resize") {
       M.resizeBox(this.chart, d.id, d.w + pt.x - d.start.x, d.h + pt.y - d.start.y);
       d.moved = true;
     } else if (d.type === "connect") {
       d.pt = pt;
-      const over = boxAt(this.chart.boxes, pt);
+      const over = boxAt(this.layout.boxes, pt);
       d.target = over && over.id !== d.from.box ? over.id : null;
     } else if (d.type === "pan") {
       this.view.x = d.vx + e.clientX - d.sx;
@@ -401,11 +512,15 @@ export class Canvas {
     this.drag = null;
     if (!d) return;
     if (d.type === "connect" && d.target) {
-      const target = M.getBox(this.chart, d.target);
+      const target = this.absBox(d.target);
       const pt = this.toWorld(e.clientX, e.clientY);
       M.addEdge(this.chart, d.from, { box: target.id, side: nearestSide(target, pt) });
       this.changed();
-    } else if ((d.type === "move" || d.type === "resize") && d.moved) {
+    } else if (d.type === "move" && d.moved) {
+      const lane = this.dropLaneFor(d);
+      M.moveBox(this.chart, d.id, lane.id, d.x, this.relativeY(lane, d.y));
+      this.changed();
+    } else if (d.type === "resize" && d.moved) {
       this.changed();
     } else {
       this.render();
@@ -442,21 +557,29 @@ export class Canvas {
   // ---- render ------------------------------------------------------------
 
   render() {
+    const d = this.drag;
+    const moving = d?.type === "move" && d.moved;
+    // While a box is being dragged, lanes keep the geometry they had when the
+    // drag started; the box floats and is assigned a lane on drop.
+    this.layout = moving
+      ? layoutChart(this.chart, { frozen: d.lanes, floating: { id: d.id, x: d.x, y: d.y } })
+      : layoutChart(this.chart);
     const boxSelected = this.selection?.type === "box" && M.getBox(this.chart, this.selection.id);
-    this.ghosts = boxSelected && this.drag?.type !== "connect"
-      ? suggestEdges(this.chart.boxes, this.chart.edges, this.selection.id)
+    this.ghosts = boxSelected && d?.type !== "connect"
+      ? suggestEdges(this.layout.boxes, this.chart.edges, this.selection.id)
       : [];
-    drawChart(this.viewport, this.chart, {
+    drawChart(this.viewport, this.chart, this.layout, {
       prefix: "cv",
       selection: this.selection,
       ghosts: this.ghosts,
-      connect: this.drag?.type === "connect" ? this.drag : null,
+      connect: d?.type === "connect" ? d : null,
+      dropLane: moving ? this.dropLaneFor(d).id : null,
       interactive: true,
     });
     const { x, y, k } = this.view;
     this.viewport.setAttribute("transform", `translate(${x} ${y}) scale(${k})`);
-    this.svg.classList.toggle("connecting", this.drag?.type === "connect");
-    this.svg.classList.toggle("panning", this.drag?.type === "pan");
+    this.svg.classList.toggle("connecting", d?.type === "connect");
+    this.svg.classList.toggle("panning", d?.type === "pan");
     this.wrap.style.backgroundSize = `${GRID_PX * k}px ${GRID_PX * k}px`;
     this.wrap.style.backgroundPosition = `${x}px ${y}px`;
     this.positionEditor();

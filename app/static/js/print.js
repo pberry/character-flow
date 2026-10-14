@@ -1,7 +1,8 @@
 // Builds a print-only copy of the chart scaled to one landscape letter page.
 
 import { h, s } from "./dom.js";
-import { boundingBox, fitViewBox } from "./geometry.js";
+import { fitViewBox } from "./geometry.js";
+import { layoutBounds, layoutChart } from "./layout.js";
 import { createSvg, drawChart } from "./canvas.js";
 import { characterSummary } from "./palette.js";
 
@@ -14,8 +15,9 @@ export function buildPrintSheet(sheet, chartRecord) {
   const svg = createSvg("pr");
   const g = s("g");
   svg.append(g);
-  drawChart(g, chart, { prefix: "pr" });
-  const vb = fitViewBox(boundingBox(chart.boxes), PRINT_WIDTH_IN / PRINT_HEIGHT_IN);
+  const layout = layoutChart(chart);
+  drawChart(g, chart, layout, { prefix: "pr" });
+  const vb = fitViewBox(layoutBounds(layout), PRINT_WIDTH_IN / PRINT_HEIGHT_IN, { padding: 4 });
   svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
   svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
   sheet.replaceChildren(

@@ -25,7 +25,7 @@ export function characterSummary(character) {
 export function renderPalette(container, character, onAdd) {
   container.replaceChildren(
     characterSummary(character),
-    h("p", { class: "hint" }, "Drag a card onto the canvas, or click it to add next to the selected box."),
+    h("p", { class: "hint" }, "Drag a card into a lane, or click it to add it to the selected lane or next to the selected box."),
     ...paletteGroups(character).map((group) =>
       h(
         "section",
@@ -34,7 +34,7 @@ export function renderPalette(container, character, onAdd) {
         group.items.map((item) => {
           const card = h(
             "div",
-            { class: "card", draggable: "true", style: { background: item.color }, title: item.text || item.label },
+            { class: `card${item.color ? "" : " lane-colored"}`, draggable: "true", style: { background: item.color || "" }, title: item.text || item.label },
             item.label,
           );
           card.addEventListener("dragstart", (e) => {
