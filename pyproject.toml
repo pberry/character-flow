@@ -1,0 +1,14 @@
+[project]
+name = "character-flow"
+version = "0.1.0"
+description = "Build a character-specific, left-to-right combat flowchart for tabletop RPGs."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["flask>=3.0"]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
