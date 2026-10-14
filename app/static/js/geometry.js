@@ -126,9 +126,23 @@ function connected(edges, a, b) {
   );
 }
 
+// Does an axis-aligned segment cross the interior of a box?
+export function segmentHitsBox(a, b, box) {
+  const minX = Math.min(a.x, b.x), maxX = Math.max(a.x, b.x);
+  const minY = Math.min(a.y, b.y), maxY = Math.max(a.y, b.y);
+  return maxX > box.x && minX < box.x + box.w && maxY > box.y && minY < box.y + box.h;
+}
+
+function routeBlocked(points, boxes, skip) {
+  return boxes.some(
+    (box) => !skip.includes(box.id) && points.slice(1).some((p, i) => segmentHitsBox(points[i], p, box)),
+  );
+}
+
 // Suggest likely arrows for the selected box. The chart flows left to right, so
 // boxes to the right get an outgoing arrow, boxes to the left an incoming one,
 // and boxes stacked directly above/below (branch stacks) a vertical arrow.
+// Arrows whose route would pass through another box are never suggested.
 export function suggestEdges(boxes, edges, selectedId, { max = 3, maxScore = 700 } = {}) {
   const sel = boxes.find((b) => b.id === selectedId);
   if (!sel) return [];
@@ -168,8 +182,14 @@ export function suggestEdges(boxes, edges, selectedId, { max = 3, maxScore = 700
       });
     }
   }
+  const byId = new Map(boxes.map((b) => [b.id, b]));
   return candidates
     .filter((c) => c.score <= maxScore)
+    .filter((c) => {
+      const from = byId.get(c.from.box), to = byId.get(c.to.box);
+      const pts = routePoints(anchor(from, c.from.side), c.from.side, anchor(to, c.to.side), c.to.side);
+      return !routeBlocked(pts, boxes, [from.id, to.id]);
+    })
     .sort((a, b) => a.score - b.score)
     .slice(0, max)
     .map(({ from, to }) => ({ from, to }));

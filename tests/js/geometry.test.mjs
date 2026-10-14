@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   anchor, nearestSide, boxAt, routePoints, simplify, polylineMidpoint,
-  edgePoints, suggestEdges, boundingBox, fitViewBox, pathD,
+  edgePoints, suggestEdges, segmentHitsBox, boundingBox, fitViewBox, pathD,
 } from "../../app/static/js/geometry.js";
 
 const box = (id, x, y, w = 100, h = 50) => ({ id, x, y, w, h });
@@ -109,4 +109,17 @@ test("fitViewBox doesn't blow up tiny charts", () => {
   const vb = fitViewBox({ x: 0, y: 0, w: 100, h: 50 }, 2, { minWidth: 900 });
   assert.equal(vb.w, 900);
   assert.equal(vb.h, 450);
+});
+
+test("suggestions skip routes that pass through another box", () => {
+  const boxes = [box("sel", 0, 0), box("mid", 200, 0), box("far", 400, 0)];
+  const s = suggestEdges(boxes, [], "sel");
+  assert.deepEqual(s.map((x) => x.to.box), ["mid"]);
+});
+
+test("segmentHitsBox", () => {
+  const b = box("a", 100, 0);
+  assert.ok(segmentHitsBox({ x: 0, y: 25 }, { x: 300, y: 25 }, b));
+  assert.ok(!segmentHitsBox({ x: 0, y: 80 }, { x: 300, y: 80 }, b));
+  assert.ok(!segmentHitsBox({ x: 0, y: 25 }, { x: 100, y: 25 }, b), "touching the edge is fine");
 });
