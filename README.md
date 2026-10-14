@@ -1,10 +1,12 @@
 # Character Flow
 
-A small local-network web app for building a **character-specific combat flowchart** (left to right) for tabletop RPGs like D&D.
+A small local-network web app for building a **character-specific combat flowchart** for tabletop RPGs like D&D,
+laid out as left-to-right **swim lanes**: one horizontal lane per part of your turn.
 
 1. Answer a short questionnaire about your character (abilities, weapons, spells, features).
-2. Those answers become a palette of cards you drag onto a canvas.
-3. Connect boxes with arrows — suggested arrows appear faintly; click one to make it real.
+2. Those answers become a palette of cards you drag into lanes. New charts start with
+   **Start of turn, Attack, Bonus Actions, Reactions, Other Actions**, and you can rename, recolor, reorder, add, or remove lanes.
+3. Connect boxes with arrows, within or across lanes. Suggested arrows appear faintly; click one to make it real.
 4. Save by name, and print to a single landscape letter page.
 
 ## Running with Docker (recommended)
@@ -40,11 +42,12 @@ Back up that file to back up your work.
 
 | Action | How |
 | --- | --- |
-| Add a box | Drag a card from the left palette onto the canvas, or double-click empty canvas |
+| Add a box | Drag a card from the left palette into a lane, or double-click empty space in a lane |
+| Fill a lane | Click the lane's header, then click palette cards: each lands at the end of that lane |
 | Add the next step | Select a box, then click a palette card: the new box is placed to its right |
 | Edit text | Double-click a box (or select it and press Enter). Ctrl/Cmd+Enter or click away to finish, Escape to cancel. The first line is shown in bold |
 | Color / delete | Select a box, use the toolbar at the top |
-| Move | Drag a box (arrows follow) |
+| Move | Drag a box (arrows follow). Drop it in another lane to move it there; the target lane is highlighted |
 | Resize | Drag the small handle at a box's bottom-right corner |
 | Draw an arrow | Hover a box, drag from one of the four side dots to another box |
 | Accept a suggested arrow | Select a box, click a faint dashed arrow |
@@ -52,6 +55,9 @@ Back up that file to back up your work.
 | Label an arrow | Double-click the arrow, or select it and use "Edit label" |
 | Delete | Select a box or arrow and press Delete / Backspace, or use the toolbar |
 | Deselect | Escape, or click empty canvas |
+| Edit a lane | Click its header: the toolbar renames, recolors, moves it up/down, adds a lane below, or deletes it. Double-click a header to rename |
+| Add a lane | "+ Add lane" under the last lane, or "Add lane below" in the lane toolbar |
+| Delete a lane | Select it and press Delete or use "Delete lane". Its boxes and their arrows go with it (you're asked first). A chart keeps at least one lane |
 | Pan / zoom | Drag empty canvas / mouse wheel or trackpad pinch / the − + buttons. "Fit" frames the whole chart |
 | Save | Autosaves; or Save button / Ctrl+S / Cmd+S |
 | Print | Print button — fits the chart onto one landscape letter page; choose "Save as PDF" in the dialog for a PDF |
@@ -61,12 +67,20 @@ Back up that file to back up your work.
 "Edit character" in the editor's top bar reopens the questionnaire. Changes update the palette and the
 printed header; boxes already on the canvas are left alone.
 
+## Swim lanes
+
+Lanes grow automatically to fit their boxes and shrink back when boxes move out. A box keeps its color when moved
+to another lane; the lane color is only the default for blank boxes added to it (cards from the palette keep their
+category color). Use the extra Indigo and Teal swatches for things like "costs a resource" variants within a lane.
+
 ## Known limitations
 
 - Tested in Google Chrome. Safari and Firefox should work but haven't been checked.
 - On touch screens, cards can't be dragged from the palette (tap a card to add it instead), and there's no pinch zoom.
 - No undo or version history yet. Use "Duplicate" on the chart list to keep a snapshot before big changes.
 - Single user: if two browsers edit the same chart, the last save wins.
+- Arrows take simple right-angle routes and don't steer around boxes in their way; nudge boxes or pick other sides.
+- Lane headers are part of the canvas, so they scroll out of view if you pan far to the right.
 
 ## Development
 
@@ -94,6 +108,7 @@ The frontend is plain ES modules + SVG with no build step, in `app/static/`:
 
 | File | Role |
 | --- | --- |
+| `js/layout.js` | Pure swim-lane layout: lane tops/heights from their boxes, absolute box positions |
 | `js/geometry.js` | Pure math: side-midpoint anchors, elbow routing, suggested arrows, print fitting |
 | `js/model.js` | Pure chart operations (boxes, edges, ids, palette, ability modifiers) |
 | `js/canvas.js` | SVG rendering and mouse interactions |

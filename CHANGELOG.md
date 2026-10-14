@@ -3,9 +3,24 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.3.0] - 2026-10-14
+
+### Added
+- Swim lanes. New charts start with Start of turn, Attack, Bonus Actions, Reactions, and Other Actions.
+  Lanes grow automatically to fit their boxes.
+- Lane editing: click a lane header to rename, recolor, move up/down, add a lane below, or delete it
+  (with its boxes); "+ Add lane" under the last lane; double-click a header to rename.
+- Drag boxes between lanes, with the target lane highlighted while dragging.
+- With a lane selected, clicking palette cards adds them to the end of that lane.
+- "Blank box" palette card that takes the color of the lane it lands in.
+- Teal and Indigo box colors.
 
 ### Changed
+- Chart data format v2: charts have `lanes`, and each box has a `lane` with `y` measured from the
+  lane's top. Older charts aren't migrated (the database was reset for this release).
+- Palette "Flow" group is now "Decision?" and "Blank box" (lanes replace Start/End cards).
+- Arrow labels draw above boxes so short arrows don't hide them.
+- Print and "Fit" include the lane headers.
 - README: documented all editor shortcuts, "Edit character", project layout, and known limitations;
   the local (non-Docker) run example now uses port 8000.
 
