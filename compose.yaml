@@ -1,0 +1,12 @@
+services:
+  charflow:
+    build: .
+    image: character-flow:latest
+    ports:
+      - "${CHARFLOW_PORT:-5050}:8000"
+    volumes:
+      - charflow-data:/data
+    restart: unless-stopped
+
+volumes:
+  charflow-data:

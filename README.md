@@ -7,7 +7,22 @@ A small local-network web app for building a **character-specific combat flowcha
 3. Connect boxes with arrows — suggested arrows appear faintly; click one to make it real.
 4. Save by name, and print to a single landscape letter page.
 
-## Running
+## Running with Docker (recommended)
+
+```sh
+docker compose up -d --build
+```
+
+Then open `http://<this-machine>:5050/` from any device on the network.
+
+- Charts live in the `character-flow_charflow-data` Docker volume (`/data/charflow.db` in the container), so they survive restarts and rebuilds.
+- Use a different host port with `CHARFLOW_PORT=8765 docker compose up -d`.
+- Back up: `docker compose cp charflow:/data/charflow.db ./charflow-backup.db`
+- Update after code changes: `docker compose up -d --build`. Logs: `docker compose logs -f`.
+
+The container runs the app with gunicorn as a non-root user.
+
+## Running locally without Docker
 
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
