@@ -41,8 +41,21 @@ Back up that file to back up your work.
 ## Development
 
 ```sh
-uv run pytest           # backend API tests
+uv run pytest           # API tests + browser end-to-end tests (Playwright, uses installed Google Chrome)
+uv run pytest tests/test_api.py   # API tests only
 npm test                # frontend logic tests (Node 22+, no dependencies to install)
 ```
 
-The frontend is plain ES modules + SVG with no build step, in `app/static/`.
+No Chrome? Run `uv run playwright install chromium` and remove `--browser-channel chrome` from `pyproject.toml`.
+
+The frontend is plain ES modules + SVG with no build step, in `app/static/`:
+
+| File | Role |
+| --- | --- |
+| `js/geometry.js` | Pure math: side-midpoint anchors, elbow routing, suggested arrows, print fitting |
+| `js/model.js` | Pure chart operations (boxes, edges, ids, palette, ability modifiers) |
+| `js/canvas.js` | SVG rendering and mouse interactions |
+| `js/editor.js` | Editor screen: toolbar, palette, autosave, keyboard shortcuts |
+| `js/intro.js` | Character questionnaire |
+| `js/print.js` | Builds the one-page print layout |
+| `js/main.js` | Hash routing between the chart list, questionnaire, and editor |

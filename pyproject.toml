@@ -7,8 +7,13 @@ requires-python = ">=3.11"
 dependencies = ["flask>=3.0"]
 
 [dependency-groups]
-dev = ["pytest>=8.0"]
+dev = [
+    "pytest>=8.0",
+    "pytest-playwright>=0.10.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+# Browser tests use the installed Google Chrome; drop this to use Playwright's own Chromium.
+addopts = "--browser-channel chrome"
