@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   newChart, normalizeChart, abilityModifier, formatModifier, addBox, moveBox, resizeBox,
   deleteBox, addEdge, deleteEdge, updateEdge, nextId, paletteGroups, bringToFront, MIN_W,
+  addLane, updateLane, moveLane, deleteLane, boxesInLane, defaultLanes,
 } from "../../app/static/js/model.js";
 
 test("ability modifiers", () => {
@@ -22,13 +23,16 @@ test("ids increment past existing ones", () => {
   assert.equal(nextId("b", [{ id: "b1" }, { id: "b7" }, { id: "e9" }]), "b8");
 });
 
-test("boxes snap to grid and enforce minimum size", () => {
+test("boxes snap to grid, stay inside their lane, and enforce minimum size", () => {
   const c = newChart();
-  const b = addBox(c, { x: 13, y: 27 });
-  assert.equal(b.x, 10);
+  const b = addBox(c, { x: 43, y: 27 });
+  assert.equal(b.lane, "l1");
+  assert.equal(b.x, 40);
   assert.equal(b.y, 30);
-  moveBox(c, b.id, 104, 96);
-  assert.deepEqual([b.x, b.y], [100, 100]);
+  moveBox(c, b.id, "l3", 104, 96);
+  assert.deepEqual([b.lane, b.x, b.y], ["l3", 100, 100]);
+  moveBox(c, b.id, "l3", -500, -40);
+  assert.deepEqual([b.x, b.y], [20, 10]);
   resizeBox(c, b.id, 5, 5);
   assert.equal(b.w, MIN_W);
 });
@@ -76,6 +80,8 @@ test("normalizeChart fills defaults and drops dangling edges", () => {
   const c = normalizeChart({ boxes: [{ id: "b1" }], edges: [{ from: { box: "b1" }, to: { box: "b9" } }] });
   assert.equal(c.character.abilities.length, 6);
   assert.equal(c.edges.length, 0);
+  assert.equal(c.lanes.length, 5);
+  assert.equal(c.boxes[0].lane, "l1");
   assert.deepEqual(normalizeChart(null).boxes, []);
 });
 
@@ -87,7 +93,42 @@ test("palette groups come from character answers", () => {
   });
   const titles = groups.map((g) => g.title);
   assert.deepEqual(titles, ["Flow", "Weapons", "Features"]);
+  assert.equal(groups[0].items.find((i) => i.label === "Blank box").color, null);
   const sword = groups[1].items[0];
   assert.equal(sword.text, "Longsword\n1d8+3");
   assert.equal(groups[1].items.length, 1);
+});
+
+test("new charts start with the five default lanes", () => {
+  assert.deepEqual(newChart().lanes, defaultLanes());
+  assert.deepEqual(defaultLanes().map((l) => l.id), ["l1", "l2", "l3", "l4", "l5"]);
+});
+
+test("add, rename, recolor and reorder lanes", () => {
+  const c = newChart();
+  const lane = addLane(c, "l2", { name: "Movement" });
+  assert.equal(lane.id, "l6");
+  assert.deepEqual(c.lanes.map((l) => l.id), ["l1", "l2", "l6", "l3", "l4", "l5"]);
+  updateLane(c, "l6", { name: "Move", color: "#ffffff" });
+  assert.equal(c.lanes[2].name, "Move");
+  assert.ok(moveLane(c, "l6", -1));
+  assert.deepEqual(c.lanes.slice(0, 3).map((l) => l.id), ["l1", "l6", "l2"]);
+  assert.ok(!moveLane(c, "l1", -1));
+  assert.ok(!moveLane(c, "l5", 1));
+  assert.equal(addLane(c).id, "l7");
+  assert.equal(c.lanes.at(-1).id, "l7");
+});
+
+test("deleting a lane removes its boxes and their arrows, but never the last lane", () => {
+  const c = newChart();
+  const a = addBox(c, { lane: "l2" }), b = addBox(c, { lane: "l3" });
+  addEdge(c, { box: b.id, side: "top" }, { box: a.id, side: "bottom" });
+  assert.ok(deleteLane(c, "l2"));
+  assert.equal(c.lanes.length, 4);
+  assert.deepEqual(c.boxes.map((x) => x.id), [b.id]);
+  assert.equal(c.edges.length, 0);
+  assert.equal(boxesInLane(c, "l3").length, 1);
+  for (const id of ["l1", "l3", "l4"]) deleteLane(c, id);
+  assert.ok(!deleteLane(c, "l5"));
+  assert.equal(c.lanes.length, 1);
 });

@@ -1,3 +1,5 @@
+import { BOX_MIN_X, BOX_MIN_Y } from "./layout.js";
+
 // Pure chart-state operations. Functions mutate the chart passed in and return
 // what they created, so the editor can keep a single mutable state object.
 
@@ -9,6 +11,8 @@ export const COLORS = [
   { name: "Purple", value: "#ddd6fe" },
   { name: "Blue", value: "#bfdbfe" },
   { name: "Green", value: "#bbf7d0" },
+  { name: "Teal", value: "#99f6e4" },
+  { name: "Indigo", value: "#a5b4fc" },
   { name: "Gray", value: "#e5e7eb" },
   { name: "White", value: "#ffffff" },
 ];
@@ -19,8 +23,20 @@ export const CATEGORY_COLORS = {
   feature: "#bbf7d0",
   decision: "#fde68a",
   action: "#e5e7eb",
-  terminal: "#ddd6fe",
 };
+
+const DEFAULT_LANES = [
+  { name: "Start of turn", color: "#bbf7d0" },
+  { name: "Attack", color: "#fecaca" },
+  { name: "Bonus Actions", color: "#bfdbfe" },
+  { name: "Reactions", color: "#fde68a" },
+  { name: "Other Actions", color: "#99f6e4" },
+];
+const NEW_LANE = { name: "New lane", color: "#e5e7eb" };
+
+export function defaultLanes() {
+  return DEFAULT_LANES.map((lane, i) => ({ id: `l${i + 1}`, ...lane }));
+}
 
 export const BOX_W = 160;
 export const BOX_H = 70;
@@ -40,7 +56,7 @@ export function defaultCharacter() {
 }
 
 export function newChart(character = defaultCharacter()) {
-  return { character, boxes: [], edges: [] };
+  return { version: 2, character, lanes: defaultLanes(), boxes: [], edges: [] };
 }
 
 // Fill in anything missing from older or hand-edited data.
@@ -50,7 +66,11 @@ export function normalizeChart(data) {
   for (const key of ["abilities", "weapons", "spells", "features"]) {
     if (!Array.isArray(chart.character[key])) chart.character[key] = [];
   }
-  chart.boxes = Array.isArray(chart.boxes) ? chart.boxes : [];
+  if (!Array.isArray(chart.lanes) || !chart.lanes.length) chart.lanes = defaultLanes();
+  const laneIds = new Set(chart.lanes.map((l) => l.id));
+  chart.boxes = (Array.isArray(chart.boxes) ? chart.boxes : []).map((b) =>
+    laneIds.has(b.lane) ? b : { ...b, lane: chart.lanes[0].id },
+  );
   const ids = new Set(chart.boxes.map((b) => b.id));
   chart.edges = (Array.isArray(chart.edges) ? chart.edges : []).filter(
     (e) => e && e.from && e.to && ids.has(e.from.box) && ids.has(e.to.box),
@@ -81,8 +101,12 @@ export function nextId(prefix, items) {
   return `${prefix}${max + 1}`;
 }
 
-export function addBox(chart, { x = 0, y = 0, w = BOX_W, h = BOX_H, text = "", color = COLORS[0].value } = {}) {
-  const box = { id: nextId("b", chart.boxes), x: snap(x), y: snap(y), w, h, text, color };
+const clampX = (x) => Math.max(BOX_MIN_X, snap(x));
+const clampY = (y) => Math.max(BOX_MIN_Y, snap(y));
+
+// `y` is relative to the top of `lane`.
+export function addBox(chart, { lane = chart.lanes[0]?.id, x = BOX_MIN_X, y = BOX_MIN_Y, w = BOX_W, h = BOX_H, text = "", color = COLORS[0].value } = {}) {
+  const box = { id: nextId("b", chart.boxes), lane, x: clampX(x), y: clampY(y), w, h, text, color };
   chart.boxes.push(box);
   return box;
 }
@@ -97,8 +121,8 @@ export function updateBox(chart, id, patch) {
   return box;
 }
 
-export function moveBox(chart, id, x, y) {
-  return updateBox(chart, id, { x: snap(x), y: snap(y) });
+export function moveBox(chart, id, lane, x, y) {
+  return updateBox(chart, id, { lane, x: clampX(x), y: clampY(y) });
 }
 
 export const MIN_W = 60;
@@ -141,6 +165,46 @@ export function deleteEdge(chart, id) {
   chart.edges = chart.edges.filter((e) => e.id !== id);
 }
 
+// ---- lanes ----------------------------------------------------------------
+
+export function getLane(chart, id) {
+  return chart.lanes.find((l) => l.id === id) || null;
+}
+
+export function addLane(chart, afterId = null, { name = NEW_LANE.name, color = NEW_LANE.color } = {}) {
+  const lane = { id: nextId("l", chart.lanes), name, color };
+  const i = chart.lanes.findIndex((l) => l.id === afterId);
+  chart.lanes.splice(i < 0 ? chart.lanes.length : i + 1, 0, lane);
+  return lane;
+}
+
+export function updateLane(chart, id, patch) {
+  const lane = getLane(chart, id);
+  if (lane) Object.assign(lane, patch);
+  return lane;
+}
+
+// Move a lane up (-1) or down (+1). Returns whether it moved.
+export function moveLane(chart, id, delta) {
+  const i = chart.lanes.findIndex((l) => l.id === id);
+  const j = i + delta;
+  if (i < 0 || j < 0 || j >= chart.lanes.length) return false;
+  [chart.lanes[i], chart.lanes[j]] = [chart.lanes[j], chart.lanes[i]];
+  return true;
+}
+
+export function boxesInLane(chart, id) {
+  return chart.boxes.filter((b) => b.lane === id);
+}
+
+// Deletes the lane with its boxes and their arrows. The last lane can't be deleted.
+export function deleteLane(chart, id) {
+  if (chart.lanes.length <= 1 || !getLane(chart, id)) return false;
+  for (const box of boxesInLane(chart, id)) deleteBox(chart, box.id);
+  chart.lanes = chart.lanes.filter((l) => l.id !== id);
+  return true;
+}
+
 const cardText = (item) => (item.notes ? `${item.name}\n${item.notes}` : item.name);
 
 // Sidebar palette groups derived from the questionnaire answers.
@@ -153,10 +217,9 @@ export function paletteGroups(character) {
     {
       title: "Flow",
       items: [
-        { label: "Start of turn", text: "Start of turn", color: CATEGORY_COLORS.terminal },
         { label: "Decision?", text: "?", color: CATEGORY_COLORS.decision },
-        { label: "Action", text: "", color: CATEGORY_COLORS.action },
-        { label: "End turn", text: "End turn", color: CATEGORY_COLORS.terminal },
+        // No color: takes the color of the lane it lands in.
+        { label: "Blank box", text: "", color: null },
       ],
     },
     { title: "Weapons", items: fromList(character.weapons, "weapon") },
