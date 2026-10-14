@@ -42,7 +42,7 @@ Back up that file to back up your work.
 
 ```sh
 uv run pytest           # backend API tests
-node --test tests/js    # frontend logic tests (Node 18+, no npm install needed)
+npm test                # frontend logic tests (Node 22+, no dependencies to install)
 ```
 
 The frontend is plain ES modules + SVG with no build step, in `app/static/`.
