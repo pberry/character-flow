@@ -3,11 +3,21 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- README: documented all editor shortcuts, "Edit character", project layout, and known limitations;
+  the local (non-Docker) run example now uses port 8000.
+
 ## [0.2.0] - 2026-10-14
 
 ### Added
 - Dockerfile and `compose.yaml`: runs under gunicorn as a non-root user, on host port 5050 by default
   (`CHARFLOW_PORT` overrides it), with the SQLite database stored in a named volume.
+- Docker usage, backup, and update instructions in the README.
+
+### Changed
+- gunicorn is now a runtime dependency.
 
 ## [0.1.0] - 2026-10-13
 
