@@ -3,6 +3,18 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-10-14
+
+### Added
+- Fixed page width: the canvas shows the printed page's right edge, and boxes can't be dragged or resized past it.
+- Cards clicked into a lane wrap to a new row in that lane when the row is full (about five boxes per row).
+- A "Bottom of the printed page" guide that turns red when the lanes run past it, meaning the chart will print smaller.
+
+### Changed
+- Print always uses the full page width, so every chart that fits the page prints at the same, readable scale.
+- Cards added next to the selected box use the same 40-unit spacing as cards added to the end of a lane.
+- Charts loaded with boxes beyond the page edge have them pulled back onto the page.
+
 ## [0.3.0] - 2026-10-14
 
 ### Added

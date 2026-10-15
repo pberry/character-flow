@@ -43,7 +43,7 @@ Back up that file to back up your work.
 | Action | How |
 | --- | --- |
 | Add a box | Drag a card from the left palette into a lane, or double-click empty space in a lane |
-| Fill a lane | Click the lane's header, then click palette cards: each lands at the end of that lane |
+| Fill a lane | Click the lane's header, then click palette cards: each lands at the end of that lane, wrapping to a new row at the page edge |
 | Add the next step | Select a box, then click a palette card: the new box is placed to its right |
 | Edit text | Double-click a box (or select it and press Enter). Ctrl/Cmd+Enter or click away to finish, Escape to cancel. The first line is shown in bold |
 | Color / delete | Select a box, use the toolbar at the top |
@@ -60,7 +60,7 @@ Back up that file to back up your work.
 | Delete a lane | Select it and press Delete or use "Delete lane". Its boxes and their arrows go with it (you're asked first). A chart keeps at least one lane |
 | Pan / zoom | Drag empty canvas / mouse wheel or trackpad pinch / the − + buttons. "Fit" frames the whole chart |
 | Save | Autosaves; or Save button / Ctrl+S / Cmd+S |
-| Print | Print button — fits the chart onto one landscape letter page; choose "Save as PDF" in the dialog for a PDF |
+| Print | Print button — prints the chart on one landscape letter page; choose "Save as PDF" in the dialog for a PDF |
 
 ## Edit the character
 
@@ -72,6 +72,15 @@ printed header; boxes already on the canvas are left alone.
 Lanes grow automatically to fit their boxes and shrink back when boxes move out. A box keeps its color when moved
 to another lane; the lane color is only the default for blank boxes added to it (cards from the palette keep their
 category color). Use the extra Indigo and Teal swatches for things like "costs a resource" variants within a lane.
+
+## Page size
+
+The chart is always one printed page wide (a dashed line marks the right edge), so box text prints at about 9pt.
+Boxes can't be dragged or resized past the edge. When cards are clicked into a full row, they wrap to a new row
+in the same lane and the lane grows taller; boxes already placed are never rearranged.
+
+A second dashed line marks the bottom of the printed page. Lanes that run past it still print on one page, but the
+whole chart is scaled down to fit, and the line turns red as a warning. About five standard boxes fit in a row.
 
 ## Known limitations
 
