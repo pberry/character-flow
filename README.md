@@ -93,6 +93,9 @@ whole chart is scaled down to fit, and the line turns red as a warning. About fi
 
 ## Development
 
+Product goals, decisions, and the roadmap are in [PRD.md](PRD.md). PRD, README, and CHANGELOG are living
+documents and are updated in the same change as the code (see [CLAUDE.md](CLAUDE.md)).
+
 ```sh
 uv run pytest           # API tests + browser end-to-end tests (Playwright, uses installed Google Chrome)
 uv run pytest tests/test_api.py   # API tests only

@@ -3,6 +3,13 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- `PRD.md`: goals, requirements, decisions log, and roadmap. It's a living document.
+- `CLAUDE.md`: repo instructions to keep PRD, README, and CHANGELOG updated alongside code changes.
+- `.gitignore` entry for the local Meren reference mock-up PDF.
+
 ## [0.4.0] - 2026-10-14
 
 ### Added
