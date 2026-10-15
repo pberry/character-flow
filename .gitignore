@@ -4,3 +4,6 @@ __pycache__/
 .pytest_cache/
 *.db
 .DS_Store
+
+# Reference mock-up, kept out of the repo
+Meren abilities.pdf
