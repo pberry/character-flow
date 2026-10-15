@@ -1,4 +1,4 @@
-import { BOX_MIN_X, BOX_MIN_Y } from "./layout.js";
+import { BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y } from "./layout.js";
 
 // Pure chart-state operations. Functions mutate the chart passed in and return
 // what they created, so the editor can keep a single mutable state object.
@@ -68,9 +68,15 @@ export function normalizeChart(data) {
   }
   if (!Array.isArray(chart.lanes) || !chart.lanes.length) chart.lanes = defaultLanes();
   const laneIds = new Set(chart.lanes.map((l) => l.id));
-  chart.boxes = (Array.isArray(chart.boxes) ? chart.boxes : []).map((b) =>
-    laneIds.has(b.lane) ? b : { ...b, lane: chart.lanes[0].id },
-  );
+  chart.boxes = (Array.isArray(chart.boxes) ? chart.boxes : []).map((b) => {
+    const box = laneIds.has(b.lane) ? { ...b } : { ...b, lane: chart.lanes[0].id };
+    // Pull anything past the page edge back onto the page.
+    if (box.x + box.w > BOX_MAX_RIGHT) {
+      box.w = Math.min(box.w, BOX_MAX_RIGHT - BOX_MIN_X);
+      box.x = clampX(box.x, box.w);
+    }
+    return box;
+  });
   const ids = new Set(chart.boxes.map((b) => b.id));
   chart.edges = (Array.isArray(chart.edges) ? chart.edges : []).filter(
     (e) => e && e.from && e.to && ids.has(e.from.box) && ids.has(e.to.box),
@@ -101,12 +107,13 @@ export function nextId(prefix, items) {
   return `${prefix}${max + 1}`;
 }
 
-const clampX = (x) => Math.max(BOX_MIN_X, snap(x));
+// Keep a box of width w between the lane headers and the page's right edge.
+export const clampX = (x, w = BOX_W) => Math.max(BOX_MIN_X, Math.min(snap(x), BOX_MAX_RIGHT - w));
 const clampY = (y) => Math.max(BOX_MIN_Y, snap(y));
 
 // `y` is relative to the top of `lane`.
 export function addBox(chart, { lane = chart.lanes[0]?.id, x = BOX_MIN_X, y = BOX_MIN_Y, w = BOX_W, h = BOX_H, text = "", color = COLORS[0].value } = {}) {
-  const box = { id: nextId("b", chart.boxes), lane, x: clampX(x), y: clampY(y), w, h, text, color };
+  const box = { id: nextId("b", chart.boxes), lane, x: clampX(x, w), y: clampY(y), w, h, text, color };
   chart.boxes.push(box);
   return box;
 }
@@ -122,14 +129,19 @@ export function updateBox(chart, id, patch) {
 }
 
 export function moveBox(chart, id, lane, x, y) {
-  return updateBox(chart, id, { lane, x: clampX(x), y: clampY(y) });
+  const box = getBox(chart, id);
+  return box && updateBox(chart, id, { lane, x: clampX(x, box.w), y: clampY(y) });
 }
 
 export const MIN_W = 60;
 export const MIN_H = 30;
 
+// Width stops at the page's right edge.
 export function resizeBox(chart, id, w, h) {
-  return updateBox(chart, id, { w: Math.max(MIN_W, snap(w)), h: Math.max(MIN_H, snap(h)) });
+  const box = getBox(chart, id);
+  if (!box) return null;
+  const maxW = Math.max(MIN_W, BOX_MAX_RIGHT - box.x);
+  return updateBox(chart, id, { w: Math.min(maxW, Math.max(MIN_W, snap(w))), h: Math.max(MIN_H, snap(h)) });
 }
 
 export function deleteBox(chart, id) {

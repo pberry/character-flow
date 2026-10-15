@@ -5,6 +5,7 @@ import {
   deleteBox, addEdge, deleteEdge, updateEdge, nextId, paletteGroups, bringToFront, MIN_W,
   addLane, updateLane, moveLane, deleteLane, boxesInLane, defaultLanes,
 } from "../../app/static/js/model.js";
+import { BOX_MAX_RIGHT } from "../../app/static/js/layout.js";
 
 test("ability modifiers", () => {
   assert.equal(abilityModifier(10), 0);
@@ -35,6 +36,22 @@ test("boxes snap to grid, stay inside their lane, and enforce minimum size", () 
   assert.deepEqual([b.x, b.y], [20, 10]);
   resizeBox(c, b.id, 5, 5);
   assert.equal(b.w, MIN_W);
+});
+
+test("boxes can't move or grow past the page's right edge", () => {
+  const c = newChart();
+  const b = addBox(c, { x: 5000 });
+  assert.equal(b.x + b.w, BOX_MAX_RIGHT);
+  moveBox(c, b.id, "l1", 400, 10);
+  resizeBox(c, b.id, 5000, 70);
+  assert.equal(b.x + b.w, BOX_MAX_RIGHT);
+  moveBox(c, b.id, "l1", 5000, 10);
+  assert.equal(b.x + b.w, BOX_MAX_RIGHT);
+});
+
+test("normalizeChart pulls off-page boxes back onto the page", () => {
+  const c = normalizeChart({ boxes: [{ id: "b1", lane: "l1", x: 3000, y: 10, w: 160, h: 70 }] });
+  assert.equal(c.boxes[0].x + c.boxes[0].w, BOX_MAX_RIGHT);
 });
 
 test("edges reject self loops, duplicates and unknown boxes", () => {

@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  layoutChart, laneAt, layoutBounds, HEADER_W, LANE_PAD, MIN_LANE_H, MIN_CONTENT_W,
+  layoutChart, laneAt, layoutBounds, HEADER_W, LANE_PAD, MIN_LANE_H, CONTENT_W, PAGE_W, PAGE_H,
+  BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y, findSlot, endOfLane,
 } from "../../app/static/js/layout.js";
 import { newChart, addBox } from "../../app/static/js/model.js";
 
@@ -11,7 +12,7 @@ test("empty default chart stacks five minimum-height lanes", () => {
   assert.deepEqual(layout.lanes.map((l) => l.top), [0, 110, 220, 330, 440].map((n) => (n / 110) * MIN_LANE_H));
   assert.equal(layout.height, 5 * MIN_LANE_H);
   assert.equal(layout.left, -HEADER_W);
-  assert.equal(layout.width, HEADER_W + MIN_CONTENT_W);
+  assert.equal(layout.width, PAGE_W);
 });
 
 test("lanes grow to fit boxes and push later lanes down", () => {
@@ -32,10 +33,44 @@ test("box positions become absolute", () => {
   assert.equal(c.boxes[0].y, 30, "stored box is not mutated");
 });
 
-test("content width grows with the rightmost box", () => {
+test("width stays at one page however far right boxes are placed", () => {
   const c = newChart();
   addBox(c, { x: 2000, w: 160 });
-  assert.equal(layoutChart(c).width, HEADER_W + 2000 + 160 + 60);
+  assert.equal(layoutChart(c).width, PAGE_W);
+  assert.equal(c.boxes[0].x + c.boxes[0].w, BOX_MAX_RIGHT);
+});
+
+test("page height matches the printable aspect ratio", () => {
+  assert.equal(PAGE_W, HEADER_W + CONTENT_W);
+  assert.ok(Math.abs((PAGE_W + 8) / (PAGE_H + 8) - 1.5) < 0.01);
+});
+
+const B = (x, y, w = 160, h = 70) => ({ x, y, w, h });
+
+test("findSlot keeps a free spot", () => {
+  assert.deepEqual(findSlot([], B(200, 10)), { x: 200, y: 10 });
+});
+
+test("findSlot slides right past boxes in the way", () => {
+  assert.deepEqual(findSlot([B(20, 10)], B(20, 10)), { x: 220, y: 10 });
+});
+
+test("findSlot wraps to a new row at the page edge", () => {
+  const row = [20, 220, 420, 620, 820].map((x) => B(x, 10));
+  assert.ok(820 + 160 <= BOX_MAX_RIGHT, "five boxes fit in a row");
+  assert.deepEqual(findSlot(row, B(20, 10)), { x: BOX_MIN_X, y: 10 + 70 + 30 });
+  // Starting right of the last box (e.g. "next to the selected box") wraps too.
+  assert.deepEqual(findSlot(row, B(1040, 10)), { x: BOX_MIN_X, y: 110 });
+});
+
+test("endOfLane starts empty lanes at the top left", () => {
+  assert.deepEqual(endOfLane([], { w: 160, h: 70 }), { x: BOX_MIN_X, y: BOX_MIN_Y });
+});
+
+test("endOfLane continues the lowest row, then wraps", () => {
+  assert.deepEqual(endOfLane([B(20, 10), B(20, 110)], { w: 160, h: 70 }), { x: 220, y: 110 });
+  const full = [20, 220, 420, 620, 820].map((x) => B(x, 10));
+  assert.deepEqual(endOfLane(full, { w: 160, h: 70 }), { x: BOX_MIN_X, y: 110 });
 });
 
 test("frozen lanes and a floating box don't change lane geometry", () => {
