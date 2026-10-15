@@ -5,7 +5,7 @@ import {
   SIDES, anchor, boxAt, edgePoints, nearestSide, pathD,
   polylineMidpoint, routePoints, suggestEdges,
 } from "./geometry.js";
-import { HEADER_W, layoutBounds, layoutChart, laneAt } from "./layout.js";
+import { HEADER_W, PAGE_H, SLOT_GAP_X, endOfLane, findSlot, layoutBounds, layoutChart, laneAt } from "./layout.js";
 import * as M from "./model.js";
 
 const DOUBLE_CLICK_MS = 400;
@@ -70,6 +70,16 @@ function drawLanes(layout, { selection, dropLane, interactive }) {
     g.append(lg);
   });
   if (interactive) {
+    // Page edges: boxes can't go past the right one; lanes reaching below the
+    // bottom one make the printout shrink to fit.
+    const x = layout.left + layout.width;
+    g.append(s("line", { class: "page-edge", x1: x, y1: 0, x2: x, y2: Math.max(layout.height, PAGE_H) }));
+    const over = layout.height > PAGE_H;
+    g.append(
+      s("line", { class: `page-bottom${over ? " over" : ""}`, x1: layout.left, y1: PAGE_H, x2: x, y2: PAGE_H }),
+      s("text", { class: `page-bottom-label${over ? " over" : ""}`, x: x - 6, y: PAGE_H - 6, "text-anchor": "end" },
+        over ? "Bottom of the printed page — the chart will print smaller" : "Bottom of the printed page"),
+    );
     const y = layout.height + 10;
     g.append(
       s(
@@ -276,16 +286,16 @@ export class Canvas {
     return absY - lane.top;
   }
 
-  // Next free spot at the right end of a lane.
-  endOfLane(laneId) {
-    const right = this.layout.boxes.filter((b) => b.lane === laneId).reduce((m, b) => Math.max(m, b.x + b.w), 0);
-    return { x: right ? right + 40 : 20, y: 10 };
+  laneBoxes(laneId) {
+    return M.boxesInLane(this.chart, laneId);
   }
 
   // Add a box from a palette card. With a drop point it lands there. Otherwise
   // it goes right of the selected box, at the end of the selected lane, or into
-  // the lane in the middle of the view. Cards without a color take the lane's.
+  // the lane in the middle of the view, wrapping to a new row in the lane when
+  // the page edge is reached. Cards without a color take the lane's.
   addCard(card, at = null) {
+    const size = { w: M.BOX_W, h: M.BOX_H };
     let lane, x, y;
     if (at) {
       lane = laneAt(this.layout, at.y);
@@ -294,15 +304,11 @@ export class Canvas {
     } else if (this.selectedBox()) {
       const sel = this.absBox(this.selection.id);
       lane = this.layout.lanes.find((l) => l.id === sel.lane);
-      x = sel.x + sel.w + 60;
-      y = this.relativeY(lane, sel.y);
+      ({ x, y } = findSlot(this.laneBoxes(lane.id), { x: sel.x + sel.w + SLOT_GAP_X, y: this.relativeY(lane, sel.y), ...size }));
     } else {
       const laneSel = this.selectedLane();
       lane = laneSel ? this.layout.lanes.find((l) => l.id === laneSel.id) : laneAt(this.layout, this.visibleCenter().y);
-      ({ x, y } = this.endOfLane(lane.id));
-    }
-    if (!at) {
-      while (boxAt(this.layout.boxes, { x: x + 10, y: lane.top + y + 10 })) y += M.BOX_H + 20;
+      ({ x, y } = endOfLane(this.laneBoxes(lane.id), size));
     }
     const box = M.addBox(this.chart, { lane: lane.id, x, y, text: card.text, color: card.color || lane.color });
     this.select({ type: "box", id: box.id });
@@ -450,7 +456,7 @@ export class Canvas {
       M.bringToFront(this.chart, box.id);
       this.drag = {
         type: "move", id: box.id, dx: pt.x - box.x, dy: pt.y - box.y,
-        x: box.x, y: box.y, h: box.h, lanes: this.layout.lanes, moved: false,
+        x: box.x, y: box.y, w: box.w, h: box.h, lanes: this.layout.lanes, moved: false,
       };
     } else if (edgeEl) {
       this.select({ type: "edge", id: edgeEl.dataset.edge });
@@ -488,7 +494,7 @@ export class Canvas {
     if (!d) return;
     const pt = this.toWorld(e.clientX, e.clientY);
     if (d.type === "move") {
-      const nx = Math.max(M.snap(pt.x - d.dx), 20), ny = M.snap(pt.y - d.dy);
+      const nx = M.clampX(pt.x - d.dx, d.w), ny = M.snap(pt.y - d.dy);
       if (nx === d.x && ny === d.y) return;
       d.x = nx;
       d.y = ny;

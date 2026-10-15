@@ -189,3 +189,32 @@ def test_print_sheet_fits_page(page: Page, live_server):
     if out := os.environ.get("CHARFLOW_PDF_OUT"):
         with open(out, "wb") as f:
             f.write(pdf)
+
+
+def test_cards_wrap_at_page_edge(page: Page, live_server):
+    chart_id = create_character(page, live_server)
+
+    # Seven cards into one lane: five fit across the page, then they wrap.
+    lane_header(page, "l2").click()
+    for _ in range(7):
+        page.locator(".card", has_text="Greataxe").click()
+    expect(page.locator("[data-box]")).to_have_count(7)
+    expect(page.locator(".page-bottom-label")).to_have_text("Bottom of the printed page")
+
+    page.get_by_role("button", name="Save").click()
+    expect(page.locator(".status")).to_have_text("Saved")
+    boxes = chart_data(live_server, chart_id)["boxes"]
+    assert all(b["lane"] == "l2" for b in boxes)
+    assert max(b["x"] + b["w"] for b in boxes) <= 980
+    rows = sorted({b["y"] for b in boxes})
+    assert len(rows) == 2
+    assert sum(b["y"] == rows[0] for b in boxes) == 5
+
+    # Dragging a box far to the right stops it at the page edge.
+    last = boxes[-1]["id"]
+    x, y = box_center(page, last)
+    drag(page, (x, y), (x + 2000, y))
+    page.get_by_role("button", name="Save").click()
+    expect(page.locator(".status")).to_have_text("Saved")
+    moved = next(b for b in chart_data(live_server, chart_id)["boxes"] if b["id"] == last)
+    assert moved["x"] + moved["w"] == 980
