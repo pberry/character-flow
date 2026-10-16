@@ -1,7 +1,7 @@
 # Character Flow — Product Requirements
 
 > **Living document.** Update this file whenever a goal, decision, or requirement changes, in the same change
-> that implements it. Record *why* a decision was made, not just what. Last updated for **v0.4.0**.
+> that implements it. Record *why* a decision was made, not just what. Last updated for **v0.5.0**.
 
 ## Problem
 
@@ -91,13 +91,14 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 
 ## Roadmap
 
+Shipped from the mock-up: box shapes and flag lane headers ([#3](https://github.com/pberry/character-flow/issues/3), v0.5.0).
+
 Tracked as GitHub issues:
 
 - [#1](https://github.com/pberry/character-flow/issues/1) Side column for trackers: gear, Focus/Luck Points,
   potions, conditions
 - [#2](https://github.com/pberry/character-flow/issues/2) Resource badges on boxes: cost (1 FP), duration (10 min, 1 hr),
   recharge (SR/LR), modifier (2x)
-- [#3](https://github.com/pberry/character-flow/issues/3) More box shapes: flag, diamond, star, document, block arrow
 - [#4](https://github.com/pberry/character-flow/issues/4) Grouping brackets
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
 - [#6](https://github.com/pberry/character-flow/issues/6) Route arrows around boxes
@@ -105,7 +106,7 @@ Tracked as GitHub issues:
 - [#8](https://github.com/pberry/character-flow/issues/8) Touch support
 - [#9](https://github.com/pberry/character-flow/issues/9) Undo and version history
 
-Items 1–4 come from the player's Lucidchart mock-up of Meren (a Wood Elf Monk, Warrior of the Elements, level 3).
+Items 1, 2, and 4 come from the player's Lucidchart mock-up of Meren (a Wood Elf Monk, Warrior of the Elements, level 3).
 The mock-up is kept out of the repo.
 
 ## Constraints
