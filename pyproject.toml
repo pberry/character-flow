@@ -1,6 +1,6 @@
 [project]
 name = "character-flow"
-version = "0.5.0"
+version = "0.6.0"
 description = "Build a character-specific, left-to-right combat flowchart for tabletop RPGs."
 readme = "README.md"
 requires-python = ">=3.11"
