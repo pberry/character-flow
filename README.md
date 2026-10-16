@@ -46,7 +46,7 @@ Back up that file to back up your work.
 | Fill a lane | Click the lane's header, then click palette cards: each lands at the end of that lane, wrapping to a new row at the page edge |
 | Add the next step | Select a box, then click a palette card: the new box is placed to its right |
 | Edit text | Double-click a box (or select it and press Enter). Ctrl/Cmd+Enter or click away to finish, Escape to cancel. The first line is shown in bold |
-| Color / delete | Select a box, use the toolbar at the top |
+| Color / shape / delete | Select a box, use the toolbar at the top |
 | Move | Drag a box (arrows follow). Drop it in another lane to move it there; the target lane is highlighted |
 | Resize | Drag the small handle at a box's bottom-right corner |
 | Draw an arrow | Hover a box, drag from one of the four side dots to another box |
@@ -72,6 +72,15 @@ printed header; boxes already on the canvas are left alone.
 Lanes grow automatically to fit their boxes and shrink back when boxes move out. A box keeps its color when moved
 to another lane; the lane color is only the default for blank boxes added to it (cards from the palette keep their
 category color). Use the extra Indigo and Teal swatches for things like "costs a resource" variants within a lane.
+
+## Box shapes
+
+Select a box and pick a shape in the toolbar: rectangle, flag, diamond, star, document (wavy bottom), right
+arrow, or up arrow. Shapes only tell boxes apart; the app doesn't give them a meaning. For example, the Meren
+mock-up uses diamonds for branches, a star for a buff you activate, and arrows for jumps. The "Decision?" card
+starts as a diamond. Switching to a diamond, star, or arrow grows the box if it's too small for that shape (it
+never shrinks a box). Arrows still attach at the four side midpoints, where they meet the shape's outline.
+Lane headers are drawn as flags.
 
 ## Page size
 
@@ -122,6 +131,7 @@ The frontend is plain ES modules + SVG with no build step, in `app/static/`:
 | --- | --- |
 | `js/layout.js` | Pure swim-lane layout: lane tops/heights from their boxes, absolute box positions |
 | `js/geometry.js` | Pure math: side-midpoint anchors, elbow routing, suggested arrows, print fitting |
+| `js/shapes.js` | Pure box-shape outlines, text areas, and where arrows meet each outline |
 | `js/model.js` | Pure chart operations (boxes, edges, ids, palette, ability modifiers) |
 | `js/canvas.js` | SVG rendering and mouse interactions |
 | `js/editor.js` | Editor screen: toolbar, palette, autosave, keyboard shortcuts |

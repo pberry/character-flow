@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   newChart, normalizeChart, abilityModifier, formatModifier, addBox, moveBox, resizeBox,
   deleteBox, addEdge, deleteEdge, updateEdge, nextId, paletteGroups, bringToFront, MIN_W,
-  addLane, updateLane, moveLane, deleteLane, boxesInLane, defaultLanes,
+  addLane, updateLane, moveLane, deleteLane, boxesInLane, defaultLanes, defaultCharacter, setShape, shapeSize,
 } from "../../app/static/js/model.js";
 import { BOX_MAX_RIGHT } from "../../app/static/js/layout.js";
 
@@ -148,4 +148,41 @@ test("deleting a lane removes its boxes and their arrows, but never the last lan
   for (const id of ["l1", "l3", "l4"]) deleteLane(c, id);
   assert.ok(!deleteLane(c, "l5"));
   assert.equal(c.lanes.length, 1);
+});
+
+test("boxes default to rectangles; shaped boxes get a shape-sized default", () => {
+  const c = newChart();
+  assert.equal(addBox(c).shape, "rect");
+  const star = addBox(c, { shape: "star" });
+  assert.deepEqual([star.shape, star.w, star.h], ["star", 160, 140]);
+  assert.equal(addBox(c, { shape: "bogus" }).shape, "rect");
+  assert.deepEqual(shapeSize("rect"), { w: 160, h: 70 });
+});
+
+test("setShape grows a box to the shape's minimum, never shrinks it", () => {
+  const c = newChart();
+  const b = addBox(c, { w: 300, h: 70 });
+  setShape(c, b.id, "diamond");
+  assert.deepEqual([b.shape, b.w, b.h], ["diamond", 300, 90]);
+  setShape(c, b.id, "rect");
+  assert.deepEqual([b.shape, b.w, b.h], ["rect", 300, 90]);
+  assert.equal(setShape(c, b.id, "hexagon"), null);
+  assert.equal(b.shape, "rect");
+});
+
+test("normalizeChart gives old or unknown boxes the rectangle shape", () => {
+  const c = normalizeChart({
+    lanes: defaultLanes(),
+    boxes: [
+      { id: "b1", lane: "l1", x: 20, y: 10, w: 160, h: 70 },
+      { id: "b2", lane: "l1", x: 220, y: 10, w: 160, h: 70, shape: "blob" },
+      { id: "b3", lane: "l1", x: 420, y: 10, w: 160, h: 90, shape: "diamond" },
+    ],
+  });
+  assert.deepEqual(c.boxes.map((b) => b.shape), ["rect", "rect", "diamond"]);
+});
+
+test("the Decision? palette card is a diamond", () => {
+  const flow = paletteGroups(defaultCharacter()).find((g) => g.title === "Flow");
+  assert.equal(flow.items.find((i) => i.label === "Decision?").shape, "diamond");
 });

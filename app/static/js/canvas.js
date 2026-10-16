@@ -7,6 +7,7 @@ import {
 } from "./geometry.js";
 import { HEADER_W, PAGE_H, SLOT_GAP_X, endOfLane, findSlot, layoutBounds, layoutChart, laneAt } from "./layout.js";
 import * as M from "./model.js";
+import { shapePathD, textArea } from "./shapes.js";
 
 const DOUBLE_CLICK_MS = 400;
 const MIN_ZOOM = 0.25;
@@ -57,9 +58,11 @@ function drawLanes(layout, { selection, dropLane, interactive }) {
     lg.append(s("rect", { class: "lane-band", x: layout.left, y: lane.top, width: layout.width, height: lane.height }));
     const header = s("g", { class: "lane-header", "data-lane": lane.id });
     const hx = layout.left + 10, hy = lane.top + 10, hw = HEADER_W - 30, hh = lane.height - 20;
+    // Lane headers are flags: the start of each swim lane.
+    const ta = textArea("flag", hw, hh);
     header.append(
-      s("rect", { class: "lane-header-rect", x: hx, y: hy, width: hw, height: hh, rx: 8, fill: lane.color }),
-      s("foreignObject", { x: hx, y: hy, width: hw, height: hh }, h("div", { class: "lane-name" }, lane.name)),
+      s("path", { class: "lane-header-rect", d: shapePathD("flag", hw, hh), transform: `translate(${hx} ${hy})`, fill: lane.color }),
+      s("foreignObject", { x: hx + ta.x, y: hy + ta.y, width: ta.w, height: ta.h }, h("div", { class: "lane-name" }, lane.name)),
     );
     if (interactive) header.append(s("title", {}, "Click to edit this lane"));
     lg.append(header);
@@ -127,10 +130,14 @@ export function drawChart(g, chart, layout, opts = {}) {
       "data-box": box.id,
       transform: `translate(${box.x} ${box.y})`,
     });
-    bg.append(s("rect", { class: "box-rect", width: box.w, height: box.h, rx: 6, fill: box.color }));
-    bg.append(s("foreignObject", { x: 0, y: 0, width: box.w, height: box.h }, boxText(box.text)));
+    const d = shapePathD(box.shape, box.w, box.h);
+    bg.append(d
+      ? s("path", { class: "box-rect", d, fill: box.color })
+      : s("rect", { class: "box-rect", width: box.w, height: box.h, rx: 6, fill: box.color }));
+    const ta = textArea(box.shape, box.w, box.h);
+    bg.append(s("foreignObject", { x: ta.x, y: ta.y, width: ta.w, height: ta.h }, boxText(box.text)));
     if (interactive) {
-      const local = { x: 0, y: 0, w: box.w, h: box.h };
+      const local = { x: 0, y: 0, w: box.w, h: box.h, shape: box.shape };
       for (const side of SIDES) {
         const a = anchor(local, side);
         bg.append(s("circle", { class: "anchor", cx: a.x, cy: a.y, r: 6, "data-anchor": side }));
@@ -281,6 +288,11 @@ export class Canvas {
     this.changed();
   }
 
+  setShape(shape) {
+    const box = this.selectedBox();
+    if (box && M.setShape(this.chart, box.id, shape)) this.changed();
+  }
+
   // Lane-relative y for a box whose top-left would be at absolute y.
   relativeY(lane, absY) {
     return absY - lane.top;
@@ -295,12 +307,12 @@ export class Canvas {
   // the lane in the middle of the view, wrapping to a new row in the lane when
   // the page edge is reached. Cards without a color take the lane's.
   addCard(card, at = null) {
-    const size = { w: M.BOX_W, h: M.BOX_H };
+    const size = M.shapeSize(card.shape);
     let lane, x, y;
     if (at) {
       lane = laneAt(this.layout, at.y);
-      x = at.x - M.BOX_W / 2;
-      y = this.relativeY(lane, at.y - M.BOX_H / 2);
+      x = at.x - size.w / 2;
+      y = this.relativeY(lane, at.y - size.h / 2);
     } else if (this.selectedBox()) {
       const sel = this.absBox(this.selection.id);
       lane = this.layout.lanes.find((l) => l.id === sel.lane);
@@ -310,7 +322,7 @@ export class Canvas {
       lane = laneSel ? this.layout.lanes.find((l) => l.id === laneSel.id) : laneAt(this.layout, this.visibleCenter().y);
       ({ x, y } = endOfLane(this.laneBoxes(lane.id), size));
     }
-    const box = M.addBox(this.chart, { lane: lane.id, x, y, text: card.text, color: card.color || lane.color });
+    const box = M.addBox(this.chart, { lane: lane.id, x, y, ...size, shape: card.shape, text: card.text, color: card.color || lane.color });
     this.select({ type: "box", id: box.id });
     this.changed();
     return box;

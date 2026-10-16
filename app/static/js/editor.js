@@ -2,12 +2,23 @@
 
 import * as api from "./api.js";
 import { Canvas } from "./canvas.js";
-import { h } from "./dom.js";
+import { h, s } from "./dom.js";
 import { COLORS } from "./model.js";
 import { renderPalette } from "./palette.js";
 import { buildPrintSheet } from "./print.js";
+import { SHAPES, shapePathD } from "./shapes.js";
 
 const AUTOSAVE_MS = 2000;
+
+function shapeIcon(shape) {
+  const w = 24, ht = 18;
+  const d = shapePathD(shape, w, ht);
+  return s(
+    "svg",
+    { class: "shape-icon", width: w + 2, height: ht + 2, viewBox: `-1 -1 ${w + 2} ${ht + 2}`, "aria-hidden": "true" },
+    d ? s("path", { d }) : s("rect", { width: w, height: ht, rx: 3 }),
+  );
+}
 
 // Returns a cleanup function that flushes pending saves and unhooks listeners.
 export function showEditor(container, chartRecord) {
@@ -77,6 +88,17 @@ export function showEditor(container, chartRecord) {
             style: { background: c.value },
             onclick: () => canvas.setColor(c.value),
           }),
+        ),
+        h("span", { class: "sep" }),
+        h("span", { class: "label" }, "Shape"),
+        SHAPES.map((sh) =>
+          h("button", {
+            class: `btn icon shape-btn${(box?.shape || "rect") === sh.id ? " active" : ""}`,
+            title: sh.name,
+            "aria-label": sh.name,
+            "aria-pressed": String((box?.shape || "rect") === sh.id),
+            onclick: () => canvas.setShape(sh.id),
+          }, shapeIcon(sh.id)),
         ),
         h("span", { class: "sep" }),
         h("button", { class: "btn", onclick: () => canvas.startEdit(selection.id) }, "Edit text"),

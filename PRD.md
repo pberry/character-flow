@@ -43,8 +43,11 @@ build a one-page, character-specific combat flowchart and print it to keep at th
   Other Actions. You can rename, recolor, reorder, add, and remove lanes. A chart always has at least one lane.
 - Lane height adjusts automatically to fit the lane's boxes.
 - Flow inside a lane runs left to right.
-- **Boxes** have a color and editable multi-line text (the first line is bold), and you can move and resize them.
-  Arrows follow boxes when they move.
+- **Boxes** have a color, a shape, and editable multi-line text (the first line is bold), and you can move and
+  resize them. Arrows follow boxes when they move.
+- **Shapes**: rectangle (default), flag, diamond, star, document, right arrow, up arrow. They tell boxes apart and
+  carry no enforced meaning. Arrows meet the outline at each side's midpoint. Lane headers are flags, and the
+  "Decision?" card starts as a diamond.
 - A box **keeps its color** when moved to another lane. The lane color is only the default for "Blank box" cards.
 - **Arrows** anchor only at the **midpoint of a box side**. You can add a label to an arrow (e.g. yes/no).
 - **Suggested arrows**: when a box is selected, faint dashed arrows to nearby boxes appear; one click makes a
@@ -81,6 +84,8 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-14 | Fixed page width, wrap new cards, no automatic reflow, page-bottom guide | Keep printouts readable; respect hand placement |
 | 2026-10-16 | Box shapes (flag, diamond, star, document, block arrow) suggest a use but carry no enforced meaning | The mock-up picked shapes to tell boxes apart, not for their ISO flowchart meanings |
 | 2026-10-16 | Four badge types, each with its own shape: cost (circle), duration (not a circle), recharge (plus), modifier (triangle) | The mock-up drew cost and duration as the same circle; separate shapes keep them distinct in print |
+| 2026-10-16 | Lane headers drawn as flags | The player described the start of a swim lane as a flag |
+| 2026-10-16 | Arrows meet a shape's outline, not its bounding box | Arrows ending in empty space beside a star point or diamond edge look wrong |
 | 2026-10-16 | Badges attach to boxes only, not lanes or rows | Keep it simple for now |
 | 2026-10-16 | No border-weight styling | Thick borders in the mock-up were accidental |
 

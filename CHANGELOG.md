@@ -6,9 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 ## [Unreleased]
 
 ### Added
+- Box shapes: rectangle, flag, diamond, star, document (wavy bottom), right arrow, and up arrow, picked from the
+  box toolbar. Arrows attach where each side's midpoint meets the shape's outline, and shapes print.
+- Switching to a diamond, star, or arrow grows a too-small box to fit the shape.
 - `PRD.md`: goals, requirements, decisions log, and roadmap. It's a living document.
 - `CLAUDE.md`: repo instructions to keep PRD, README, and CHANGELOG updated alongside code changes.
 - `.gitignore` entry for the local Meren reference mock-up PDF.
+
+### Changed
+- Lane headers are drawn as flags, marking the start of each swim lane.
+- The "Decision?" palette card starts as a diamond.
+- Boxes now store a `shape`. Older charts load with rectangles.
 
 ## [0.4.0] - 2026-10-14
 

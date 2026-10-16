@@ -218,3 +218,41 @@ def test_cards_wrap_at_page_edge(page: Page, live_server):
     expect(page.locator(".status")).to_have_text("Saved")
     moved = next(b for b in chart_data(live_server, chart_id)["boxes"] if b["id"] == last)
     assert moved["x"] + moved["w"] == 980
+
+
+def test_box_shapes(page: Page, live_server):
+    chart_id = create_character(page, live_server)
+
+    # Lane headers are drawn as flags.
+    expect(page.locator('[data-lane="l1"] path.lane-header-rect')).to_have_count(1)
+
+    # The Decision? card starts as a diamond; other cards are rectangles.
+    lane_header(page, "l2").click()
+    page.locator(".card", has_text="Decision?").click()
+    page.locator(".card", has_text="Greataxe").click()
+    expect(page.locator('[data-box="b1"] path.box-rect')).to_have_count(1)
+    expect(page.locator('[data-box="b2"] rect.box-rect')).to_have_count(1)
+
+    # The selected box (b2) changes shape from the toolbar and grows to fit a star.
+    expect(page.get_by_role("button", name="Rectangle")).to_have_attribute("aria-pressed", "true")
+    page.get_by_role("button", name="Star").click()
+    expect(page.get_by_role("button", name="Star")).to_have_attribute("aria-pressed", "true")
+    expect(page.locator('[data-box="b2"] path.box-rect')).to_have_count(1)
+
+    # Diamonds can change shape too.
+    page.mouse.click(*box_center(page, "b1"))
+    page.get_by_role("button", name="Up arrow").click()
+
+    page.get_by_role("button", name="Save").click()
+    expect(page.locator(".status")).to_have_text("Saved")
+    boxes = {b["id"]: b for b in chart_data(live_server, chart_id)["boxes"]}
+    assert boxes["b1"]["shape"] == "arrow-up"
+    assert boxes["b2"]["shape"] == "star"
+    assert boxes["b2"]["h"] >= 140
+
+    # Shapes survive a reload and print.
+    page.reload()
+    expect(page.locator('[data-box="b2"] path.box-rect')).to_have_count(1)
+    page.evaluate("window.print = () => {}")
+    page.get_by_role("button", name="Print").click()
+    expect(page.locator("#print-sheet [data-box] path.box-rect")).to_have_count(2)

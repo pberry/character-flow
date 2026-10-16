@@ -1,6 +1,8 @@
 // Pure geometry helpers: anchors, edge routing, hit-testing, suggestions, print fitting.
 // No DOM access here so everything can be unit tested with `node --test`.
 
+import { outlineAnchor } from "./shapes.js";
+
 export const SIDES = ["top", "right", "bottom", "left"];
 const DIRS = {
   top: { x: 0, y: -1 },
@@ -10,8 +12,14 @@ const DIRS = {
 };
 const STUB = 18;
 
-// Midpoint of a side: the only place arrows may attach.
+// Midpoint of a side: the only place arrows may attach. For shaped boxes it's
+// where the outline crosses the line from the center to that midpoint.
 export function anchor(box, side) {
+  if (!SIDES.includes(side)) throw new Error(`unknown side ${side}`);
+  if (box.shape && box.shape !== "rect") {
+    const p = outlineAnchor(box.shape, box.w, box.h, side);
+    return { x: box.x + p.x, y: box.y + p.y };
+  }
   switch (side) {
     case "top": return { x: box.x + box.w / 2, y: box.y };
     case "right": return { x: box.x + box.w, y: box.y + box.h / 2 };

@@ -1,4 +1,5 @@
 import { BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y } from "./layout.js";
+import { isShape, minSize } from "./shapes.js";
 
 // Pure chart-state operations. Functions mutate the chart passed in and return
 // what they created, so the editor can keep a single mutable state object.
@@ -70,6 +71,7 @@ export function normalizeChart(data) {
   const laneIds = new Set(chart.lanes.map((l) => l.id));
   chart.boxes = (Array.isArray(chart.boxes) ? chart.boxes : []).map((b) => {
     const box = laneIds.has(b.lane) ? { ...b } : { ...b, lane: chart.lanes[0].id };
+    if (!isShape(box.shape)) box.shape = "rect";
     // Pull anything past the page edge back onto the page.
     if (box.x + box.w > BOX_MAX_RIGHT) {
       box.w = Math.min(box.w, BOX_MAX_RIGHT - BOX_MIN_X);
@@ -111,9 +113,19 @@ export function nextId(prefix, items) {
 export const clampX = (x, w = BOX_W) => Math.max(BOX_MIN_X, Math.min(snap(x), BOX_MAX_RIGHT - w));
 const clampY = (y) => Math.max(BOX_MIN_Y, snap(y));
 
+// Default size of a new box with this shape.
+export function shapeSize(shape) {
+  const min = minSize(shape);
+  return { w: Math.max(BOX_W, min?.w || 0), h: Math.max(BOX_H, min?.h || 0) };
+}
+
 // `y` is relative to the top of `lane`.
-export function addBox(chart, { lane = chart.lanes[0]?.id, x = BOX_MIN_X, y = BOX_MIN_Y, w = BOX_W, h = BOX_H, text = "", color = COLORS[0].value } = {}) {
-  const box = { id: nextId("b", chart.boxes), lane, x: clampX(x, w), y: clampY(y), w, h, text, color };
+export function addBox(chart, { lane = chart.lanes[0]?.id, x = BOX_MIN_X, y = BOX_MIN_Y, shape = "rect", w, h, text = "", color = COLORS[0].value } = {}) {
+  if (!isShape(shape)) shape = "rect";
+  const size = shapeSize(shape);
+  w = w ?? size.w;
+  h = h ?? size.h;
+  const box = { id: nextId("b", chart.boxes), lane, x: clampX(x, w), y: clampY(y), w, h, text, color, shape };
   chart.boxes.push(box);
   return box;
 }
@@ -142,6 +154,16 @@ export function resizeBox(chart, id, w, h) {
   if (!box) return null;
   const maxW = Math.max(MIN_W, BOX_MAX_RIGHT - box.x);
   return updateBox(chart, id, { w: Math.min(maxW, Math.max(MIN_W, snap(w))), h: Math.max(MIN_H, snap(h)) });
+}
+
+// Changing shape grows the box to the shape's minimum size, never shrinks it.
+export function setShape(chart, id, shape) {
+  const box = getBox(chart, id);
+  if (!box || !isShape(shape)) return null;
+  box.shape = shape;
+  const min = minSize(shape);
+  if (min) resizeBox(chart, id, Math.max(box.w, min.w), Math.max(box.h, min.h));
+  return box;
 }
 
 export function deleteBox(chart, id) {
@@ -229,7 +251,7 @@ export function paletteGroups(character) {
     {
       title: "Flow",
       items: [
-        { label: "Decision?", text: "?", color: CATEGORY_COLORS.decision },
+        { label: "Decision?", text: "?", color: CATEGORY_COLORS.decision, shape: "diamond" },
         // No color: takes the color of the lane it lands in.
         { label: "Blank box", text: "", color: null },
       ],

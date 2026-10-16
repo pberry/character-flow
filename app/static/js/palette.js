@@ -38,7 +38,7 @@ export function renderPalette(container, character, onAdd) {
             item.label,
           );
           card.addEventListener("dragstart", (e) => {
-            const payload = JSON.stringify({ text: item.text, color: item.color });
+            const payload = JSON.stringify({ text: item.text, color: item.color, shape: item.shape });
             e.dataTransfer.setData("application/x-charflow", payload);
             e.dataTransfer.setData("text/plain", payload);
             e.dataTransfer.effectAllowed = "copy";
