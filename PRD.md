@@ -79,6 +79,10 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-14 | Box keeps its color across lanes | "Let the user figure it out": color often means something other than the lane |
 | 2026-10-14 | Data format v2 with a fresh database, no migration | No real data existed yet |
 | 2026-10-14 | Fixed page width, wrap new cards, no automatic reflow, page-bottom guide | Keep printouts readable; respect hand placement |
+| 2026-10-16 | Box shapes (flag, diamond, star, document, block arrow) suggest a use but carry no enforced meaning | The mock-up picked shapes to tell boxes apart, not for their ISO flowchart meanings |
+| 2026-10-16 | Four badge types, each with its own shape: cost (circle), duration (not a circle), recharge (plus), modifier (triangle) | The mock-up drew cost and duration as the same circle; separate shapes keep them distinct in print |
+| 2026-10-16 | Badges attach to boxes only, not lanes or rows | Keep it simple for now |
+| 2026-10-16 | No border-weight styling | Thick borders in the mock-up were accidental |
 
 ## Roadmap
 
@@ -86,8 +90,9 @@ Tracked as GitHub issues:
 
 - [#1](https://github.com/pberry/character-flow/issues/1) Side column for trackers: gear, Focus/Luck Points,
   potions, conditions
-- [#2](https://github.com/pberry/character-flow/issues/2) Resource badges on boxes (1 FP, LR, SR, 10 min, 1 hr, 2x)
-- [#3](https://github.com/pberry/character-flow/issues/3) More box shapes: star, diamond, flag, block arrow
+- [#2](https://github.com/pberry/character-flow/issues/2) Resource badges on boxes: cost (1 FP), duration (10 min, 1 hr),
+  recharge (SR/LR), modifier (2x)
+- [#3](https://github.com/pberry/character-flow/issues/3) More box shapes: flag, diamond, star, document, block arrow
 - [#4](https://github.com/pberry/character-flow/issues/4) Grouping brackets
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
 - [#6](https://github.com/pberry/character-flow/issues/6) Route arrows around boxes
