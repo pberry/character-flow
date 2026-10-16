@@ -5,6 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- Badges on boxes: cost (circle), duration (pill), recharge (plus), and modifier (triangle), each on its own corner.
+  Add them from the box toolbar; double-click a badge or use its toolbar chip to edit or remove it. Badges print.
+- Long badge text wraps onto short lines, and lanes grow to fit badges hanging below a box.
+
+### Changed
+- The box toolbar wraps onto a second row when it doesn't fit.
+- Boxes now store `badges`. Older charts load with none.
+
 ## [0.5.0] - 2026-10-16
 
 ### Added

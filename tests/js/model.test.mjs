@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   newChart, normalizeChart, abilityModifier, formatModifier, addBox, moveBox, resizeBox,
   deleteBox, addEdge, deleteEdge, updateEdge, nextId, paletteGroups, bringToFront, MIN_W,
-  addLane, updateLane, moveLane, deleteLane, boxesInLane, defaultLanes, defaultCharacter, setShape, shapeSize,
+  addLane, updateLane, moveLane, deleteLane, boxesInLane, defaultLanes, defaultCharacter, setShape, shapeSize, addBadge, updateBadge, removeBadge,
 } from "../../app/static/js/model.js";
 import { BOX_MAX_RIGHT } from "../../app/static/js/layout.js";
 
@@ -185,4 +185,38 @@ test("normalizeChart gives old or unknown boxes the rectangle shape", () => {
 test("the Decision? palette card is a diamond", () => {
   const flow = paletteGroups(defaultCharacter()).find((g) => g.title === "Flow");
   assert.equal(flow.items.find((i) => i.label === "Decision?").shape, "diamond");
+});
+
+test("badges: add, edit, and remove; empty text or unknown types are refused", () => {
+  const c = newChart();
+  const b = addBox(c);
+  assert.deepEqual(b.badges, []);
+  assert.deepEqual(addBadge(c, b.id, "cost", "  1 FP "), { type: "cost", text: "1 FP" });
+  assert.equal(addBadge(c, b.id, "cost", "   "), null);
+  assert.equal(addBadge(c, b.id, "sparkle", "x"), null);
+  assert.equal(addBadge(c, "nope", "cost", "x"), null);
+  addBadge(c, b.id, "recharge", "LR");
+  updateBadge(c, b.id, 1, "SR");
+  assert.deepEqual(b.badges.map((g) => g.text), ["1 FP", "SR"]);
+  // Clearing a badge's text removes it.
+  assert.equal(updateBadge(c, b.id, 0, ""), null);
+  assert.deepEqual(b.badges, [{ type: "recharge", text: "SR" }]);
+  removeBadge(c, b.id, 0);
+  removeBadge(c, b.id, 5);
+  assert.deepEqual(b.badges, []);
+});
+
+test("normalizeChart keeps valid badges and drops the rest", () => {
+  const c = normalizeChart({
+    lanes: defaultLanes(),
+    boxes: [
+      { id: "b1", lane: "l1", x: 20, y: 10, w: 160, h: 70 },
+      {
+        id: "b2", lane: "l1", x: 220, y: 10, w: 160, h: 70,
+        badges: [{ type: "cost", text: " 1 FP " }, { type: "zap", text: "x" }, { type: "duration", text: "" }, null],
+      },
+    ],
+  });
+  assert.deepEqual(c.boxes[0].badges, []);
+  assert.deepEqual(c.boxes[1].badges, [{ type: "cost", text: "1 FP" }]);
 });

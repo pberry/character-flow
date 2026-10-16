@@ -125,24 +125,48 @@ export function textArea(shape, w, h) {
 
 const SIDE_DIR = { top: [0, -1], right: [1, 0], bottom: [0, 1], left: [-1, 0] };
 
-// Where a ray from the box center toward a side's midpoint leaves the outline
-// (the farthest crossing, so concave shapes like the star still work). This
-// keeps arrows on side midpoints while touching the drawn shape.
-export function outlineAnchor(shape, w, h, side) {
-  const [dx, dy] = SIDE_DIR[side];
+// Where a ray from the box center toward the bounding-box point (dx, dy) leaves
+// the outline. dx and dy are -1, 0, or 1: (1, 0) aims at the right side's
+// midpoint and (1, -1) at the top-right corner. Uses the farthest crossing, so
+// concave shapes like the star still work.
+export function outlinePoint(shape, w, h, dx, dy) {
   const cx = w / 2, cy = h / 2;
-  const fallback = { x: cx + (dx * w) / 2, y: cy + (dy * h) / 2 };
+  const rx = (dx * w) / 2, ry = (dy * h) / 2;
+  const target = { x: cx + rx, y: cy + ry };
   const pts = shapePoints(shape, w, h);
-  if (!pts) return fallback;
+  if (!pts) return target;
   let best = -1;
   for (let i = 0; i < pts.length; i++) {
     const p = pts[i], q = pts[(i + 1) % pts.length];
     const ex = q.x - p.x, ey = q.y - p.y;
-    const den = dx * ey - dy * ex;
+    const den = rx * ey - ry * ex;
     if (Math.abs(den) < 1e-9) continue;
     const t = ((p.x - cx) * ey - (p.y - cy) * ex) / den; // along the ray
-    const u = ((p.x - cx) * dy - (p.y - cy) * dx) / den; // along the edge
+    const u = ((p.x - cx) * ry - (p.y - cy) * rx) / den; // along the edge
     if (t > 0 && u >= -1e-9 && u <= 1 + 1e-9) best = Math.max(best, t);
   }
-  return best < 0 ? fallback : { x: cx + dx * best, y: cy + dy * best };
+  return best < 0 ? target : { x: cx + rx * best, y: cy + ry * best };
+}
+
+// Where arrows attach: a side's midpoint, moved onto the drawn outline.
+export function outlineAnchor(shape, w, h, side) {
+  const [dx, dy] = SIDE_DIR[side];
+  return outlinePoint(shape, w, h, dx, dy);
+}
+
+// The point on the outline nearest (px, py), e.g. a bounding-box corner.
+export function nearestOutlinePoint(shape, w, h, px, py) {
+  const pts = shapePoints(shape, w, h);
+  if (!pts) return { x: Math.min(w, Math.max(0, px)), y: Math.min(h, Math.max(0, py)) };
+  let best = null, bestD = Infinity;
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i], q = pts[(i + 1) % pts.length];
+    const ex = q.x - p.x, ey = q.y - p.y;
+    const len2 = ex * ex + ey * ey;
+    const t = len2 ? Math.max(0, Math.min(1, ((px - p.x) * ex + (py - p.y) * ey) / len2)) : 0;
+    const c = { x: p.x + t * ex, y: p.y + t * ey };
+    const d = (c.x - px) ** 2 + (c.y - py) ** 2;
+    if (d < bestD) { bestD = d; best = c; }
+  }
+  return best;
 }

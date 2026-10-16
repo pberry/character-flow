@@ -1,6 +1,7 @@
 // The flowchart editor screen: top bar, selection toolbar, palette and canvas.
 
 import * as api from "./api.js";
+import { BADGE_TYPES, badgePathD, badgeType } from "./badges.js";
 import { Canvas } from "./canvas.js";
 import { h, s } from "./dom.js";
 import { COLORS } from "./model.js";
@@ -18,6 +19,37 @@ function shapeIcon(shape) {
     { class: "shape-icon", width: w + 2, height: ht + 2, viewBox: `-1 -1 ${w + 2} ${ht + 2}`, "aria-hidden": "true" },
     d ? s("path", { d }) : s("rect", { width: w, height: ht, rx: 3 }),
   );
+}
+
+function badgeIcon(type) {
+  const t = badgeType(type);
+  const w = 16, ht = type === "duration" ? 10 : type === "modifier" ? 14 : 16;
+  return s(
+    "svg",
+    { class: "badge-icon", width: 18, height: 18, viewBox: "-9 -9 18 18", "aria-hidden": "true" },
+    s("path", { d: badgePathD(type, w, ht), fill: t.fill, stroke: t.stroke }),
+  );
+}
+
+function badgeControls(canvas, box) {
+  const chips = (box.badges || []).map((b, i) => {
+    const name = badgeType(b.type)?.name || b.type;
+    return h(
+      "span",
+      { class: "badge-chip" },
+      h("button", { class: "btn chip-text", title: `Edit ${name.toLowerCase()} badge`, onclick: () => canvas.editBadge(box.id, i) },
+        badgeIcon(b.type), b.text),
+      h("button", { class: "btn chip-remove", title: "Remove badge", "aria-label": `Remove ${name.toLowerCase()} badge ${b.text}`,
+        onclick: () => canvas.removeBadge(box.id, i) }, "×"),
+    );
+  });
+  const adds = BADGE_TYPES.map((t) =>
+    h("button", {
+      class: "btn add-badge", title: `Add a ${t.name.toLowerCase()} badge, e.g. ${t.example}`,
+      "aria-label": `Add ${t.name.toLowerCase()} badge`, onclick: () => canvas.addBadge(t.id),
+    }, badgeIcon(t.id), `+ ${t.name}`),
+  );
+  return [h("span", { class: "label" }, "Badges"), ...chips, ...adds];
 }
 
 // Returns a cleanup function that flushes pending saves and unhooks listeners.
@@ -100,6 +132,8 @@ export function showEditor(container, chartRecord) {
             onclick: () => canvas.setShape(sh.id),
           }, shapeIcon(sh.id)),
         ),
+        h("span", { class: "sep" }),
+        box ? badgeControls(canvas, box) : null,
         h("span", { class: "sep" }),
         h("button", { class: "btn", onclick: () => canvas.startEdit(selection.id) }, "Edit text"),
         h("button", { class: "btn danger", onclick: () => canvas.deleteSelection() }, "Delete box"),

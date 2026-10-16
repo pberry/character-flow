@@ -5,6 +5,7 @@ import {
   BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y, findSlot, endOfLane,
 } from "../../app/static/js/layout.js";
 import { newChart, addBox } from "../../app/static/js/model.js";
+import { badgeOverhang } from "../../app/static/js/badges.js";
 
 test("empty default chart stacks five minimum-height lanes", () => {
   const layout = layoutChart(newChart());
@@ -100,4 +101,24 @@ test("laneAt clamps above and below", () => {
 test("layoutBounds covers headers and all lanes", () => {
   const layout = layoutChart(newChart());
   assert.deepEqual(layoutBounds(layout), { x: -HEADER_W, y: 0, w: layout.width, h: layout.height });
+});
+
+test("badges hanging below a box make its lane taller", () => {
+  const chart = newChart();
+  const box = addBox(chart, { lane: "l1", x: 20, y: 10, w: 160, h: 70 });
+  const plain = layoutChart(chart).lanes[0].height;
+  box.badges = [{ type: "modifier", text: "2x + 9' reach" }];
+  const tall = layoutChart(chart).lanes[0].height;
+  const over = badgeOverhang(box).bottom;
+  assert.ok(over > 20);
+  assert.equal(tall, 10 + 70 + over + 20);
+  assert.ok(tall > plain);
+});
+
+test("badges sticking out past the page edge widen the layout", () => {
+  const chart = newChart();
+  const box = addBox(chart, { lane: "l1", x: 5000 });
+  assert.equal(layoutChart(chart).width, PAGE_W);
+  box.badges = [{ type: "recharge", text: "SR" }, { type: "recharge", text: "LR" }];
+  assert.ok(layoutChart(chart).width > PAGE_W);
 });

@@ -5,8 +5,9 @@ import {
   SIDES, anchor, boxAt, edgePoints, nearestSide, pathD,
   polylineMidpoint, routePoints, suggestEdges,
 } from "./geometry.js";
-import { HEADER_W, PAGE_H, SLOT_GAP_X, endOfLane, findSlot, layoutBounds, layoutChart, laneAt } from "./layout.js";
+import { CONTENT_W, HEADER_W, PAGE_H, SLOT_GAP_X, endOfLane, findSlot, layoutBounds, layoutChart, laneAt } from "./layout.js";
 import * as M from "./model.js";
+import { BADGE_FONT, LINE_H, badgePathD, badgeType, layoutBadges } from "./badges.js";
 import { shapePathD, textArea } from "./shapes.js";
 
 const DOUBLE_CLICK_MS = 400;
@@ -49,6 +50,20 @@ function boxText(text) {
   );
 }
 
+function drawBadges(box) {
+  return layoutBadges(box).map((b) => {
+    const type = badgeType(b.type);
+    return s(
+      "g",
+      { class: `badge badge-${b.type}`, "data-badge": b.index, transform: `translate(${b.x} ${b.y})` },
+      s("title", {}, `${type.name}: ${b.text}`),
+      s("path", { class: "badge-shape", d: badgePathD(b.type, b.w, b.h), fill: type.fill, stroke: type.stroke }),
+      s("text", { class: "badge-text", "font-size": BADGE_FONT, "text-anchor": "middle", "dominant-baseline": "central" },
+        b.lines.map((line, i) => s("tspan", { x: 0, y: b.textY + (i - (b.lines.length - 1) / 2) * LINE_H }, line))),
+    );
+  });
+}
+
 function drawLanes(layout, { selection, dropLane, interactive }) {
   const g = s("g", { class: "lanes" });
   const right = layout.left + layout.width;
@@ -74,8 +89,9 @@ function drawLanes(layout, { selection, dropLane, interactive }) {
   });
   if (interactive) {
     // Page edges: boxes can't go past the right one; lanes reaching below the
-    // bottom one make the printout shrink to fit.
-    const x = layout.left + layout.width;
+    // bottom one make the printout shrink to fit. Badges may stick out past the
+    // right edge, which widens the layout but not the page.
+    const x = CONTENT_W;
     g.append(s("line", { class: "page-edge", x1: x, y1: 0, x2: x, y2: Math.max(layout.height, PAGE_H) }));
     const over = layout.height > PAGE_H;
     g.append(
@@ -136,6 +152,7 @@ export function drawChart(g, chart, layout, opts = {}) {
       : s("rect", { class: "box-rect", width: box.w, height: box.h, rx: 6, fill: box.color }));
     const ta = textArea(box.shape, box.w, box.h);
     bg.append(s("foreignObject", { x: ta.x, y: ta.y, width: ta.w, height: ta.h }, boxText(box.text)));
+    bg.append(...drawBadges(box));
     if (interactive) {
       const local = { x: 0, y: 0, w: box.w, h: box.h, shape: box.shape };
       for (const side of SIDES) {
@@ -293,6 +310,29 @@ export class Canvas {
     if (box && M.setShape(this.chart, box.id, shape)) this.changed();
   }
 
+  addBadge(type) {
+    const box = this.selectedBox();
+    const t = badgeType(type);
+    if (!box || !t) return;
+    const text = window.prompt(`${t.name} badge text (e.g. ${t.example}):`, t.example);
+    if (text === null) return;
+    if (M.addBadge(this.chart, box.id, type, text)) this.changed();
+  }
+
+  editBadge(boxId, index) {
+    const badge = M.getBox(this.chart, boxId)?.badges?.[index];
+    if (!badge) return;
+    const text = window.prompt(`${badgeType(badge.type).name} badge text. Leave empty to remove it:`, badge.text);
+    if (text === null) return;
+    M.updateBadge(this.chart, boxId, index, text);
+    this.changed();
+  }
+
+  removeBadge(boxId, index) {
+    M.removeBadge(this.chart, boxId, index);
+    this.changed();
+  }
+
   // Lane-relative y for a box whose top-left would be at absolute y.
   relativeY(lane, absY) {
     return absY - lane.top;
@@ -424,13 +464,15 @@ export class Canvas {
     const anchorEl = t.closest("[data-anchor]");
     const resizeEl = t.closest("[data-resize]");
     const boxEl = t.closest("[data-box]");
+    const badgeEl = t.closest("[data-badge]");
     const edgeEl = t.closest("[data-edge]");
     const laneEl = t.closest("[data-lane]");
     const addLaneEl = t.closest("[data-add-lane]");
 
     // Our own double-click detection: rendering replaces elements between
     // clicks, which makes native dblclick unreliable.
-    const key = boxEl && !anchorEl && !resizeEl ? `box:${boxEl.dataset.box}`
+    const key = badgeEl && boxEl ? `badge:${boxEl.dataset.box}:${badgeEl.dataset.badge}`
+      : boxEl && !anchorEl && !resizeEl ? `box:${boxEl.dataset.box}`
       : edgeEl ? `edge:${edgeEl.dataset.edge}`
       : laneEl ? `lane:${laneEl.dataset.lane}`
       : !ghostEl && !anchorEl && !resizeEl && !addLaneEl ? "empty" : null;
@@ -483,8 +525,10 @@ export class Canvas {
   }
 
   doubleClick(key, pt) {
-    const [kind, id] = key.split(":");
-    if (kind === "box") {
+    const [kind, id, index] = key.split(":");
+    if (kind === "badge") {
+      this.editBadge(id, Number(index));
+    } else if (kind === "box") {
       this.startEdit(id);
     } else if (kind === "edge") {
       this.editEdgeLabel(id);

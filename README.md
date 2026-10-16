@@ -47,6 +47,8 @@ Back up that file to back up your work.
 | Add the next step | Select a box, then click a palette card: the new box is placed to its right |
 | Edit text | Double-click a box (or select it and press Enter). Ctrl/Cmd+Enter or click away to finish, Escape to cancel. The first line is shown in bold |
 | Color / shape / delete | Select a box, use the toolbar at the top |
+| Add a badge | Select a box, click "+ Cost", "+ Duration", "+ Recharge", or "+ Modifier" in the toolbar |
+| Edit / remove a badge | Double-click the badge, or use its chip in the toolbar (× removes it; clearing its text does too) |
 | Move | Drag a box (arrows follow). Drop it in another lane to move it there; the target lane is highlighted |
 | Resize | Drag the small handle at a box's bottom-right corner |
 | Draw an arrow | Hover a box, drag from one of the four side dots to another box |
@@ -81,6 +83,22 @@ mock-up uses diamonds for branches, a star for a buff you activate, and arrows f
 starts as a diamond. Switching to a diamond, star, or arrow grows the box if it's too small for that shape (it
 never shrinks a box). Arrows still attach at the four side midpoints, where they meet the shape's outline.
 Lane headers are drawn as flags.
+
+## Badges
+
+Badges are small labels on a box's corners, as in the Meren mock-up. Each type has its own shape and corner, so they
+stay distinct when printed in black and white:
+
+| Type | Shape | Corner | Examples |
+| --- | --- | --- | --- |
+| Cost | Circle with a red ring | Top right | `1 FP` |
+| Duration | Pill | Top left | `10 min`, `1 hr` |
+| Recharge | Plus | Bottom right | `SR` (short rest), `LR` (long rest) |
+| Modifier | Triangle | Bottom left | `2x`, `2x + 9' reach` |
+
+The text is free; the type only picks the look. A box can have several badges, and more of the same type line up
+outward from their corner. On shaped boxes a badge sits on the outline nearest its corner (a star's arm tips, for
+example). Longer text wraps onto short lines. Lanes grow to fit badges that hang below a box.
 
 ## Page size
 
@@ -132,6 +150,7 @@ The frontend is plain ES modules + SVG with no build step, in `app/static/`:
 | `js/layout.js` | Pure swim-lane layout: lane tops/heights from their boxes, absolute box positions |
 | `js/geometry.js` | Pure math: side-midpoint anchors, elbow routing, suggested arrows, print fitting |
 | `js/shapes.js` | Pure box-shape outlines, text areas, and where arrows meet each outline |
+| `js/badges.js` | Pure badge types, sizes, text wrapping, and corner placement |
 | `js/model.js` | Pure chart operations (boxes, edges, ids, palette, ability modifiers) |
 | `js/canvas.js` | SVG rendering and mouse interactions |
 | `js/editor.js` | Editor screen: toolbar, palette, autosave, keyboard shortcuts |

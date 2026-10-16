@@ -49,6 +49,9 @@ build a one-page, character-specific combat flowchart and print it to keep at th
   carry no enforced meaning. Arrows meet the outline at each side's midpoint. Lane headers are flags, and the
   "Decision?" card starts as a diamond.
 - A box **keeps its color** when moved to another lane. The lane color is only the default for "Blank box" cards.
+- **Badges** on box corners show cost, duration, recharge, or a modifier: free text, with a shape, color, and
+  corner per type (circle top right, pill top left, plus bottom right, triangle bottom left). Badges attach to
+  boxes only. On shaped boxes they sit on the outline nearest their corner, and lanes grow to fit them.
 - **Arrows** anchor only at the **midpoint of a box side**. You can add a label to an arrow (e.g. yes/no).
 - **Suggested arrows**: when a box is selected, faint dashed arrows to nearby boxes appear; one click makes a
   suggestion real. Suggestions that would cross another box are not offered.
@@ -86,19 +89,20 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-16 | Four badge types, each with its own shape: cost (circle), duration (not a circle), recharge (plus), modifier (triangle) | The mock-up drew cost and duration as the same circle; separate shapes keep them distinct in print |
 | 2026-10-16 | Lane headers drawn as flags | The player described the start of a swim lane as a flag |
 | 2026-10-16 | Arrows meet a shape's outline, not its bounding box | Arrows ending in empty space beside a star point or diamond edge look wrong |
+| 2026-10-16 | One corner per badge type: cost top right, duration top left, recharge bottom right, modifier bottom left | Corners keep badges off the side midpoints where arrows attach; cost and recharge match the mock-up |
+| 2026-10-16 | Duration badge is a pill | Fits text better than an hourglass and still reads differently from the cost circle |
 | 2026-10-16 | Badges attach to boxes only, not lanes or rows | Keep it simple for now |
 | 2026-10-16 | No border-weight styling | Thick borders in the mock-up were accidental |
 
 ## Roadmap
 
-Shipped from the mock-up: box shapes and flag lane headers ([#3](https://github.com/pberry/character-flow/issues/3), v0.5.0).
+Shipped from the mock-up: box shapes and flag lane headers ([#3](https://github.com/pberry/character-flow/issues/3), v0.5.0);
+badges on boxes ([#2](https://github.com/pberry/character-flow/issues/2), unreleased).
 
 Tracked as GitHub issues:
 
 - [#1](https://github.com/pberry/character-flow/issues/1) Side column for trackers: gear, Focus/Luck Points,
   potions, conditions
-- [#2](https://github.com/pberry/character-flow/issues/2) Resource badges on boxes: cost (1 FP), duration (10 min, 1 hr),
-  recharge (SR/LR), modifier (2x)
 - [#4](https://github.com/pberry/character-flow/issues/4) Grouping brackets
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
 - [#6](https://github.com/pberry/character-flow/issues/6) Route arrows around boxes
@@ -106,7 +110,7 @@ Tracked as GitHub issues:
 - [#8](https://github.com/pberry/character-flow/issues/8) Touch support
 - [#9](https://github.com/pberry/character-flow/issues/9) Undo and version history
 
-Items 1, 2, and 4 come from the player's Lucidchart mock-up of Meren (a Wood Elf Monk, Warrior of the Elements, level 3).
+Items 1 and 4 come from the player's Lucidchart mock-up of Meren (a Wood Elf Monk, Warrior of the Elements, level 3).
 The mock-up is kept out of the repo.
 
 ## Constraints

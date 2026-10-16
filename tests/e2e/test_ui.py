@@ -256,3 +256,50 @@ def test_box_shapes(page: Page, live_server):
     page.evaluate("window.print = () => {}")
     page.get_by_role("button", name="Print").click()
     expect(page.locator("#print-sheet [data-box] path.box-rect")).to_have_count(2)
+
+
+def test_badges(page: Page, live_server):
+    chart_id = create_character(page, live_server)
+    answers = []
+    page.on("dialog", lambda d: d.accept(answers.pop(0)) if answers else d.dismiss())
+
+    lane_header(page, "l3").click()
+    page.locator(".card", has_text="Rage").click()
+
+    # Add a cost, a recharge, and a second recharge badge to the selected box.
+    answers.extend(["1 FP", "SR", "LR"])
+    page.get_by_role("button", name="Add cost badge").click()
+    page.get_by_role("button", name="Add recharge badge").click()
+    page.get_by_role("button", name="Add recharge badge").click()
+    expect(page.locator('[data-box="b1"] [data-badge]')).to_have_count(3)
+    expect(page.locator('[data-box="b1"] .badge-cost .badge-text')).to_have_text("1 FP")
+
+    # The cost badge sits on the top-right corner.
+    box = page.locator('[data-box="b1"] .box-rect').bounding_box()
+    badge = page.locator('[data-box="b1"] .badge-cost .badge-shape').bounding_box()
+    assert abs(badge["x"] + badge["width"] / 2 - (box["x"] + box["width"])) < 3
+    assert abs(badge["y"] + badge["height"] / 2 - box["y"]) < 3
+
+    # Double-click a badge to edit it; remove one from the toolbar.
+    answers.append("2 FP")
+    x, y = (badge["x"] + badge["width"] / 2, badge["y"] + badge["height"] / 2)
+    page.mouse.dblclick(x, y)
+    expect(page.locator('[data-box="b1"] .badge-cost .badge-text')).to_have_text("2 FP")
+    page.get_by_role("button", name="Remove recharge badge SR").click()
+    expect(page.locator('[data-box="b1"] [data-badge]')).to_have_count(2)
+
+    # Cancelling the prompt adds nothing.
+    page.get_by_role("button", name="Add duration badge").click()
+    expect(page.locator('[data-box="b1"] [data-badge]')).to_have_count(2)
+
+    page.get_by_role("button", name="Save").click()
+    expect(page.locator(".status")).to_have_text("Saved")
+    box_data = chart_data(live_server, chart_id)["boxes"][0]
+    assert box_data["badges"] == [{"type": "cost", "text": "2 FP"}, {"type": "recharge", "text": "LR"}]
+
+    # Badges survive a reload and print.
+    page.reload()
+    expect(page.locator('[data-box="b1"] [data-badge]')).to_have_count(2)
+    page.evaluate("window.print = () => {}")
+    page.get_by_role("button", name="Print").click()
+    expect(page.locator("#print-sheet .badge")).to_have_count(2)

@@ -77,13 +77,19 @@ input:focus, textarea:focus { outline: 2px solid var(--select); outline-offset: 
 .chart-name:hover { text-decoration: underline dotted; }
 .status { color: var(--muted); font-size: 13px; margin-right: 8px; }
 .status.error { color: var(--danger); }
-.toolbar { min-height: 48px; padding: 6px 16px; }
+.toolbar { min-height: 48px; padding: 6px 16px; flex-wrap: wrap; row-gap: 6px; }
 .toolbar .label { font-size: 13px; color: var(--muted); }
 .toolbar .sep { width: 1px; align-self: stretch; background: var(--border); margin: 0 4px; }
 .toolbar .hint { margin-left: 8px; }
 .swatch { width: 24px; height: 24px; padding: 0; border-radius: 50%; border: 1px solid #9a958a; }
 .swatch.active { outline: 2px solid var(--select); outline-offset: 2px; }
 .shape-btn { padding: 3px 4px; }
+.badge-icon { display: block; stroke-width: 1.5; }
+.add-badge { padding: 4px 8px; font-size: 13px; }
+.badge-chip { display: inline-flex; }
+.badge-chip .chip-text { border-radius: 6px 0 0 6px; padding: 4px 8px; font-size: 13px; }
+.badge-chip .chip-remove { border-radius: 0 6px 6px 0; border-left: 0; padding: 4px 7px; color: var(--muted); }
+.badge-chip .chip-remove:hover { color: var(--danger); }
 .shape-btn.active { border-color: var(--select); background: #eef4ff; }
 .shape-icon { display: block; fill: #f1efe9; stroke: #3f3f46; stroke-width: 1.2; }
 
@@ -118,6 +124,9 @@ input:focus, textarea:focus { outline: 2px solid var(--select); outline-offset: 
   font: 14px/1.25 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #111;
 }
 .box-inner { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 100%; }
+.badge-shape { stroke-width: 1.5; stroke-linejoin: round; }
+.badge-cost .badge-shape { stroke-width: 2.5; }
+.badge-text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 600; fill: #111; }
 .edge-line { fill: none; stroke: #374151; stroke-width: 2; }
 .edge-label {
   font: 600 13px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: #111;

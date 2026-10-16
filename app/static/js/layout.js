@@ -2,6 +2,8 @@
 // Boxes store `y` relative to their lane's top, so a lane growing never
 // requires rewriting the boxes below it. Pure functions, no DOM.
 
+import { badgeOverhang } from "./badges.js";
+
 export const HEADER_W = 150;     // lane header column, drawn left of x = 0
 export const LANE_PAD = 20;      // space below the lowest box in a lane
 export const MIN_LANE_H = 110;
@@ -37,7 +39,8 @@ export function layoutChart(chart, { frozen = null, floating = null } = {}) {
     lanes = chart.lanes.map((lane) => {
       let bottom = 0;
       for (const b of chart.boxes) {
-        if (laneOf(b) === lane.id) bottom = Math.max(bottom, b.y + b.h);
+        // Badges hanging below a box count too, so they don't spill into the next lane.
+        if (laneOf(b) === lane.id) bottom = Math.max(bottom, b.y + b.h + badgeOverhang(b).bottom);
       }
       const height = Math.max(MIN_LANE_H, bottom + LANE_PAD);
       const placed = { ...lane, top, height };
@@ -54,7 +57,7 @@ export function layoutChart(chart, { frozen = null, floating = null } = {}) {
   );
 
   // Boxes are clamped to BOX_MAX_RIGHT, but never hide one that isn't.
-  const right = boxes.reduce((m, b) => Math.max(m, b.x + b.w + 20), 0);
+  const right = boxes.reduce((m, b) => Math.max(m, b.x + b.w + badgeOverhang(b).right + 20), 0);
   const last = lanes[lanes.length - 1];
   return {
     lanes,

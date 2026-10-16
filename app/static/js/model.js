@@ -1,4 +1,5 @@
 import { BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y } from "./layout.js";
+import { badgeType } from "./badges.js";
 import { isShape, minSize } from "./shapes.js";
 
 // Pure chart-state operations. Functions mutate the chart passed in and return
@@ -72,6 +73,9 @@ export function normalizeChart(data) {
   chart.boxes = (Array.isArray(chart.boxes) ? chart.boxes : []).map((b) => {
     const box = laneIds.has(b.lane) ? { ...b } : { ...b, lane: chart.lanes[0].id };
     if (!isShape(box.shape)) box.shape = "rect";
+    box.badges = (Array.isArray(box.badges) ? box.badges : [])
+      .filter((g) => g && badgeType(g.type) && typeof g.text === "string" && g.text.trim())
+      .map((g) => ({ type: g.type, text: g.text.trim() }));
     // Pull anything past the page edge back onto the page.
     if (box.x + box.w > BOX_MAX_RIGHT) {
       box.w = Math.min(box.w, BOX_MAX_RIGHT - BOX_MIN_X);
@@ -125,7 +129,7 @@ export function addBox(chart, { lane = chart.lanes[0]?.id, x = BOX_MIN_X, y = BO
   const size = shapeSize(shape);
   w = w ?? size.w;
   h = h ?? size.h;
-  const box = { id: nextId("b", chart.boxes), lane, x: clampX(x, w), y: clampY(y), w, h, text, color, shape };
+  const box = { id: nextId("b", chart.boxes), lane, x: clampX(x, w), y: clampY(y), w, h, text, color, shape, badges: [] };
   chart.boxes.push(box);
   return box;
 }
@@ -164,6 +168,37 @@ export function setShape(chart, id, shape) {
   const min = minSize(shape);
   if (min) resizeBox(chart, id, Math.max(box.w, min.w), Math.max(box.h, min.h));
   return box;
+}
+
+// ---- badges ---------------------------------------------------------------
+
+// Returns the new badge, or null for an unknown type or empty text.
+export function addBadge(chart, id, type, text) {
+  const box = getBox(chart, id);
+  const clean = (text || "").trim();
+  if (!box || !badgeType(type) || !clean) return null;
+  box.badges = box.badges || [];
+  const badge = { type, text: clean };
+  box.badges.push(badge);
+  return badge;
+}
+
+// Empty text removes the badge.
+export function updateBadge(chart, id, index, text) {
+  const badge = getBox(chart, id)?.badges?.[index];
+  if (!badge) return null;
+  const clean = (text || "").trim();
+  if (!clean) {
+    removeBadge(chart, id, index);
+    return null;
+  }
+  badge.text = clean;
+  return badge;
+}
+
+export function removeBadge(chart, id, index) {
+  const box = getBox(chart, id);
+  if (box?.badges?.[index]) box.badges.splice(index, 1);
 }
 
 export function deleteBox(chart, id) {
