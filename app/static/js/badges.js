@@ -17,6 +17,43 @@ export const BADGE_TYPES = [
 const BY_ID = new Map(BADGE_TYPES.map((t) => [t.id, t]));
 export const badgeType = (id) => BY_ID.get(id) || null;
 
+// ---- badge lists ----------------------------------------------------------
+// These work on anything with a `badges` array: boxes and tracker items.
+
+// Valid badges only, with trimmed text.
+export function normalizeBadges(list) {
+  return (Array.isArray(list) ? list : [])
+    .filter((g) => g && badgeType(g.type) && typeof g.text === "string" && g.text.trim())
+    .map((g) => ({ type: g.type, text: g.text.trim() }));
+}
+
+// Returns the new badge, or null for an unknown type or empty text.
+export function addBadge(target, type, text) {
+  const clean = (text || "").trim();
+  if (!target || !badgeType(type) || !clean) return null;
+  target.badges = target.badges || [];
+  const badge = { type, text: clean };
+  target.badges.push(badge);
+  return badge;
+}
+
+// Empty text removes the badge.
+export function updateBadge(target, index, text) {
+  const badge = target?.badges?.[index];
+  if (!badge) return null;
+  const clean = (text || "").trim();
+  if (!clean) {
+    removeBadge(target, index);
+    return null;
+  }
+  badge.text = clean;
+  return badge;
+}
+
+export function removeBadge(target, index) {
+  if (target?.badges?.[index]) target.badges.splice(index, 1);
+}
+
 export const BADGE_FONT = 12;
 export const LINE_H = 13;
 const CHAR_W = 7;     // rough width of one character at BADGE_FONT
@@ -90,8 +127,9 @@ export function badgePathD(type, w, h) {
 
 // Where each of a box's badges goes. A badge sits on the point of the outline
 // nearest its type's corner (a star's arm or leg tip, the middle of a diamond's
-// edge); more of the same type line up outward from it.
-export function layoutBadges(box) {
+// edge); more of the same type line up outward from it, or inward along the
+// edge when `inward` is set (for tight spots like the tracker column).
+export function layoutBadges(box, { inward = false } = {}) {
   const out = [];
   const last = new Map(); // type -> the previous badge placed on that corner
   for (const [index, badge] of (box.badges || []).entries()) {
@@ -101,7 +139,8 @@ export function layoutBadges(box) {
     const [dx, dy] = type.corner;
     const prev = last.get(badge.type);
     const corner = nearestOutlinePoint(box.shape, box.w, box.h, dx > 0 ? box.w : 0, dy > 0 ? box.h : 0);
-    const x = prev ? prev.x + dx * (prev.w / 2 + GAP + size.w / 2) : corner.x;
+    const step = (inward ? -dx : dx) * (prev ? prev.w / 2 + GAP + size.w / 2 : 0);
+    const x = prev ? prev.x + step : corner.x;
     const placed = { index, type: badge.type, text: badge.text, x, y: corner.y, ...size };
     last.set(badge.type, placed);
     out.push(placed);
@@ -109,12 +148,13 @@ export function layoutBadges(box) {
   return out;
 }
 
-// How far a box's badges stick out past its right and bottom edges (0 if not).
-export function badgeOverhang(box) {
-  let right = 0, bottom = 0;
-  for (const b of layoutBadges(box)) {
+// How far a box's badges stick out past its edges (0 where they don't).
+export function badgeOverhang(box, opts) {
+  let top = 0, right = 0, bottom = 0;
+  for (const b of layoutBadges(box, opts)) {
+    top = Math.max(top, b.h / 2 - b.y);
     right = Math.max(right, b.x + b.w / 2 - box.w);
     bottom = Math.max(bottom, b.y + b.h / 2 - box.h);
   }
-  return { right, bottom };
+  return { top, right, bottom };
 }

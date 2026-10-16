@@ -60,6 +60,14 @@ build a one-page, character-specific combat flowchart and print it to keep at th
   **never rearranged automatically**, because hand placement (branches, alignment) is part of the chart.
 - A **page-bottom guide** shows where the printed page ends and turns red when lanes run past it.
 
+### Side column
+- An optional **tracker column** left of the lanes holds what isn't part of the turn: gear, resource pools, healing,
+  and conditions. It starts with those four sections, which can be renamed, reordered, added, and deleted.
+- **Items stack automatically** in their section (no hand placement). An item has text, up to 20 **tick circles**
+  to mark in pencil, and badges.
+- The column **takes its width from the lanes** (200 units, about four boxes per row instead of five), so the print
+  scale is unchanged. Boxes past the narrower edge are pulled back in.
+
 ### Saving
 - Charts are saved by unique name in SQLite. You can rename, duplicate, and delete them.
 - Changes autosave 2 seconds after the last edit. Ctrl/Cmd+S saves immediately.
@@ -91,18 +99,19 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-16 | Arrows meet a shape's outline, not its bounding box | Arrows ending in empty space beside a star point or diamond edge look wrong |
 | 2026-10-16 | One corner per badge type: cost top right, duration top left, recharge bottom right, modifier bottom left | Corners keep badges off the side midpoints where arrows attach; cost and recharge match the mock-up |
 | 2026-10-16 | Duration badge is a pill | Fits text better than an hourglass and still reads differently from the cost circle |
+| 2026-10-16 | Side column takes its width from the lanes, not the print scale | Readable text at the table matters more than a fifth box per row |
+| 2026-10-16 | Side column is a structured list (sections of auto-stacked items), not free-placed boxes | Less fiddly to edit, consistent printouts, and real tick circles for resource counts |
 | 2026-10-16 | Badges attach to boxes only, not lanes or rows | Keep it simple for now |
 | 2026-10-16 | No border-weight styling | Thick borders in the mock-up were accidental |
 
 ## Roadmap
 
 Shipped from the mock-up: box shapes and flag lane headers ([#3](https://github.com/pberry/character-flow/issues/3), v0.5.0);
-badges on boxes ([#2](https://github.com/pberry/character-flow/issues/2), v0.6.0).
+badges on boxes ([#2](https://github.com/pberry/character-flow/issues/2), v0.6.0); tracker side column
+([#1](https://github.com/pberry/character-flow/issues/1), unreleased).
 
 Tracked as GitHub issues:
 
-- [#1](https://github.com/pberry/character-flow/issues/1) Side column for trackers: gear, Focus/Luck Points,
-  potions, conditions
 - [#4](https://github.com/pberry/character-flow/issues/4) Grouping brackets
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
 - [#6](https://github.com/pberry/character-flow/issues/6) Route arrows around boxes
@@ -110,7 +119,7 @@ Tracked as GitHub issues:
 - [#8](https://github.com/pberry/character-flow/issues/8) Touch support
 - [#9](https://github.com/pberry/character-flow/issues/9) Undo and version history
 
-Items 1 and 4 come from the player's Lucidchart mock-up of Meren (a Wood Elf Monk, Warrior of the Elements, level 3).
+Item 4 comes from the player's Lucidchart mock-up of Meren (a Wood Elf Monk, Warrior of the Elements, level 3).
 The mock-up is kept out of the repo.
 
 ## Constraints

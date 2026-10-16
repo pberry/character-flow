@@ -8,6 +8,7 @@ import { COLORS } from "./model.js";
 import { renderPalette } from "./palette.js";
 import { buildPrintSheet } from "./print.js";
 import { SHAPES, shapePathD } from "./shapes.js";
+import { MAX_COUNT, getItem, getSection } from "./sidebar.js";
 
 const AUTOSAVE_MS = 2000;
 
@@ -31,6 +32,7 @@ function badgeIcon(type) {
   );
 }
 
+// Badge chips and add buttons for a box or tracker item (`box`).
 function badgeControls(canvas, box) {
   const chips = (box.badges || []).map((b, i) => {
     const name = badgeType(b.type)?.name || b.type;
@@ -169,6 +171,51 @@ export function showEditor(container, chartRecord) {
         h("button", { class: "btn danger", disabled: chart.lanes.length <= 1, onclick: () => canvas.deleteSelection() }, "Delete lane"),
         h("span", { class: "hint" }, "Click palette cards to add them to this lane."),
       );
+    } else if (selection?.type === "item") {
+      const item = getItem(chart, selection.id);
+      const list = chart.sidebar.sections.find((s) => s.items.includes(item)).items;
+      const i = list.indexOf(item);
+      items.push(
+        h("span", { class: "label" }, "Tracker item"),
+        h("button", { class: "btn", onclick: () => canvas.startEdit(item.id) }, "Edit text"),
+        h("span", { class: "sep" }),
+        h("span", { class: "label" }, "Tick circles"),
+        h("button", { class: "btn icon", "aria-label": "Fewer tick circles", title: "Fewer tick circles", disabled: item.count <= 0, onclick: () => canvas.setCount(item.count - 1) }, "−"),
+        h("span", { class: "count", "aria-label": "Tick circles" }, String(item.count)),
+        h("button", { class: "btn icon", "aria-label": "More tick circles", title: "More tick circles", disabled: item.count >= MAX_COUNT, onclick: () => canvas.setCount(item.count + 1) }, "+"),
+        h("span", { class: "sep" }),
+        badgeControls(canvas, item),
+        h("span", { class: "sep" }),
+        h("button", { class: "btn icon", title: "Move item up", "aria-label": "Move item up", disabled: i === 0, onclick: () => canvas.moveItem(-1) }, "↑"),
+        h("button", { class: "btn icon", title: "Move item down", "aria-label": "Move item down", disabled: i === list.length - 1, onclick: () => canvas.moveItem(1) }, "↓"),
+        h("button", { class: "btn", onclick: () => canvas.addItem() }, "Add item below"),
+        h("button", { class: "btn danger", onclick: () => canvas.deleteSelection() }, "Delete item"),
+      );
+    } else if (selection?.type === "section") {
+      const section = getSection(chart, selection.id);
+      const i = chart.sidebar.sections.indexOf(section);
+      const name = h("input", { class: "lane-name-input", value: section.name, "aria-label": "Section name" });
+      name.addEventListener("change", () => {
+        if (name.value.trim()) { section.name = name.value.trim(); canvas.changed(); }
+      });
+      name.addEventListener("keydown", (e) => { if (e.key === "Enter") name.blur(); });
+      items.push(
+        h("span", { class: "label" }, "Section"),
+        name,
+        h("button", { class: "btn", onclick: () => canvas.addItem() }, "Add item"),
+        h("span", { class: "sep" }),
+        h("button", { class: "btn icon", title: "Move section up", "aria-label": "Move section up", disabled: i === 0, onclick: () => canvas.moveSection(-1) }, "↑"),
+        h("button", { class: "btn icon", title: "Move section down", "aria-label": "Move section down", disabled: i === chart.sidebar.sections.length - 1, onclick: () => canvas.moveSection(1) }, "↓"),
+        h("button", { class: "btn", onclick: () => canvas.addSection(section.id) }, "Add section below"),
+        h("button", { class: "btn danger", onclick: () => canvas.deleteSelection() }, "Delete section"),
+      );
+    } else if (selection?.type === "sidebar") {
+      items.push(
+        h("span", { class: "label" }, "Side column"),
+        h("button", { class: "btn", onclick: () => canvas.addSection() }, "Add section"),
+        h("button", { class: "btn danger", onclick: () => canvas.setSidebar(false) }, "Remove side column"),
+        h("span", { class: "hint" }, "Click a section heading to add items to it. Gear, resources, healing, conditions — anything that isn't part of the turn."),
+      );
     } else if (selection?.type === "edge") {
       items.push(
         h("button", { class: "btn", onclick: () => canvas.editEdgeLabel(selection.id) }, "Edit label"),
@@ -176,6 +223,7 @@ export function showEditor(container, chartRecord) {
       );
     } else {
       items.push(
+        chart.sidebar ? null : h("button", { class: "btn", onclick: () => canvas.setSidebar(true) }, "Add side column"),
         h("span", { class: "hint" },
           "Click a lane header to edit it or fill it from the palette · drag cards into a lane · double-click a lane for a blank box · drag from a box's side dots to connect"),
       );
@@ -234,7 +282,7 @@ export function showEditor(container, chartRecord) {
     } else if (e.key === "Escape") {
       canvas.select(null);
       canvas.render();
-    } else if (e.key === "Enter" && canvas.selection?.type === "box") {
+    } else if (e.key === "Enter" && (canvas.selection?.type === "box" || canvas.selection?.type === "item")) {
       e.preventDefault();
       canvas.startEdit(canvas.selection.id);
     }

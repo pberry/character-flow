@@ -5,10 +5,11 @@ import {
   SIDES, anchor, boxAt, edgePoints, nearestSide, pathD,
   polylineMidpoint, routePoints, suggestEdges,
 } from "./geometry.js";
-import { CONTENT_W, HEADER_W, PAGE_H, SLOT_GAP_X, endOfLane, findSlot, layoutBounds, layoutChart, laneAt } from "./layout.js";
+import { HEADER_W, PAGE_H, SLOT_GAP_X, boxMaxRight, endOfLane, findSlot, layoutBounds, layoutChart, laneAt } from "./layout.js";
 import * as M from "./model.js";
-import { BADGE_FONT, LINE_H, badgePathD, badgeType, layoutBadges } from "./badges.js";
+import { BADGE_FONT, LINE_H, addBadge, badgePathD, badgeType, layoutBadges, removeBadge, updateBadge } from "./badges.js";
 import { shapePathD, textArea } from "./shapes.js";
+import * as T from "./sidebar.js";
 
 const DOUBLE_CLICK_MS = 400;
 const MIN_ZOOM = 0.25;
@@ -50,8 +51,8 @@ function boxText(text) {
   );
 }
 
-function drawBadges(box) {
-  return layoutBadges(box).map((b) => {
+function drawBadges(box, opts) {
+  return layoutBadges(box, opts).map((b) => {
     const type = badgeType(b.type);
     return s(
       "g",
@@ -66,13 +67,14 @@ function drawBadges(box) {
 
 function drawLanes(layout, { selection, dropLane, interactive }) {
   const g = s("g", { class: "lanes" });
+  const left = layout.lanesLeft;
   const right = layout.left + layout.width;
   layout.lanes.forEach((lane, i) => {
     const selected = selection?.type === "lane" && selection.id === lane.id;
     const lg = s("g", { class: `lane${selected ? " selected" : ""}${dropLane === lane.id ? " drop-target" : ""}` });
-    lg.append(s("rect", { class: "lane-band", x: layout.left, y: lane.top, width: layout.width, height: lane.height }));
+    lg.append(s("rect", { class: "lane-band", x: left, y: lane.top, width: right - left, height: lane.height }));
     const header = s("g", { class: "lane-header", "data-lane": lane.id });
-    const hx = layout.left + 10, hy = lane.top + 10, hw = HEADER_W - 30, hh = lane.height - 20;
+    const hx = left + 10, hy = lane.top + 10, hw = HEADER_W - 30, hh = lane.height - 20;
     // Lane headers are flags: the start of each swim lane.
     const ta = textArea("flag", hw, hh);
     header.append(
@@ -83,7 +85,7 @@ function drawLanes(layout, { selection, dropLane, interactive }) {
     lg.append(header);
     if (i < layout.lanes.length - 1) {
       const y = lane.top + lane.height;
-      lg.append(s("line", { class: "lane-divider", x1: layout.left, y1: y, x2: right, y2: y }));
+      lg.append(s("line", { class: "lane-divider", x1: left, y1: y, x2: right, y2: y }));
     }
     g.append(lg);
   });
@@ -91,7 +93,7 @@ function drawLanes(layout, { selection, dropLane, interactive }) {
     // Page edges: boxes can't go past the right one; lanes reaching below the
     // bottom one make the printout shrink to fit. Badges may stick out past the
     // right edge, which widens the layout but not the page.
-    const x = CONTENT_W;
+    const x = layout.contentW;
     g.append(s("line", { class: "page-edge", x1: x, y1: 0, x2: x, y2: Math.max(layout.height, PAGE_H) }));
     const over = layout.height > PAGE_H;
     g.append(
@@ -99,15 +101,55 @@ function drawLanes(layout, { selection, dropLane, interactive }) {
       s("text", { class: `page-bottom-label${over ? " over" : ""}`, x: x - 6, y: PAGE_H - 6, "text-anchor": "end" },
         over ? "Bottom of the printed page — the chart will print smaller" : "Bottom of the printed page"),
     );
-    const y = layout.height + 10;
+    const y = layout.lanesHeight + 10;
     g.append(
       s(
         "g",
         { class: "add-lane", "data-add-lane": "1" },
-        s("rect", { x: layout.left + 10, y, width: HEADER_W - 30, height: ADD_LANE_H - 10, rx: 6 }),
-        s("text", { x: layout.left + 10 + (HEADER_W - 30) / 2, y: y + (ADD_LANE_H - 10) / 2, "text-anchor": "middle", "dominant-baseline": "central" }, "+ Add lane"),
+        s("rect", { x: left + 10, y, width: HEADER_W - 30, height: ADD_LANE_H - 10, rx: 6 }),
+        s("text", { x: left + 10 + (HEADER_W - 30) / 2, y: y + (ADD_LANE_H - 10) / 2, "text-anchor": "middle", "dominant-baseline": "central" }, "+ Add lane"),
       ),
     );
+  }
+  return g;
+}
+
+// The tracker side column: section headings over auto-stacked items.
+function drawSidebar(layout, { selection, interactive }) {
+  const side = layout.sidebar;
+  const g = s("g", { class: "sidebar" });
+  if (layout.left === layout.lanesLeft) return g; // no column
+  const height = Math.max(layout.height, side.height);
+  const isSel = (type, id) => selection?.type === type && selection.id === id;
+  g.append(
+    s("rect", { class: `side-band${isSel("sidebar", "sidebar") ? " selected" : ""}`, x: side.x, y: 0, width: side.w, height, "data-sidebar": "1" }),
+    s("line", { class: "side-divider", x1: layout.lanesLeft, y1: 0, x2: layout.lanesLeft, y2: height }),
+  );
+  for (const sec of side.sections) {
+    g.append(
+      s(
+        "g",
+        { class: `tracker-section${isSel("section", sec.id) ? " selected" : ""}`, "data-section": sec.id },
+        interactive ? s("title", {}, "Click to edit this section") : null,
+        s("rect", { class: "section-hit", x: sec.x, y: sec.y, width: sec.w, height: sec.h }),
+        s("text", { class: "section-name", x: sec.x + 2, y: sec.y + sec.h / 2 + 2, "dominant-baseline": "central" }, sec.name),
+        s("line", { class: "section-rule", x1: sec.x, y1: sec.y + sec.h - 3, x2: sec.x + sec.w, y2: sec.y + sec.h - 3 }),
+      ),
+    );
+  }
+  for (const item of side.items) {
+    const ig = s("g", {
+      class: `tracker-item${isSel("item", item.id) ? " selected" : ""}`,
+      "data-item": item.id,
+      transform: `translate(${item.x} ${item.y})`,
+    });
+    ig.append(
+      s("rect", { class: "item-rect", width: item.w, height: item.h, rx: 6 }),
+      s("foreignObject", { x: 0, y: 0, width: item.w, height: item.textH }, boxText(item.text)),
+      ...item.ticks.map((t) => s("circle", { class: "tick", cx: t.x, cy: t.y, r: 5.5 })),
+      ...drawBadges(item, T.ITEM_BADGES),
+    );
+    g.append(ig);
   }
   return g;
 }
@@ -184,7 +226,7 @@ export function drawChart(g, chart, layout, opts = {}) {
 
   // Ghosts sit under boxes so they never steal clicks meant for a box; arrow
   // labels sit above boxes so short arrows don't hide them.
-  g.append(drawLanes(layout, { selection, dropLane, interactive }), edgesG, ghostsG, boxesG, labelsG);
+  g.append(drawSidebar(layout, { selection, interactive }), drawLanes(layout, { selection, dropLane, interactive }), edgesG, ghostsG, boxesG, labelsG);
 
   if (connect) {
     const p1 = anchor(byId.get(connect.from.box), connect.from.side);
@@ -266,6 +308,8 @@ export class Canvas {
   }
 
   changed() {
+    // An edit in between two clicks means they aren't a double-click.
+    this.lastDown = null;
     this.onChange();
     this.render();
   }
@@ -283,6 +327,16 @@ export class Canvas {
     if (!sel) return;
     if (sel.type === "box") M.deleteBox(this.chart, sel.id);
     else if (sel.type === "edge") M.deleteEdge(this.chart, sel.id);
+    else if (sel.type === "item") T.deleteItem(this.chart, sel.id);
+    else if (sel.type === "section") {
+      const section = T.getSection(this.chart, sel.id);
+      const n = section.items.length;
+      if (n && !window.confirm(`Delete section "${section.name}" and its ${n} item${n === 1 ? "" : "s"}?`)) return;
+      T.deleteSection(this.chart, sel.id);
+    } else if (sel.type === "sidebar") {
+      if (T.allItems(this.chart).length && !window.confirm("Remove the side column and everything in it?")) return;
+      M.setSidebar(this.chart, false);
+    }
     else if (sel.type === "lane") {
       const lane = M.getLane(this.chart, sel.id);
       if (this.chart.lanes.length <= 1) {
@@ -310,26 +364,92 @@ export class Canvas {
     if (box && M.setShape(this.chart, box.id, shape)) this.changed();
   }
 
-  addBadge(type) {
-    const box = this.selectedBox();
-    const t = badgeType(type);
-    if (!box || !t) return;
-    const text = window.prompt(`${t.name} badge text (e.g. ${t.example}):`, t.example);
-    if (text === null) return;
-    if (M.addBadge(this.chart, box.id, type, text)) this.changed();
+  selectedItem() {
+    return this.selection?.type === "item" ? T.getItem(this.chart, this.selection.id) : null;
   }
 
-  editBadge(boxId, index) {
-    const badge = M.getBox(this.chart, boxId)?.badges?.[index];
+  // A box or tracker item, by id. Both carry text and badges.
+  owner(id) {
+    return M.getBox(this.chart, id) || T.getItem(this.chart, id);
+  }
+
+  addBadge(type) {
+    const target = this.selectedBox() || this.selectedItem();
+    const t = badgeType(type);
+    if (!target || !t) return;
+    const text = window.prompt(`${t.name} badge text (e.g. ${t.example}):`, t.example);
+    if (text === null) return;
+    if (addBadge(target, type, text)) this.changed();
+  }
+
+  editBadge(ownerId, index) {
+    const target = this.owner(ownerId);
+    const badge = target?.badges?.[index];
     if (!badge) return;
     const text = window.prompt(`${badgeType(badge.type).name} badge text. Leave empty to remove it:`, badge.text);
     if (text === null) return;
-    M.updateBadge(this.chart, boxId, index, text);
+    updateBadge(target, index, text);
     this.changed();
   }
 
-  removeBadge(boxId, index) {
-    M.removeBadge(this.chart, boxId, index);
+  removeBadge(ownerId, index) {
+    removeBadge(this.owner(ownerId), index);
+    this.changed();
+  }
+
+  // ---- tracker side column ----------------------------------------------
+
+  setSidebar(on) {
+    if (!on) {
+      this.select({ type: "sidebar", id: "sidebar" });
+      this.deleteSelection();
+      return;
+    }
+    M.setSidebar(this.chart, true);
+    this.select({ type: "sidebar", id: "sidebar" });
+    this.changed();
+    // The column appears left of the lanes, likely out of view.
+    this.fitView();
+  }
+
+  addSection(afterId = null) {
+    const section = T.addSection(this.chart, afterId);
+    if (!section) return;
+    this.select({ type: "section", id: section.id });
+    this.changed();
+  }
+
+  renameSection(id) {
+    const section = T.getSection(this.chart, id);
+    if (!section) return;
+    const name = window.prompt("Section name:", section.name);
+    if (name === null || !T.renameSection(this.chart, id, name)) return;
+    this.changed();
+  }
+
+  moveSection(delta) {
+    if (this.selection?.type === "section" && T.moveSection(this.chart, this.selection.id, delta)) this.changed();
+  }
+
+  // After the selected item, or at the end of the selected section.
+  addItem() {
+    const sel = this.selection;
+    const item = T.addItem(this.chart, sel?.type === "item" ? { afterId: sel.id } : { sectionId: sel?.id });
+    if (!item) return;
+    this.select({ type: "item", id: item.id });
+    this.changed();
+    this.startEdit(item.id);
+  }
+
+  moveItem(delta) {
+    const item = this.selectedItem();
+    if (item && T.moveItem(this.chart, item.id, delta)) this.changed();
+  }
+
+  setCount(count) {
+    const item = this.selectedItem();
+    if (!item) return;
+    T.updateItem(this.chart, item.id, { count });
     this.changed();
   }
 
@@ -356,11 +476,11 @@ export class Canvas {
     } else if (this.selectedBox()) {
       const sel = this.absBox(this.selection.id);
       lane = this.layout.lanes.find((l) => l.id === sel.lane);
-      ({ x, y } = findSlot(this.laneBoxes(lane.id), { x: sel.x + sel.w + SLOT_GAP_X, y: this.relativeY(lane, sel.y), ...size }));
+      ({ x, y } = findSlot(this.laneBoxes(lane.id), { x: sel.x + sel.w + SLOT_GAP_X, y: this.relativeY(lane, sel.y), ...size }, boxMaxRight(this.chart)));
     } else {
       const laneSel = this.selectedLane();
       lane = laneSel ? this.layout.lanes.find((l) => l.id === laneSel.id) : laneAt(this.layout, this.visibleCenter().y);
-      ({ x, y } = endOfLane(this.laneBoxes(lane.id), size));
+      ({ x, y } = endOfLane(this.laneBoxes(lane.id), size, boxMaxRight(this.chart)));
     }
     const box = M.addBox(this.chart, { lane: lane.id, x, y, ...size, shape: card.shape, text: card.text, color: card.color || lane.color });
     this.select({ type: "box", id: box.id });
@@ -382,12 +502,13 @@ export class Canvas {
 
   // ---- text editing ------------------------------------------------------
 
+  // Edit a box's or tracker item's text in place.
   startEdit(id) {
     this.finishEdit(true);
-    const box = M.getBox(this.chart, id);
-    if (!box) return;
+    const target = this.owner(id);
+    if (!target) return;
     const ta = h("textarea", { class: "box-editor", spellcheck: "false" });
-    ta.value = box.text;
+    ta.value = target.text;
     ta.addEventListener("keydown", (e) => {
       e.stopPropagation();
       if (e.key === "Escape") {
@@ -410,10 +531,10 @@ export class Canvas {
     if (!this.editing) return;
     const { id, ta } = this.editing;
     this.editing = null;
-    const box = M.getBox(this.chart, id);
+    const target = this.owner(id);
     ta.remove();
-    if (commit && box && ta.value !== box.text) {
-      box.text = ta.value;
+    if (commit && target && ta.value !== target.text) {
+      target.text = ta.value;
       this.changed();
     } else {
       this.render();
@@ -422,7 +543,8 @@ export class Canvas {
 
   positionEditor() {
     if (!this.editing) return;
-    const box = this.absBox(this.editing.id);
+    const id = this.editing.id;
+    const box = this.absBox(id) || this.layout.sidebar.items.find((i) => i.id === id);
     if (!box) return;
     const { x, y, k } = this.view;
     Object.assign(this.editing.ta.style, {
@@ -431,7 +553,7 @@ export class Canvas {
       width: `${box.w * k}px`,
       height: `${box.h * k}px`,
       fontSize: `${14 * k}px`,
-      background: box.color,
+      background: box.color || "#fff",
     });
   }
 
@@ -468,11 +590,18 @@ export class Canvas {
     const edgeEl = t.closest("[data-edge]");
     const laneEl = t.closest("[data-lane]");
     const addLaneEl = t.closest("[data-add-lane]");
+    const itemEl = t.closest("[data-item]");
+    const sectionEl = t.closest("[data-section]");
+    const sidebarEl = t.closest("[data-sidebar]");
+    const ownerId = boxEl?.dataset.box || itemEl?.dataset.item;
 
     // Our own double-click detection: rendering replaces elements between
     // clicks, which makes native dblclick unreliable.
-    const key = badgeEl && boxEl ? `badge:${boxEl.dataset.box}:${badgeEl.dataset.badge}`
+    const key = badgeEl && ownerId ? `badge:${ownerId}:${badgeEl.dataset.badge}`
       : boxEl && !anchorEl && !resizeEl ? `box:${boxEl.dataset.box}`
+      : itemEl ? `item:${itemEl.dataset.item}`
+      : sectionEl ? `section:${sectionEl.dataset.section}`
+      : sidebarEl ? "sidebar"
       : edgeEl ? `edge:${edgeEl.dataset.edge}`
       : laneEl ? `lane:${laneEl.dataset.lane}`
       : !ghostEl && !anchorEl && !resizeEl && !addLaneEl ? "empty" : null;
@@ -512,6 +641,12 @@ export class Canvas {
         type: "move", id: box.id, dx: pt.x - box.x, dy: pt.y - box.y,
         x: box.x, y: box.y, w: box.w, h: box.h, lanes: this.layout.lanes, moved: false,
       };
+    } else if (itemEl) {
+      this.select({ type: "item", id: itemEl.dataset.item });
+    } else if (sectionEl) {
+      this.select({ type: "section", id: sectionEl.dataset.section });
+    } else if (sidebarEl) {
+      this.select({ type: "sidebar", id: "sidebar" });
     } else if (edgeEl) {
       this.select({ type: "edge", id: edgeEl.dataset.edge });
     } else if (laneEl) {
@@ -528,8 +663,12 @@ export class Canvas {
     const [kind, id, index] = key.split(":");
     if (kind === "badge") {
       this.editBadge(id, Number(index));
-    } else if (kind === "box") {
+    } else if (kind === "box" || kind === "item") {
       this.startEdit(id);
+    } else if (kind === "section") {
+      this.renameSection(id);
+    } else if (kind === "sidebar") {
+      // Nothing to add on the column's background.
     } else if (kind === "edge") {
       this.editEdgeLabel(id);
     } else if (kind === "lane") {
@@ -550,7 +689,7 @@ export class Canvas {
     if (!d) return;
     const pt = this.toWorld(e.clientX, e.clientY);
     if (d.type === "move") {
-      const nx = M.clampX(pt.x - d.dx, d.w), ny = M.snap(pt.y - d.dy);
+      const nx = M.clampX(pt.x - d.dx, d.w, boxMaxRight(this.chart)), ny = M.snap(pt.y - d.dy);
       if (nx === d.x && ny === d.y) return;
       d.x = nx;
       d.y = ny;

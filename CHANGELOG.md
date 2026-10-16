@@ -5,6 +5,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- Tracker side column for gear, resources, healing, and conditions, added from the toolbar. Sections can be renamed,
+  reordered, added, and deleted. Items stack automatically and have text, tick circles to mark in pencil, and badges.
+  The column prints with the chart.
+
+### Changed
+- Adding the side column narrows the lanes by 200 units (four standard boxes per row instead of five) so the print
+  scale stays the same; boxes past the new edge are pulled back in.
+- Charts now store `sidebar` (null when there's no column). Older charts load without one.
+
+### Fixed
+- Two clicks in the same spot with an edit in between no longer count as a double-click.
+
 ## [0.6.0] - 2026-10-16
 
 ### Added

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   newChart, normalizeChart, abilityModifier, formatModifier, addBox, moveBox, resizeBox,
   deleteBox, addEdge, deleteEdge, updateEdge, nextId, paletteGroups, bringToFront, MIN_W,
-  addLane, updateLane, moveLane, deleteLane, boxesInLane, defaultLanes, defaultCharacter, setShape, shapeSize, addBadge, updateBadge, removeBadge,
+  addLane, updateLane, moveLane, deleteLane, boxesInLane, defaultLanes, defaultCharacter, setShape, shapeSize, setSidebar,
 } from "../../app/static/js/model.js";
 import { BOX_MAX_RIGHT } from "../../app/static/js/layout.js";
 
@@ -187,25 +187,6 @@ test("the Decision? palette card is a diamond", () => {
   assert.equal(flow.items.find((i) => i.label === "Decision?").shape, "diamond");
 });
 
-test("badges: add, edit, and remove; empty text or unknown types are refused", () => {
-  const c = newChart();
-  const b = addBox(c);
-  assert.deepEqual(b.badges, []);
-  assert.deepEqual(addBadge(c, b.id, "cost", "  1 FP "), { type: "cost", text: "1 FP" });
-  assert.equal(addBadge(c, b.id, "cost", "   "), null);
-  assert.equal(addBadge(c, b.id, "sparkle", "x"), null);
-  assert.equal(addBadge(c, "nope", "cost", "x"), null);
-  addBadge(c, b.id, "recharge", "LR");
-  updateBadge(c, b.id, 1, "SR");
-  assert.deepEqual(b.badges.map((g) => g.text), ["1 FP", "SR"]);
-  // Clearing a badge's text removes it.
-  assert.equal(updateBadge(c, b.id, 0, ""), null);
-  assert.deepEqual(b.badges, [{ type: "recharge", text: "SR" }]);
-  removeBadge(c, b.id, 0);
-  removeBadge(c, b.id, 5);
-  assert.deepEqual(b.badges, []);
-});
-
 test("normalizeChart keeps valid badges and drops the rest", () => {
   const c = normalizeChart({
     lanes: defaultLanes(),
@@ -219,4 +200,32 @@ test("normalizeChart keeps valid badges and drops the rest", () => {
   });
   assert.deepEqual(c.boxes[0].badges, []);
   assert.deepEqual(c.boxes[1].badges, [{ type: "cost", text: "1 FP" }]);
+});
+
+test("turning on the side column pulls boxes past the narrower page back in", () => {
+  const c = newChart();
+  assert.equal(c.sidebar, null);
+  const far = addBox(c, { x: 820, w: 160 });
+  const wide = addBox(c, { x: 20, y: 200, w: 900 });
+  const near = addBox(c, { x: 100, y: 400 });
+  setSidebar(c, true);
+  assert.deepEqual(c.sidebar.sections.length, 4);
+  assert.equal(far.x + far.w, BOX_MAX_RIGHT - 200);
+  assert.deepEqual([wide.x, wide.w], [20, BOX_MAX_RIGHT - 200 - 20]);
+  assert.equal(near.x, 100, "boxes that fit stay put");
+  // New and moved boxes respect the narrower page too.
+  assert.equal(addBox(c, { x: 5000 }).x + 160, BOX_MAX_RIGHT - 200);
+  setSidebar(c, false);
+  assert.equal(c.sidebar, null);
+});
+
+test("normalizeChart keeps a valid side column and pulls boxes onto the narrower page", () => {
+  const c = normalizeChart({
+    lanes: defaultLanes(),
+    boxes: [{ id: "b1", lane: "l1", x: 800, y: 10, w: 160, h: 70 }],
+    sidebar: { sections: [{ id: "s1", name: "Gear", items: [{ id: "t1", text: "Boots", count: 2 }] }] },
+  });
+  assert.equal(c.sidebar.sections[0].items[0].count, 2);
+  assert.equal(c.boxes[0].x + c.boxes[0].w, BOX_MAX_RIGHT - 200);
+  assert.equal(normalizeChart({}).sidebar, null);
 });

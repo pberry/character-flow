@@ -2,9 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   layoutChart, laneAt, layoutBounds, HEADER_W, LANE_PAD, MIN_LANE_H, CONTENT_W, PAGE_W, PAGE_H,
-  BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y, findSlot, endOfLane,
+  BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y, findSlot, endOfLane, boxMaxRight,
 } from "../../app/static/js/layout.js";
-import { newChart, addBox } from "../../app/static/js/model.js";
+import { newChart, addBox, setSidebar } from "../../app/static/js/model.js";
+import { SIDE_W, addItem } from "../../app/static/js/sidebar.js";
 import { badgeOverhang } from "../../app/static/js/badges.js";
 
 test("empty default chart stacks five minimum-height lanes", () => {
@@ -121,4 +122,31 @@ test("badges sticking out past the page edge widen the layout", () => {
   assert.equal(layoutChart(chart).width, PAGE_W);
   box.badges = [{ type: "recharge", text: "SR" }, { type: "recharge", text: "LR" }];
   assert.ok(layoutChart(chart).width > PAGE_W);
+});
+
+test("a side column narrows the lanes but keeps the page width", () => {
+  const chart = newChart();
+  setSidebar(chart, true);
+  const l = layoutChart(chart);
+  assert.equal(l.width, PAGE_W);
+  assert.equal(l.left, -HEADER_W - SIDE_W);
+  assert.equal(l.lanesLeft, -HEADER_W);
+  assert.equal(l.contentW, CONTENT_W - SIDE_W);
+  assert.equal(boxMaxRight(chart), BOX_MAX_RIGHT - SIDE_W);
+  // Four standard boxes still fit across a row.
+  for (let i = 0; i < 5; i++) {
+    const { x, y } = endOfLane(chart.boxes.filter((b) => b.lane === "l1"), { w: 160, h: 70 }, boxMaxRight(chart));
+    addBox(chart, { lane: "l1", x, y });
+  }
+  const ys = chart.boxes.map((b) => b.y);
+  assert.equal(ys.filter((y) => y === ys[0]).length, 4);
+});
+
+test("a tall side column makes the layout taller than the lanes", () => {
+  const chart = newChart();
+  setSidebar(chart, true);
+  for (let i = 0; i < 40; i++) addItem(chart, { sectionId: "s1", text: `Item ${i}` });
+  const l = layoutChart(chart);
+  assert.ok(l.height > l.lanesHeight);
+  assert.equal(l.height, l.sidebar.height);
 });

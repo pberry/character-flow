@@ -47,6 +47,9 @@ Back up that file to back up your work.
 | Add the next step | Select a box, then click a palette card: the new box is placed to its right |
 | Edit text | Double-click a box (or select it and press Enter). Ctrl/Cmd+Enter or click away to finish, Escape to cancel. The first line is shown in bold |
 | Color / shape / delete | Select a box, use the toolbar at the top |
+| Add the side column | With nothing selected, click "Add side column" in the toolbar |
+| Add a tracker item | Click a side-column section heading, then "Add item" (or select an item and "Add item below"); type its text |
+| Edit a tracker item | Double-click it (or select it and press Enter). The toolbar sets tick circles, badges, order, and deletes it |
 | Add a badge | Select a box, click "+ Cost", "+ Duration", "+ Recharge", or "+ Modifier" in the toolbar |
 | Edit / remove a badge | Double-click the badge, or use its chip in the toolbar (× removes it; clearing its text does too) |
 | Move | Drag a box (arrows follow). Drop it in another lane to move it there; the target lane is highlighted |
@@ -100,6 +103,21 @@ The text is free; the type only picks the look. A box can have several badges, a
 outward from their corner. On shaped boxes a badge sits on the outline nearest its corner (a star's arm tips, for
 example). Longer text wraps onto short lines. Lanes grow to fit badges that hang below a box.
 
+## Side column
+
+A chart can have a tracker column left of the lanes for things that aren't part of the turn: gear, resource pools
+like Focus or Luck Points, potions, and conditions. It starts with Gear, Resources, Healing, and Conditions sections,
+which you can rename, reorder, add, and delete; select a section heading to edit it, or the column's background to
+add a section or remove the column.
+
+Items stack automatically within their section. Each has text (the first line is bold), optional **tick circles**
+to mark in pencil at the table (up to 20, e.g. three for 3 Focus Points), and badges like boxes have (e.g. `SR` and
+`LR` on Focus Points). On items, several badges of one type line up inward so they stay inside the column.
+
+The column takes its 200 units of width from the lanes, so the print scale doesn't change: about four standard boxes
+fit in a row instead of five. Boxes past the new right edge are pulled back in when the column is added. Removing the
+column gives the width back (boxes stay where they are).
+
 ## Page size
 
 The chart is always one printed page wide (a dashed line marks the right edge), so box text prints at about 9pt.
@@ -117,6 +135,9 @@ whole chart is scaled down to fit, and the line turns red as a warning. About fi
 - Single user: if two browsers edit the same chart, the last save wins.
 - Arrows take simple right-angle routes and don't steer around boxes in their way; nudge boxes or pick other sides.
 - Lane headers are part of the canvas, so they scroll out of view if you pan far to the right.
+- Side-column item heights are estimated from the text, so unusual text (many wide capitals) can be clipped; add a
+  line break or shorten it.
+- Side-column items can be reordered within their section but not dragged to another section.
 
 ## Development
 
@@ -151,6 +172,7 @@ The frontend is plain ES modules + SVG with no build step, in `app/static/`:
 | `js/geometry.js` | Pure math: side-midpoint anchors, elbow routing, suggested arrows, print fitting |
 | `js/shapes.js` | Pure box-shape outlines, text areas, and where arrows meet each outline |
 | `js/badges.js` | Pure badge types, sizes, text wrapping, and corner placement |
+| `js/sidebar.js` | Pure tracker side column: sections, items, tick circles, and stacking layout |
 | `js/model.js` | Pure chart operations (boxes, edges, ids, palette, ability modifiers) |
 | `js/canvas.js` | SVG rendering and mouse interactions |
 | `js/editor.js` | Editor screen: toolbar, palette, autosave, keyboard shortcuts |

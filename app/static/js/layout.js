@@ -3,6 +3,7 @@
 // requires rewriting the boxes below it. Pure functions, no DOM.
 
 import { badgeOverhang } from "./badges.js";
+import { layoutSidebar, sideWidth } from "./sidebar.js";
 
 export const HEADER_W = 150;     // lane header column, drawn left of x = 0
 export const LANE_PAD = 20;      // space below the lowest box in a lane
@@ -14,6 +15,10 @@ export const BOX_MIN_Y = 10;     // ...and below their lane's top edge
 // (14px box text comes out around 9pt). Lanes grow downward, never sideways.
 export const CONTENT_W = 1000;
 export const BOX_MAX_RIGHT = CONTENT_W - 20;   // boxes end left of this x
+// A tracker side column takes its width from the lanes, so the page (and the
+// print scale) stays the same.
+export const contentWidth = (chart) => CONTENT_W - sideWidth(chart);
+export const boxMaxRight = (chart) => BOX_MAX_RIGHT - sideWidth(chart);
 export const PAGE_W = HEADER_W + CONTENT_W;
 // Printable chart area on landscape letter is 10.2 x 6.8in (see print.css).
 export const PRINT_ASPECT = 10.2 / 6.8;
@@ -59,12 +64,20 @@ export function layoutChart(chart, { frozen = null, floating = null } = {}) {
   // Boxes are clamped to BOX_MAX_RIGHT, but never hide one that isn't.
   const right = boxes.reduce((m, b) => Math.max(m, b.x + b.w + badgeOverhang(b).right + 20), 0);
   const last = lanes[lanes.length - 1];
+  const sideW = sideWidth(chart);
+  const contentW = contentWidth(chart);
+  const left = -HEADER_W - sideW;
+  const sidebar = layoutSidebar(chart.sidebar, left);
   return {
     lanes,
     boxes,
-    left: -HEADER_W,
-    width: HEADER_W + Math.max(CONTENT_W, right),
-    height: last ? last.top + last.height : 0,
+    sidebar,
+    left,
+    width: sideW + HEADER_W + Math.max(contentW, right),
+    lanesLeft: -HEADER_W,
+    contentW,
+    lanesHeight: last ? last.top + last.height : 0,
+    height: Math.max(last ? last.top + last.height : 0, sidebar.height),
   };
 }
 
@@ -85,17 +98,17 @@ export function layoutBounds(layout) {
 
 // Where to put a new w x h box in a lane, starting from the lane-relative spot
 // `x, y`: slide right past boxes in the way, and wrap to a new row at the left
-// when the page's right edge is reached. `boxes` are lane-relative.
+// when the page's right edge (`maxRight`) is reached. `boxes` are lane-relative.
 export const SLOT_GAP_X = 40;
 export const SLOT_GAP_Y = 30;
-export function findSlot(boxes, { x, y, w, h }) {
+export function findSlot(boxes, { x, y, w, h }, maxRight = BOX_MAX_RIGHT) {
   const overlaps = (b) =>
     x < b.x + b.w + SLOT_GAP_X / 2 && b.x < x + w + SLOT_GAP_X / 2 &&
     y < b.y + b.h + SLOT_GAP_Y / 2 && b.y < y + h + SLOT_GAP_Y / 2;
   x = Math.max(BOX_MIN_X, x);
   y = Math.max(BOX_MIN_Y, y);
   for (let i = 0; i < 1000; i++) {
-    if (x + w > BOX_MAX_RIGHT) {
+    if (x + w > maxRight) {
       x = BOX_MIN_X;
       y += h + SLOT_GAP_Y;
       continue;
@@ -109,8 +122,8 @@ export function findSlot(boxes, { x, y, w, h }) {
 
 // Lane-relative spot after the last box in a lane: the start of its lowest
 // row, slid right past what's already there.
-export function endOfLane(boxes, { w, h }) {
+export function endOfLane(boxes, { w, h }, maxRight = BOX_MAX_RIGHT) {
   if (!boxes.length) return { x: BOX_MIN_X, y: BOX_MIN_Y };
   const lastRow = Math.max(...boxes.map((b) => b.y));
-  return findSlot(boxes, { x: BOX_MIN_X, y: lastRow, w, h });
+  return findSlot(boxes, { x: BOX_MIN_X, y: lastRow, w, h }, maxRight);
 }

@@ -303,3 +303,79 @@ def test_badges(page: Page, live_server):
     page.evaluate("window.print = () => {}")
     page.get_by_role("button", name="Print").click()
     expect(page.locator("#print-sheet .badge")).to_have_count(2)
+
+
+def test_side_column(page: Page, live_server):
+    chart_id = create_character(page, live_server)
+    answers = []
+    page.on("dialog", lambda d: d.accept(answers.pop(0)) if answers else d.accept())
+
+    # A box near the right edge gets pulled in when the column narrows the lanes.
+    lane_header(page, "l2").click()
+    for _ in range(5):
+        page.locator(".card", has_text="Greataxe").click()
+    page.keyboard.press("Escape")
+
+    expect(page.locator("[data-section]")).to_have_count(0)
+    page.get_by_role("button", name="Add side column").click()
+    expect(page.locator("[data-section]")).to_have_count(4)
+    expect(page.locator(".section-name")).to_have_text(["Gear", "Resources", "Healing", "Conditions"])
+    expect(page.get_by_role("button", name="Add side column")).to_have_count(0)
+
+    # Add an item to Resources and type its text in place.
+    page.locator('[data-section="s2"]').click()
+    expect(page.get_by_label("Section name")).to_have_value("Resources")
+    page.get_by_role("button", name="Add item", exact=True).click()
+    page.locator(".box-editor").fill("Focus Points")
+    page.keyboard.press("Control+Enter")
+    expect(page.locator('[data-item="t1"]')).to_contain_text("Focus Points")
+
+    # Three tick circles and a recharge badge.
+    for _ in range(3):
+        page.get_by_role("button", name="More tick circles").click()
+    expect(page.locator('[data-item="t1"] .tick')).to_have_count(3)
+    page.get_by_role("button", name="Fewer tick circles").click()
+    expect(page.locator('[data-item="t1"] .tick')).to_have_count(2)
+    answers.append("SR")
+    page.get_by_role("button", name="Add recharge badge").click()
+    expect(page.locator('[data-item="t1"] [data-badge]')).to_have_count(1)
+
+    # A second item below it, then rename the section.
+    page.get_by_role("button", name="Add item below").click()
+    page.locator(".box-editor").fill("Luck Points")
+    page.keyboard.press("Control+Enter")
+    page.locator('[data-section="s2"]').click()
+    page.get_by_label("Section name").fill("Pools")
+    page.keyboard.press("Enter")
+    expect(page.locator('[data-section="s2"] .section-name')).to_have_text("Pools")
+
+    page.get_by_role("button", name="Save").click()
+    expect(page.locator(".status")).to_have_text("Saved")
+    data = chart_data(live_server, chart_id)
+    pools = data["sidebar"]["sections"][1]
+    assert pools["name"] == "Pools"
+    assert pools["items"] == [
+        {"id": "t1", "text": "Focus Points", "count": 2, "badges": [{"type": "recharge", "text": "SR"}]},
+        {"id": "t2", "text": "Luck Points", "count": 0, "badges": []},
+    ]
+    # The fifth box no longer fit across the row and was pulled in from the edge.
+    assert max(b["x"] + b["w"] for b in data["boxes"]) <= 780
+
+    # The column survives a reload and prints.
+    page.reload()
+    expect(page.locator("[data-item]")).to_have_count(2)
+    page.evaluate("window.print = () => {}")
+    page.get_by_role("button", name="Print").click()
+    expect(page.locator("#print-sheet .tracker-item")).to_have_count(2)
+    page.emulate_media(media="print")
+    pdf = page.pdf(format="Letter", landscape=True, print_background=True, prefer_css_page_size=True)
+    assert len(re.findall(rb"/Type\s*/Page(?!s)", pdf)) == 1
+    page.emulate_media(media="screen")
+
+    # Removing the column (confirmed) gives the lanes their width back.
+    page.locator("#app .side-band").click(position={"x": 100, "y": 5})
+    page.get_by_role("button", name="Remove side column").click()
+    expect(page.locator("#app [data-section]")).to_have_count(0)
+    page.get_by_role("button", name="Save").click()
+    expect(page.locator(".status")).to_have_text("Saved")
+    assert chart_data(live_server, chart_id)["sidebar"] is None

@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { BADGE_TYPES, badgeType, badgeSize, badgePathD, layoutBadges, wrapText } from "../../app/static/js/badges.js";
+import {
+  BADGE_TYPES, badgeType, badgeSize, badgePathD, layoutBadges, wrapText, badgeOverhang,
+  addBadge, updateBadge, removeBadge, normalizeBadges,
+} from "../../app/static/js/badges.js";
 import { nearestOutlinePoint, shapePoints } from "../../app/static/js/shapes.js";
 
 const box = (badges, shape = "rect", w = 160, h = 70) => ({ x: 0, y: 0, w, h, shape, badges });
@@ -99,4 +102,37 @@ test("unknown badge types are skipped but keep indexes stable", () => {
   const placed = layoutBadges(box([{ type: "bogus", text: "?" }, { type: "cost", text: "1" }]));
   assert.deepEqual(placed.map((b) => b.index), [1]);
   assert.deepEqual(layoutBadges(box(undefined)), []);
+});
+
+test("badge lists: add, edit, and remove; empty text or unknown types are refused", () => {
+  const b = { badges: [] };
+  assert.deepEqual(addBadge(b, "cost", "  1 FP "), { type: "cost", text: "1 FP" });
+  assert.equal(addBadge(b, "cost", "   "), null);
+  assert.equal(addBadge(b, "sparkle", "x"), null);
+  assert.equal(addBadge(null, "cost", "x"), null);
+  addBadge(b, "recharge", "LR");
+  updateBadge(b, 1, "SR");
+  assert.deepEqual(b.badges.map((g) => g.text), ["1 FP", "SR"]);
+  // Clearing a badge's text removes it.
+  assert.equal(updateBadge(b, 0, ""), null);
+  assert.deepEqual(b.badges, [{ type: "recharge", text: "SR" }]);
+  removeBadge(b, 0);
+  removeBadge(b, 5);
+  assert.deepEqual(b.badges, []);
+  // Objects without a list get one.
+  const item = {};
+  addBadge(item, "cost", "1");
+  assert.equal(item.badges.length, 1);
+});
+
+test("normalizeBadges keeps valid badges only", () => {
+  assert.deepEqual(normalizeBadges([{ type: "cost", text: " 1 " }, { type: "x", text: "y" }, null]), [{ type: "cost", text: "1" }]);
+  assert.deepEqual(normalizeBadges(undefined), []);
+});
+
+test("badgeOverhang measures badges sticking out above, right, and below", () => {
+  assert.deepEqual(badgeOverhang({ w: 160, h: 70, shape: "rect", badges: [] }), { top: 0, right: 0, bottom: 0 });
+  const o = badgeOverhang({ w: 160, h: 70, shape: "rect", badges: [{ type: "cost", text: "1 FP" }] });
+  assert.ok(o.top > 0 && o.right > 0);
+  assert.equal(o.bottom, 0);
 });

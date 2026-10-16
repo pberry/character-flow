@@ -1,6 +1,7 @@
-import { BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y } from "./layout.js";
-import { badgeType } from "./badges.js";
+import { BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y, boxMaxRight } from "./layout.js";
+import { normalizeBadges } from "./badges.js";
 import { isShape, minSize } from "./shapes.js";
+import { disableSidebar, enableSidebar, normalizeSidebar } from "./sidebar.js";
 
 // Pure chart-state operations. Functions mutate the chart passed in and return
 // what they created, so the editor can keep a single mutable state object.
@@ -58,7 +59,7 @@ export function defaultCharacter() {
 }
 
 export function newChart(character = defaultCharacter()) {
-  return { version: 2, character, lanes: defaultLanes(), boxes: [], edges: [] };
+  return { version: 2, character, lanes: defaultLanes(), boxes: [], edges: [], sidebar: null };
 }
 
 // Fill in anything missing from older or hand-edited data.
@@ -69,20 +70,15 @@ export function normalizeChart(data) {
     if (!Array.isArray(chart.character[key])) chart.character[key] = [];
   }
   if (!Array.isArray(chart.lanes) || !chart.lanes.length) chart.lanes = defaultLanes();
+  chart.sidebar = normalizeSidebar(chart.sidebar);
   const laneIds = new Set(chart.lanes.map((l) => l.id));
   chart.boxes = (Array.isArray(chart.boxes) ? chart.boxes : []).map((b) => {
     const box = laneIds.has(b.lane) ? { ...b } : { ...b, lane: chart.lanes[0].id };
     if (!isShape(box.shape)) box.shape = "rect";
-    box.badges = (Array.isArray(box.badges) ? box.badges : [])
-      .filter((g) => g && badgeType(g.type) && typeof g.text === "string" && g.text.trim())
-      .map((g) => ({ type: g.type, text: g.text.trim() }));
-    // Pull anything past the page edge back onto the page.
-    if (box.x + box.w > BOX_MAX_RIGHT) {
-      box.w = Math.min(box.w, BOX_MAX_RIGHT - BOX_MIN_X);
-      box.x = clampX(box.x, box.w);
-    }
+    box.badges = normalizeBadges(box.badges);
     return box;
   });
+  pullOntoPage(chart);
   const ids = new Set(chart.boxes.map((b) => b.id));
   chart.edges = (Array.isArray(chart.edges) ? chart.edges : []).filter(
     (e) => e && e.from && e.to && ids.has(e.from.box) && ids.has(e.to.box),
@@ -114,7 +110,29 @@ export function nextId(prefix, items) {
 }
 
 // Keep a box of width w between the lane headers and the page's right edge.
-export const clampX = (x, w = BOX_W) => Math.max(BOX_MIN_X, Math.min(snap(x), BOX_MAX_RIGHT - w));
+export const clampX = (x, w = BOX_W, maxRight = BOX_MAX_RIGHT) => Math.max(BOX_MIN_X, Math.min(snap(x), maxRight - w));
+
+// Pull boxes past the page's right edge back onto the page, narrowing any
+// that are too wide to fit. Other boxes are left where they are.
+export function pullOntoPage(chart) {
+  const maxRight = boxMaxRight(chart);
+  for (const box of chart.boxes) {
+    if (box.x + box.w > maxRight) {
+      box.w = Math.min(box.w, maxRight - BOX_MIN_X);
+      box.x = clampX(box.x, box.w, maxRight);
+    }
+  }
+}
+
+// Turn the tracker side column on or off. Turning it on narrows the lanes.
+export function setSidebar(chart, on) {
+  if (on) {
+    enableSidebar(chart);
+    pullOntoPage(chart);
+  } else {
+    disableSidebar(chart);
+  }
+}
 const clampY = (y) => Math.max(BOX_MIN_Y, snap(y));
 
 // Default size of a new box with this shape.
@@ -129,7 +147,7 @@ export function addBox(chart, { lane = chart.lanes[0]?.id, x = BOX_MIN_X, y = BO
   const size = shapeSize(shape);
   w = w ?? size.w;
   h = h ?? size.h;
-  const box = { id: nextId("b", chart.boxes), lane, x: clampX(x, w), y: clampY(y), w, h, text, color, shape, badges: [] };
+  const box = { id: nextId("b", chart.boxes), lane, x: clampX(x, w, boxMaxRight(chart)), y: clampY(y), w, h, text, color, shape, badges: [] };
   chart.boxes.push(box);
   return box;
 }
@@ -146,7 +164,7 @@ export function updateBox(chart, id, patch) {
 
 export function moveBox(chart, id, lane, x, y) {
   const box = getBox(chart, id);
-  return box && updateBox(chart, id, { lane, x: clampX(x, box.w), y: clampY(y) });
+  return box && updateBox(chart, id, { lane, x: clampX(x, box.w, boxMaxRight(chart)), y: clampY(y) });
 }
 
 export const MIN_W = 60;
@@ -156,7 +174,7 @@ export const MIN_H = 30;
 export function resizeBox(chart, id, w, h) {
   const box = getBox(chart, id);
   if (!box) return null;
-  const maxW = Math.max(MIN_W, BOX_MAX_RIGHT - box.x);
+  const maxW = Math.max(MIN_W, boxMaxRight(chart) - box.x);
   return updateBox(chart, id, { w: Math.min(maxW, Math.max(MIN_W, snap(w))), h: Math.max(MIN_H, snap(h)) });
 }
 
@@ -168,37 +186,6 @@ export function setShape(chart, id, shape) {
   const min = minSize(shape);
   if (min) resizeBox(chart, id, Math.max(box.w, min.w), Math.max(box.h, min.h));
   return box;
-}
-
-// ---- badges ---------------------------------------------------------------
-
-// Returns the new badge, or null for an unknown type or empty text.
-export function addBadge(chart, id, type, text) {
-  const box = getBox(chart, id);
-  const clean = (text || "").trim();
-  if (!box || !badgeType(type) || !clean) return null;
-  box.badges = box.badges || [];
-  const badge = { type, text: clean };
-  box.badges.push(badge);
-  return badge;
-}
-
-// Empty text removes the badge.
-export function updateBadge(chart, id, index, text) {
-  const badge = getBox(chart, id)?.badges?.[index];
-  if (!badge) return null;
-  const clean = (text || "").trim();
-  if (!clean) {
-    removeBadge(chart, id, index);
-    return null;
-  }
-  badge.text = clean;
-  return badge;
-}
-
-export function removeBadge(chart, id, index) {
-  const box = getBox(chart, id);
-  if (box?.badges?.[index]) box.badges.splice(index, 1);
 }
 
 export function deleteBox(chart, id) {
