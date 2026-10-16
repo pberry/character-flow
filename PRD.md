@@ -1,7 +1,7 @@
 # Character Flow — Product Requirements
 
 > **Living document.** Update this file whenever a goal, decision, or requirement changes, in the same change
-> that implements it. Record *why* a decision was made, not just what. Last updated for **v0.6.0**.
+> that implements it. Record *why* a decision was made, not just what. Last updated for **v0.7.0**.
 
 ## Problem
 
@@ -108,7 +108,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 
 Shipped from the mock-up: box shapes and flag lane headers ([#3](https://github.com/pberry/character-flow/issues/3), v0.5.0);
 badges on boxes ([#2](https://github.com/pberry/character-flow/issues/2), v0.6.0); tracker side column
-([#1](https://github.com/pberry/character-flow/issues/1), unreleased).
+([#1](https://github.com/pberry/character-flow/issues/1), v0.7.0).
 
 Tracked as GitHub issues:
 

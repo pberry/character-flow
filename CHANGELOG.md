@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-16
+
 ### Added
 - Tracker side column for gear, resources, healing, and conditions, added from the toolbar. Sections can be renamed,
   reordered, added, and deleted. Items stack automatically and have text, tick circles to mark in pencil, and badges.
