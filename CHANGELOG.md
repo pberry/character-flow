@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-16
+
 ### Added
 - Groups: a bracket (open on the left) or outline around related boxes, with an optional label. Shift-click boxes to
   select several, then "Group". The line follows its boxes when they move, and prints.
