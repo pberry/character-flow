@@ -50,6 +50,9 @@ Back up that file to back up your work.
 | Add the side column | With nothing selected, click "Add side column" in the toolbar |
 | Add a tracker item | Click a side-column section heading, then "Add item" (or select an item and "Add item below"); type its text |
 | Edit a tracker item | Double-click it (or select it and press Enter). The toolbar sets tick circles, badges, order, and deletes it |
+| Select several boxes | Shift-click boxes (Shift-click a selected box to drop it) |
+| Group boxes | Select one or more boxes, click "Group" in the toolbar |
+| Edit a group | Click its line. Edit the label and style in the toolbar, or double-click the line to edit the label. Shift-click boxes to add or remove them. "Ungroup" removes the line; the boxes stay |
 | Add a badge | Select a box, click "+ Cost", "+ Duration", "+ Recharge", or "+ Modifier" in the toolbar |
 | Edit / remove a badge | Double-click the badge, or use its chip in the toolbar (× removes it; clearing its text does too) |
 | Move | Drag a box (arrows follow). Drop it in another lane to move it there; the target lane is highlighted |
@@ -102,6 +105,13 @@ stay distinct when printed in black and white:
 The text is free; the type only picks the look. A box can have several badges, and more of the same type line up
 outward from their corner. On shaped boxes a badge sits on the outline nearest its corner (a star's arm tips, for
 example). Longer text wraps onto short lines. Lanes grow to fit badges that hang below a box.
+
+## Groups
+
+A group draws a line around related boxes, such as effects that apply while a buff is active. A **bracket** is open on
+the left, as in the Meren mock-up; an **outline** is a closed rounded rectangle. A group can have a label, shown
+centered on its top edge. The line is worked out from the boxes each time, so it follows them when they move, even
+across lanes. Deleting a box takes it out of its groups, and a group with no boxes left disappears.
 
 ## Side column
 
@@ -172,6 +182,7 @@ The frontend is plain ES modules + SVG with no build step, in `app/static/`:
 | `js/geometry.js` | Pure math: side-midpoint anchors, elbow routing, suggested arrows, print fitting |
 | `js/shapes.js` | Pure box-shape outlines, text areas, and where arrows meet each outline |
 | `js/badges.js` | Pure badge types, sizes, text wrapping, and corner placement |
+| `js/groups.js` | Pure groups: membership, bracket and outline paths around boxes |
 | `js/sidebar.js` | Pure tracker side column: sections, items, tick circles, and stacking layout |
 | `js/model.js` | Pure chart operations (boxes, edges, ids, palette, ability modifiers) |
 | `js/canvas.js` | SVG rendering and mouse interactions |

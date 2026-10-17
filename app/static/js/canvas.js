@@ -10,6 +10,7 @@ import * as M from "./model.js";
 import { BADGE_FONT, LINE_H, addBadge, badgePathD, badgeType, layoutBadges, removeBadge, updateBadge } from "./badges.js";
 import { shapePathD, textArea } from "./shapes.js";
 import * as T from "./sidebar.js";
+import * as G from "./groups.js";
 
 const DOUBLE_CLICK_MS = 400;
 const MIN_ZOOM = 0.25;
@@ -114,6 +115,31 @@ function drawLanes(layout, { selection, dropLane, interactive }) {
   return g;
 }
 
+// Brackets and outlines around groups of boxes, drawn under arrows and boxes.
+function drawGroups(chart, boxes, { selection, interactive }) {
+  const g = s("g", { class: "groups" });
+  for (const group of chart.groups || []) {
+    const rect = G.groupRect(group, boxes);
+    if (!rect) continue;
+    const selected = selection?.type === "group" && selection.id === group.id;
+    const d = G.groupPathD(group.style, rect);
+    g.append(
+      s(
+        "g",
+        { class: `group group-${group.style}${selected ? " selected" : ""}`, "data-group": group.id },
+        interactive ? s("title", {}, "Click to edit this group") : null,
+        interactive ? s("path", { class: "group-hit", d }) : null,
+        s("path", { class: "group-line", d }),
+        group.label
+          // Centered on the top edge, clear of the badges on member boxes' corners.
+          ? s("text", { class: "group-label", x: rect.x + rect.w / 2, y: rect.y, "text-anchor": "middle", "dominant-baseline": "central" }, group.label)
+          : null,
+      ),
+    );
+  }
+  return g;
+}
+
 // The tracker side column: section headings over auto-stacked items.
 function drawSidebar(layout, { selection, interactive }) {
   const side = layout.sidebar;
@@ -181,7 +207,8 @@ export function drawChart(g, chart, layout, opts = {}) {
 
   const boxesG = s("g", { class: "boxes" });
   for (const box of boxes) {
-    const selected = selection?.type === "box" && selection.id === box.id;
+    const selected = (selection?.type === "box" && selection.id === box.id)
+      || (selection?.type === "boxes" && selection.ids.includes(box.id));
     const target = connect?.target === box.id;
     const bg = s("g", {
       class: `box${selected ? " selected" : ""}${target ? " drop-target" : ""}`,
@@ -201,7 +228,7 @@ export function drawChart(g, chart, layout, opts = {}) {
         const a = anchor(local, side);
         bg.append(s("circle", { class: "anchor", cx: a.x, cy: a.y, r: 6, "data-anchor": side }));
       }
-      if (selected) {
+      if (selected && selection.type === "box") {
         bg.append(s("rect", { class: "resize-handle", x: box.w - 5, y: box.h - 5, width: 10, height: 10, "data-resize": "1" }));
       }
     }
@@ -226,7 +253,12 @@ export function drawChart(g, chart, layout, opts = {}) {
 
   // Ghosts sit under boxes so they never steal clicks meant for a box; arrow
   // labels sit above boxes so short arrows don't hide them.
-  g.append(drawSidebar(layout, { selection, interactive }), drawLanes(layout, { selection, dropLane, interactive }), edgesG, ghostsG, boxesG, labelsG);
+  g.append(
+    drawSidebar(layout, { selection, interactive }),
+    drawLanes(layout, { selection, dropLane, interactive }),
+    drawGroups(chart, boxes, { selection, interactive }),
+    edgesG, ghostsG, boxesG, labelsG,
+  );
 
   if (connect) {
     const p1 = anchor(byId.get(connect.from.box), connect.from.side);
@@ -326,6 +358,8 @@ export class Canvas {
     const sel = this.selection;
     if (!sel) return;
     if (sel.type === "box") M.deleteBox(this.chart, sel.id);
+    else if (sel.type === "boxes") sel.ids.forEach((id) => M.deleteBox(this.chart, id));
+    else if (sel.type === "group") G.deleteGroup(this.chart, sel.id); // ungroup: the boxes stay
     else if (sel.type === "edge") M.deleteEdge(this.chart, sel.id);
     else if (sel.type === "item") T.deleteItem(this.chart, sel.id);
     else if (sel.type === "section") {
@@ -394,6 +428,51 @@ export class Canvas {
 
   removeBadge(ownerId, index) {
     removeBadge(this.owner(ownerId), index);
+    this.changed();
+  }
+
+  // ---- groups ------------------------------------------------------------
+
+  selectedGroup() {
+    return this.selection?.type === "group" ? G.getGroup(this.chart, this.selection.id) : null;
+  }
+
+  // Shift+click on a box: build a multi-selection, or add the box to (or take
+  // it out of) the selected group.
+  shiftSelect(id) {
+    const sel = this.selection;
+    if (sel?.type === "group") {
+      G.toggleMember(this.chart, sel.id, id);
+      if (!G.getGroup(this.chart, sel.id)) this.select(null);
+      this.changed();
+      return;
+    }
+    let ids = sel?.type === "box" ? [sel.id] : sel?.type === "boxes" ? [...sel.ids] : [];
+    ids = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+    this.select(ids.length > 1 ? { type: "boxes", ids } : ids.length ? { type: "box", id: ids[0] } : null);
+    this.render();
+  }
+
+  groupSelection() {
+    const sel = this.selection;
+    const ids = sel?.type === "boxes" ? sel.ids : sel?.type === "box" ? [sel.id] : [];
+    const group = G.addGroup(this.chart, ids);
+    if (!group) return;
+    this.select({ type: "group", id: group.id });
+    this.changed();
+  }
+
+  setGroupStyle(style) {
+    const group = this.selectedGroup();
+    if (group && G.updateGroup(this.chart, group.id, { style })) this.changed();
+  }
+
+  editGroupLabel(id) {
+    const group = G.getGroup(this.chart, id);
+    if (!group) return;
+    const label = window.prompt("Group label (e.g. While attuned). Leave empty for none:", group.label);
+    if (label === null) return;
+    G.updateGroup(this.chart, id, { label });
     this.changed();
   }
 
@@ -593,6 +672,7 @@ export class Canvas {
     const itemEl = t.closest("[data-item]");
     const sectionEl = t.closest("[data-section]");
     const sidebarEl = t.closest("[data-sidebar]");
+    const groupEl = t.closest("[data-group]");
     const ownerId = boxEl?.dataset.box || itemEl?.dataset.item;
 
     // Our own double-click detection: rendering replaces elements between
@@ -602,6 +682,7 @@ export class Canvas {
       : itemEl ? `item:${itemEl.dataset.item}`
       : sectionEl ? `section:${sectionEl.dataset.section}`
       : sidebarEl ? "sidebar"
+      : groupEl ? `group:${groupEl.dataset.group}`
       : edgeEl ? `edge:${edgeEl.dataset.edge}`
       : laneEl ? `lane:${laneEl.dataset.lane}`
       : !ghostEl && !anchorEl && !resizeEl && !addLaneEl ? "empty" : null;
@@ -628,6 +709,11 @@ export class Canvas {
       return;
     }
 
+    if (e.shiftKey && boxEl && !anchorEl && !resizeEl) {
+      this.lastDown = null;
+      this.shiftSelect(boxEl.dataset.box);
+      return;
+    }
     if (anchorEl && boxEl) {
       this.drag = { type: "connect", from: { box: boxEl.dataset.box, side: anchorEl.dataset.anchor }, pt, target: null };
     } else if (resizeEl && boxEl) {
@@ -641,6 +727,8 @@ export class Canvas {
         type: "move", id: box.id, dx: pt.x - box.x, dy: pt.y - box.y,
         x: box.x, y: box.y, w: box.w, h: box.h, lanes: this.layout.lanes, moved: false,
       };
+    } else if (groupEl) {
+      this.select({ type: "group", id: groupEl.dataset.group });
     } else if (itemEl) {
       this.select({ type: "item", id: itemEl.dataset.item });
     } else if (sectionEl) {
@@ -667,6 +755,8 @@ export class Canvas {
       this.startEdit(id);
     } else if (kind === "section") {
       this.renameSection(id);
+    } else if (kind === "group") {
+      this.editGroupLabel(id);
     } else if (kind === "sidebar") {
       // Nothing to add on the column's background.
     } else if (kind === "edge") {
@@ -777,6 +867,11 @@ export class Canvas {
       dropLane: moving ? this.dropLaneFor(d).id : null,
       interactive: true,
     });
+    // Keep the chart still on screen when the toolbar above it changes height
+    // (it wraps to a second row for some selections).
+    const top = this.svg.getBoundingClientRect().top;
+    if (this.lastTop !== undefined && top !== this.lastTop) this.view.y -= top - this.lastTop;
+    this.lastTop = top;
     const { x, y, k } = this.view;
     this.viewport.setAttribute("transform", `translate(${x} ${y}) scale(${k})`);
     this.svg.classList.toggle("connecting", d?.type === "connect");

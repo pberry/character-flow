@@ -321,6 +321,9 @@ def test_side_column(page: Page, live_server):
     expect(page.locator("[data-section]")).to_have_count(4)
     expect(page.locator(".section-name")).to_have_text(["Gear", "Resources", "Healing", "Conditions"])
     expect(page.get_by_role("button", name="Add side column")).to_have_count(0)
+    # With nothing selected, the toolbar doesn't show a stray "null" for the hidden button.
+    page.keyboard.press("Escape")
+    expect(page.locator(".toolbar")).not_to_contain_text("null")
 
     # Add an item to Resources and type its text in place.
     page.locator('[data-section="s2"]').click()
@@ -379,3 +382,77 @@ def test_side_column(page: Page, live_server):
     page.get_by_role("button", name="Save").click()
     expect(page.locator(".status")).to_have_text("Saved")
     assert chart_data(live_server, chart_id)["sidebar"] is None
+
+
+def test_groups(page: Page, live_server):
+    chart_id = create_character(page, live_server)
+    answers = []
+    page.on("dialog", lambda d: d.accept(answers.pop(0)) if answers else d.accept())
+
+    lane_header(page, "l2").click()
+    for _ in range(3):
+        page.locator(".card", has_text="Greataxe").click()
+
+    # Shift-click builds a multi-selection; "Group" draws a bracket around it.
+    page.mouse.click(*box_center(page, "b1"))
+    page.keyboard.down("Shift")
+    page.mouse.click(*box_center(page, "b2"))
+    page.keyboard.up("Shift")
+    expect(page.locator(".toolbar")).to_contain_text("2 boxes selected")
+    expect(page.locator('[data-box="b1"].selected, [data-box="b2"].selected')).to_have_count(2)
+    page.get_by_role("button", name="Group", exact=True).click()
+    expect(page.locator("[data-group]")).to_have_count(1)
+    expect(page.get_by_role("button", name="Bracket")).to_have_attribute("aria-pressed", "true")
+
+    # The bracket surrounds both boxes.
+    line = page.locator('[data-group="g1"] .group-line').bounding_box()
+    b1 = page.locator('[data-box="b1"] .box-rect').bounding_box()
+    b2 = page.locator('[data-box="b2"] .box-rect').bounding_box()
+    assert line["x"] < b1["x"] and line["x"] + line["width"] > b2["x"] + b2["width"]
+    assert line["y"] < b1["y"] and line["y"] + line["height"] > b1["y"] + b1["height"]
+
+    # Label, style, and adding the third box with shift-click while the group is selected.
+    page.get_by_label("Group label").fill("While raging")
+    page.keyboard.press("Enter")
+    expect(page.locator('[data-group="g1"] .group-label')).to_have_text("While raging")
+    page.get_by_role("button", name="Outline").click()
+    page.keyboard.down("Shift")
+    page.mouse.click(*box_center(page, "b3"))
+    page.keyboard.up("Shift")
+    expect(page.locator(".toolbar")).to_contain_text("3 boxes")
+
+    # The group follows a box when it moves.
+    before = page.locator('[data-group="g1"] .group-line').bounding_box()
+    x, y = box_center(page, "b3")
+    drag(page, (x, y), (x, y + 120))
+    after = page.locator('[data-group="g1"] .group-line').bounding_box()
+    assert after["height"] > before["height"] + 60
+
+    page.get_by_role("button", name="Save").click()
+    expect(page.locator(".status")).to_have_text("Saved")
+    data = chart_data(live_server, chart_id)
+    assert data["groups"] == [{"id": "g1", "boxes": ["b1", "b2", "b3"], "label": "While raging", "style": "outline"}]
+
+    # Selecting changes the toolbar's height, but the chart stays still on screen.
+    box_before = page.locator('[data-box="b1"] .box-rect').bounding_box()
+    page.mouse.click(*box_center(page, "b1"))
+    expect(page.get_by_role("button", name="Delete box")).to_be_visible()
+    lane_header(page, "l1").click()
+    expect(page.get_by_label("Lane name")).to_be_visible()
+    box_after = page.locator('[data-box="b1"] .box-rect').bounding_box()
+    assert abs(box_after["y"] - box_before["y"]) < 1
+
+    # Clicking the group's line selects it; double-clicking edits the label.
+    answers.append("While attuned")
+    gl = page.locator('[data-group="g1"] .group-line').bounding_box()
+    page.mouse.dblclick(gl["x"] + gl["width"] / 3, gl["y"] + gl["height"] - 1)
+    expect(page.locator('[data-group="g1"] .group-label')).to_have_text("While attuned")
+    expect(page.locator(".toolbar")).to_contain_text("Ungroup")
+
+    # Prints, then ungroup leaves the boxes.
+    page.evaluate("window.print = () => {}")
+    page.get_by_role("button", name="Print").click()
+    expect(page.locator("#print-sheet .group")).to_have_count(1)
+    page.get_by_role("button", name="Ungroup").click()
+    expect(page.locator("#app [data-group]")).to_have_count(0)
+    expect(page.locator("#app [data-box]")).to_have_count(3)

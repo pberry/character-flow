@@ -9,6 +9,7 @@ import { renderPalette } from "./palette.js";
 import { buildPrintSheet } from "./print.js";
 import { SHAPES, shapePathD } from "./shapes.js";
 import { MAX_COUNT, getItem, getSection } from "./sidebar.js";
+import { GROUP_STYLES, getGroup } from "./groups.js";
 
 const AUTOSAVE_MS = 2000;
 
@@ -139,7 +140,8 @@ export function showEditor(container, chartRecord) {
         h("span", { class: "sep" }),
         h("button", { class: "btn", onclick: () => canvas.startEdit(selection.id) }, "Edit text"),
         h("button", { class: "btn danger", onclick: () => canvas.deleteSelection() }, "Delete box"),
-        h("span", { class: "hint" }, "Faint dashed arrows are suggestions — click one to keep it."),
+        h("button", { class: "btn", title: "Draw a bracket around this box", onclick: () => canvas.groupSelection() }, "Group"),
+        h("span", { class: "hint" }, "Faint dashed arrows are suggestions — click one to keep it. Shift-click to select more boxes."),
       );
     } else if (selection?.type === "lane") {
       const lane = canvas.selectedLane();
@@ -170,6 +172,34 @@ export function showEditor(container, chartRecord) {
         h("button", { class: "btn", onclick: () => canvas.addLane(lane.id) }, "Add lane below"),
         h("button", { class: "btn danger", disabled: chart.lanes.length <= 1, onclick: () => canvas.deleteSelection() }, "Delete lane"),
         h("span", { class: "hint" }, "Click palette cards to add them to this lane."),
+      );
+    } else if (selection?.type === "boxes") {
+      items.push(
+        h("span", { class: "label" }, `${selection.ids.length} boxes selected`),
+        h("button", { class: "btn primary", title: "Draw a bracket around these boxes", onclick: () => canvas.groupSelection() }, "Group"),
+        h("button", { class: "btn danger", onclick: () => canvas.deleteSelection() }, "Delete boxes"),
+        h("span", { class: "hint" }, "Shift-click boxes to add or remove them."),
+      );
+    } else if (selection?.type === "group") {
+      const group = getGroup(chart, selection.id);
+      const label = h("input", { class: "lane-name-input", value: group.label, placeholder: "No label", "aria-label": "Group label" });
+      label.addEventListener("change", () => { group.label = label.value.trim(); canvas.changed(); });
+      label.addEventListener("keydown", (e) => { if (e.key === "Enter") label.blur(); });
+      items.push(
+        h("span", { class: "label" }, "Group"),
+        label,
+        h("span", { class: "sep" }),
+        h("span", { class: "label" }, "Style"),
+        GROUP_STYLES.map((st) =>
+          h("button", {
+            class: `btn${group.style === st.id ? " active" : ""}`,
+            "aria-pressed": String(group.style === st.id),
+            onclick: () => canvas.setGroupStyle(st.id),
+          }, st.name),
+        ),
+        h("span", { class: "sep" }),
+        h("button", { class: "btn danger", title: "Remove the bracket; the boxes stay", onclick: () => canvas.deleteSelection() }, "Ungroup"),
+        h("span", { class: "hint" }, `${group.boxes.length} box${group.boxes.length === 1 ? "" : "es"} · Shift-click a box to add it or take it out.`),
       );
     } else if (selection?.type === "item") {
       const item = getItem(chart, selection.id);
@@ -228,7 +258,8 @@ export function showEditor(container, chartRecord) {
           "Click a lane header to edit it or fill it from the palette · drag cards into a lane · double-click a lane for a blank box · drag from a box's side dots to connect"),
       );
     }
-    toolbar.replaceChildren(...items.flat());
+    // Drop placeholders for controls that don't apply (null would render as text).
+    toolbar.replaceChildren(...items.flat().filter((el) => el != null));
   }
 
   function print() {

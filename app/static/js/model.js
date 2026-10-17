@@ -1,5 +1,6 @@
 import { BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y, boxMaxRight } from "./layout.js";
 import { normalizeBadges } from "./badges.js";
+import { forgetBox, normalizeGroups } from "./groups.js";
 import { isShape, minSize } from "./shapes.js";
 import { disableSidebar, enableSidebar, normalizeSidebar } from "./sidebar.js";
 
@@ -59,7 +60,7 @@ export function defaultCharacter() {
 }
 
 export function newChart(character = defaultCharacter()) {
-  return { version: 2, character, lanes: defaultLanes(), boxes: [], edges: [], sidebar: null };
+  return { version: 2, character, lanes: defaultLanes(), boxes: [], edges: [], sidebar: null, groups: [] };
 }
 
 // Fill in anything missing from older or hand-edited data.
@@ -80,6 +81,7 @@ export function normalizeChart(data) {
   });
   pullOntoPage(chart);
   const ids = new Set(chart.boxes.map((b) => b.id));
+  chart.groups = normalizeGroups(chart.groups, ids);
   chart.edges = (Array.isArray(chart.edges) ? chart.edges : []).filter(
     (e) => e && e.from && e.to && ids.has(e.from.box) && ids.has(e.to.box),
   );
@@ -191,6 +193,7 @@ export function setShape(chart, id, shape) {
 export function deleteBox(chart, id) {
   chart.boxes = chart.boxes.filter((b) => b.id !== id);
   chart.edges = chart.edges.filter((e) => e.from.box !== id && e.to.box !== id);
+  forgetBox(chart, id);
 }
 
 export function bringToFront(chart, id) {

@@ -60,6 +60,9 @@ build a one-page, character-specific combat flowchart and print it to keep at th
   **never rearranged automatically**, because hand placement (branches, alignment) is part of the chart.
 - A **page-bottom guide** shows where the printed page ends and turns red when lanes run past it.
 
+- **Groups** draw a bracket (open on the left) or outline around related boxes, with an optional label. Build one
+  by Shift-clicking boxes and choosing "Group". The line is computed from its boxes, so it follows them.
+
 ### Side column
 - An optional **tracker column** left of the lanes holds what isn't part of the turn: gear, resource pools, healing,
   and conditions. It starts with those four sections, which can be renamed, reordered, added, and deleted.
@@ -101,6 +104,9 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-16 | Duration badge is a pill | Fits text better than an hourglass and still reads differently from the cost circle |
 | 2026-10-16 | Side column takes its width from the lanes, not the print scale | Readable text at the table matters more than a fifth box per row |
 | 2026-10-16 | Side column is a structured list (sections of auto-stacked items), not free-placed boxes | Less fiddly to edit, consistent printouts, and real tick circles for resource counts |
+| 2026-10-16 | Groups get a label, not badges | Keeps the earlier "badges on boxes only" decision; a label like "While attuned" covers the mock-up's use |
+| 2026-10-16 | Group outline is computed from its boxes, never stored | It follows boxes for free and can't drift out of date |
+| 2026-10-16 | Multi-select with Shift-click (no drag-to-select yet) | Smallest change that makes grouping possible; matches Lucidchart |
 | 2026-10-16 | Badges attach to boxes only, not lanes or rows | Keep it simple for now |
 | 2026-10-16 | No border-weight styling | Thick borders in the mock-up were accidental |
 
@@ -108,19 +114,17 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 
 Shipped from the mock-up: box shapes and flag lane headers ([#3](https://github.com/pberry/character-flow/issues/3), v0.5.0);
 badges on boxes ([#2](https://github.com/pberry/character-flow/issues/2), v0.6.0); tracker side column
-([#1](https://github.com/pberry/character-flow/issues/1), v0.7.0).
+([#1](https://github.com/pberry/character-flow/issues/1), v0.7.0); grouping brackets
+([#4](https://github.com/pberry/character-flow/issues/4), unreleased). Those were all the items from the player's
+Lucidchart mock-up of Meren (a Wood Elf Monk, Warrior of the Elements, level 3), which is kept out of the repo.
 
 Tracked as GitHub issues:
 
-- [#4](https://github.com/pberry/character-flow/issues/4) Grouping brackets
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
 - [#6](https://github.com/pberry/character-flow/issues/6) Route arrows around boxes
 - [#7](https://github.com/pberry/character-flow/issues/7) Keep lane headers visible when panning
 - [#8](https://github.com/pberry/character-flow/issues/8) Touch support
 - [#9](https://github.com/pberry/character-flow/issues/9) Undo and version history
-
-Item 4 comes from the player's Lucidchart mock-up of Meren (a Wood Elf Monk, Warrior of the Elements, level 3).
-The mock-up is kept out of the repo.
 
 ## Constraints
 

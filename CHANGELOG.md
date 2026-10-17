@@ -5,6 +5,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- Groups: a bracket (open on the left) or outline around related boxes, with an optional label. Shift-click boxes to
+  select several, then "Group". The line follows its boxes when they move, and prints.
+- Shift-click to select several boxes; "Delete boxes" deletes them all.
+
+### Changed
+- Charts now store `groups`. Older charts load with none.
+
+### Fixed
+- The toolbar no longer shows a stray "null" when nothing is selected in a chart with a side column (since 0.7.0).
+- The chart no longer jumps up or down when selecting something changes the toolbar's height.
+
 ## [0.7.0] - 2026-10-16
 
 ### Added
