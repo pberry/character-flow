@@ -144,8 +144,8 @@ which you can rename, reorder, add, and delete; select a section heading to edit
 add a section or remove the column.
 
 Items stack automatically within their section. Each has text (the first line is bold), optional **tick circles**
-to mark in pencil at the table (up to 20, e.g. three for 3 Focus Points), and badges like boxes have (e.g. `SR` and
-`LR` on Focus Points). On items, several badges of one type line up inward so they stay inside the column.
+to mark in pencil at the table (up to 20, e.g. three for 3 Focus Points), a color (white unless you pick one), and
+badges like boxes have (e.g. `SR` and `LR` on Focus Points). On items, several badges of one type line up inward so they stay inside the column.
 
 The column takes its 200 units of width from the lanes, so the print scale doesn't change: about four standard boxes
 fit in a row instead of five. Boxes past the new right edge are pulled back in when the column is added. Removing the
@@ -210,6 +210,7 @@ The frontend is plain ES modules + SVG with no build step, in `app/static/`:
 | `js/groups.js` | Pure groups: membership, bracket and outline paths around boxes |
 | `js/sidebar.js` | Pure tracker side column: sections, items, tick circles, and stacking layout |
 | `js/model.js` | Pure chart operations (boxes, edges, ids, palette, ability modifiers) |
+| `js/colors.js` | The color swatches and color validation |
 | `js/canvas.js` | SVG rendering and mouse interactions |
 | `js/editor.js` | Editor screen: toolbar, palette, autosave, keyboard shortcuts |
 | `js/intro.js` | Character questionnaire |

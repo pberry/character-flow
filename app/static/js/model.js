@@ -1,3 +1,4 @@
+import { COLORS } from "./colors.js";
 import { BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y, boxMaxRight } from "./layout.js";
 import { normalizeBadges } from "./badges.js";
 import { forgetBox, normalizeGroups } from "./groups.js";
@@ -7,19 +8,7 @@ import { disableSidebar, enableSidebar, normalizeSidebar } from "./sidebar.js";
 // Pure chart-state operations. Functions mutate the chart passed in and return
 // what they created, so the editor can keep a single mutable state object.
 
-export const COLORS = [
-  { name: "Yellow", value: "#fde68a" },
-  { name: "Orange", value: "#fed7aa" },
-  { name: "Red", value: "#fecaca" },
-  { name: "Pink", value: "#fbcfe8" },
-  { name: "Purple", value: "#ddd6fe" },
-  { name: "Blue", value: "#bfdbfe" },
-  { name: "Green", value: "#bbf7d0" },
-  { name: "Teal", value: "#99f6e4" },
-  { name: "Indigo", value: "#a5b4fc" },
-  { name: "Gray", value: "#e5e7eb" },
-  { name: "White", value: "#ffffff" },
-];
+export { COLORS } from "./colors.js";
 
 export const CATEGORY_COLORS = {
   weapon: "#fecaca",

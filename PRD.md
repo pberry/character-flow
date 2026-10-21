@@ -68,7 +68,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 - An optional **tracker column** left of the lanes holds what isn't part of the turn: gear, resource pools, healing,
   and conditions. It starts with those four sections, which can be renamed, reordered, added, and deleted.
 - **Items stack automatically** in their section (no hand placement). An item has text, up to 20 **tick circles**
-  to mark in pencil, and badges.
+  to mark in pencil, badges, and an optional color (white by default).
 - The column **takes its width from the lanes** (200 units, about four boxes per row instead of five), so the print
   scale is unchanged. Boxes past the narrower edge are pulled back in.
 
@@ -101,6 +101,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-14 | Fixed page width, wrap new cards, no automatic reflow, page-bottom guide | Keep printouts readable; respect hand placement |
 | 2026-10-16 | Box shapes (flag, diamond, star, document, block arrow) suggest a use but carry no enforced meaning | The mock-up picked shapes to tell boxes apart, not for their ISO flowchart meanings |
 | 2026-10-16 | Four badge types, each with its own shape: cost (circle), duration (not a circle), recharge (plus), modifier (triangle) | The mock-up drew cost and duration as the same circle; separate shapes keep them distinct in print |
+| 2026-10-20 | Tracker items get an optional color from the same swatches as boxes | Player feedback; reusing the box swatches keeps printed colors consistent |
 | 2026-10-20 | Hourly database snapshots by a separate backup container, into a host folder | Real players now; backups must survive a deleted volume, and a separate read-only container can't damage the live data or slow the app |
 | 2026-10-20 | Snapshots use SQLite's online backup API and skip unchanged data | Safe while the app runs, and quiet weeks don't push older snapshots out |
 | 2026-10-16 | Lane headers drawn as flags | The player described the start of a swim lane as a flag |
@@ -126,6 +127,7 @@ Lucidchart mock-up of Meren (a Wood Elf Monk, Warrior of the Elements, level 3),
 Tracked as GitHub issues:
 
 - [#10](https://github.com/pberry/character-flow/issues/10) Automatic database backups
+- [#11](https://github.com/pberry/character-flow/issues/11) Colors for tracker items
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
 - [#6](https://github.com/pberry/character-flow/issues/6) Route arrows around boxes
 - [#7](https://github.com/pberry/character-flow/issues/7) Keep lane headers visible when panning

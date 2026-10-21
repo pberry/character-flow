@@ -1,9 +1,11 @@
 // The tracker side column: sections of items (gear, resources, healing,
 // conditions) stacked automatically left of the lanes. An item has text, an
-// optional count printed as tick circles to mark in pencil, and badges.
+// optional count printed as tick circles to mark in pencil, badges, and an
+// optional color (white when unset).
 // Pure functions, no DOM. `chart.sidebar` is null when there's no column.
 
 import { badgeOverhang, normalizeBadges } from "./badges.js";
+import { isColor } from "./colors.js";
 
 export const SIDE_W = 200;   // the lanes give up this much width to the column
 export const MAX_COUNT = 20;
@@ -37,6 +39,7 @@ export function normalizeSidebar(data) {
           text: typeof i.text === "string" ? i.text : "",
           count: clampCount(i.count),
           badges: normalizeBadges(i.badges),
+          ...(isColor(i.color) ? { color: i.color } : {}),
         })),
     })),
   };
@@ -126,6 +129,10 @@ export function updateItem(chart, id, patch) {
   if (!item) return null;
   if ("text" in patch) item.text = String(patch.text ?? "");
   if ("count" in patch) item.count = clampCount(patch.count);
+  if ("color" in patch) {
+    if (isColor(patch.color)) item.color = patch.color;
+    else delete item.color;
+  }
   return item;
 }
 

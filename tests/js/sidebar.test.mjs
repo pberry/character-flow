@@ -132,3 +132,16 @@ test("badges hanging off an item push the next item down", () => {
   a.badges = [{ type: "recharge", text: "LR" }];
   assert.ok(layoutSidebar(chart.sidebar, 0).items[1].y > plain);
 });
+
+test("items: optional color, kept only when valid", () => {
+  const chart = chartWithColumn();
+  const a = addItem(chart, { sectionId: "s1", text: "Rope" });
+  assert.equal("color" in a, false, "new items have no color");
+  updateItem(chart, a.id, { color: "#fecaca" });
+  assert.equal(a.color, "#fecaca");
+  updateItem(chart, a.id, { color: "red" });
+  assert.equal("color" in a, false, "an invalid color clears it");
+  const n = normalizeSidebar({ sections: [{ id: "s1", items: [{ id: "t1", color: "#BBF7D0" }, { id: "t2", color: "url(x)" }] }] });
+  assert.equal(n.sections[0].items[0].color, "#BBF7D0");
+  assert.equal("color" in n.sections[0].items[1], false);
+});

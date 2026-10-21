@@ -343,6 +343,11 @@ def test_side_column(page: Page, live_server):
     page.get_by_role("button", name="Add recharge badge").click()
     expect(page.locator('[data-item="t1"] [data-badge]')).to_have_count(1)
 
+    # Color the item.
+    expect(page.locator('[data-item="t1"] .item-rect')).to_have_attribute("fill", "#fff")
+    page.get_by_role("button", name="Red", exact=True).click()
+    expect(page.locator('[data-item="t1"] .item-rect')).to_have_attribute("fill", "#fecaca")
+
     # A second item below it, then rename the section.
     page.get_by_role("button", name="Add item below").click()
     page.locator(".box-editor").fill("Luck Points")
@@ -358,7 +363,7 @@ def test_side_column(page: Page, live_server):
     pools = data["sidebar"]["sections"][1]
     assert pools["name"] == "Pools"
     assert pools["items"] == [
-        {"id": "t1", "text": "Focus Points", "count": 2, "badges": [{"type": "recharge", "text": "SR"}]},
+        {"id": "t1", "text": "Focus Points", "count": 2, "badges": [{"type": "recharge", "text": "SR"}], "color": "#fecaca"},
         {"id": "t2", "text": "Luck Points", "count": 0, "badges": []},
     ]
     # The fifth box no longer fit across the row and was pulled in from the edge.
@@ -370,6 +375,7 @@ def test_side_column(page: Page, live_server):
     page.evaluate("window.print = () => {}")
     page.get_by_role("button", name="Print").click()
     expect(page.locator("#print-sheet .tracker-item")).to_have_count(2)
+    expect(page.locator('#print-sheet [data-item="t1"] .item-rect')).to_have_attribute("fill", "#fecaca")
     page.emulate_media(media="print")
     pdf = page.pdf(format="Letter", landscape=True, print_background=True, prefer_css_page_size=True)
     assert len(re.findall(rb"/Type\s*/Page(?!s)", pdf)) == 1

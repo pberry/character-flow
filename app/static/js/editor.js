@@ -33,6 +33,19 @@ function badgeIcon(type) {
   );
 }
 
+// Color swatches; `current` is the active value.
+function swatches(current, onPick) {
+  return COLORS.map((c) =>
+    h("button", {
+      class: `swatch${current === c.value ? " active" : ""}`,
+      title: c.name,
+      "aria-label": c.name,
+      style: { background: c.value },
+      onclick: () => onPick(c.value),
+    }),
+  );
+}
+
 // Badge chips and add buttons for a box or tracker item (`box`).
 function badgeControls(canvas, box) {
   const chips = (box.badges || []).map((b, i) => {
@@ -115,15 +128,7 @@ export function showEditor(container, chartRecord) {
       const box = canvas.selectedBox();
       items.push(
         h("span", { class: "label" }, "Color"),
-        COLORS.map((c) =>
-          h("button", {
-            class: `swatch${box?.color === c.value ? " active" : ""}`,
-            title: c.name,
-            "aria-label": c.name,
-            style: { background: c.value },
-            onclick: () => canvas.setColor(c.value),
-          }),
-        ),
+        swatches(box?.color, (c) => canvas.setColor(c)),
         h("span", { class: "sep" }),
         h("span", { class: "label" }, "Shape"),
         SHAPES.map((sh) =>
@@ -157,15 +162,7 @@ export function showEditor(container, chartRecord) {
         name,
         h("span", { class: "sep" }),
         h("span", { class: "label" }, "Color"),
-        COLORS.map((c) =>
-          h("button", {
-            class: `swatch${lane.color === c.value ? " active" : ""}`,
-            title: c.name,
-            "aria-label": c.name,
-            style: { background: c.value },
-            onclick: () => canvas.setColor(c.value),
-          }),
-        ),
+        swatches(lane.color, (c) => canvas.setColor(c)),
         h("span", { class: "sep" }),
         h("button", { class: "btn icon", title: "Move lane up", "aria-label": "Move lane up", disabled: i === 0, onclick: () => canvas.moveLane(-1) }, "↑"),
         h("button", { class: "btn icon", title: "Move lane down", "aria-label": "Move lane down", disabled: i === chart.lanes.length - 1, onclick: () => canvas.moveLane(1) }, "↓"),
@@ -208,6 +205,9 @@ export function showEditor(container, chartRecord) {
       items.push(
         h("span", { class: "label" }, "Tracker item"),
         h("button", { class: "btn", onclick: () => canvas.startEdit(item.id) }, "Edit text"),
+        h("span", { class: "sep" }),
+        h("span", { class: "label" }, "Color"),
+        swatches(item.color || "#ffffff", (c) => canvas.setColor(c)),
         h("span", { class: "sep" }),
         h("span", { class: "label" }, "Tick circles"),
         h("button", { class: "btn icon", "aria-label": "Fewer tick circles", title: "Fewer tick circles", disabled: item.count <= 0, onclick: () => canvas.setCount(item.count - 1) }, "−"),

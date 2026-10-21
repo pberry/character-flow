@@ -170,7 +170,7 @@ function drawSidebar(layout, { selection, interactive }) {
       transform: `translate(${item.x} ${item.y})`,
     });
     ig.append(
-      s("rect", { class: "item-rect", width: item.w, height: item.h, rx: 6 }),
+      s("rect", { class: "item-rect", width: item.w, height: item.h, rx: 6, fill: item.color || "#fff" }),
       s("foreignObject", { x: 0, y: 0, width: item.w, height: item.textH }, boxText(item.text)),
       ...item.ticks.map((t) => s("circle", { class: "tick", cx: t.x, cy: t.y, r: 5.5 })),
       ...drawBadges(item, T.ITEM_BADGES),
@@ -387,10 +387,11 @@ export class Canvas {
   }
 
   setColor(color) {
+    const item = this.selectedItem();
+    if (item) T.updateItem(this.chart, item.id, { color });
     const target = this.selectedBox() || this.selectedLane();
-    if (!target) return;
-    target.color = color;
-    this.changed();
+    if (target) target.color = color;
+    if (item || target) this.changed();
   }
 
   setShape(shape) {
