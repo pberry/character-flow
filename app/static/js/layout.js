@@ -51,10 +51,20 @@ export const contentWidth = (chart) => CONTENT_W - sideWidth(chart);
 export const boxMaxRight = (chart) => BOX_MAX_RIGHT - sideWidth(chart);
 export const PAGE_W = HEADER_W + CONTENT_W;
 // Printable chart area on landscape letter is 10.2 x 6.8in (see print.css).
-export const PRINT_ASPECT = 10.2 / 6.8;
+// Character notes print in a strip under the chart, which takes its height
+// from the chart area.
+export const PRINT_W_IN = 10.2;
+export const PRINT_H_IN = 6.8;
+export const NOTES_H_IN = 0.8;
+export const PRINT_ASPECT = PRINT_W_IN / PRINT_H_IN;
 export const PRINT_PAD = 4;
+const pageHFor = (aspect) => Math.floor((PAGE_W + 2 * PRINT_PAD) / aspect - 2 * PRINT_PAD);
 // Height that still prints at full scale; anything taller shrinks the page.
-export const PAGE_H = Math.floor((PAGE_W + 2 * PRINT_PAD) / PRINT_ASPECT - 2 * PRINT_PAD);
+export const PAGE_H = pageHFor(PRINT_ASPECT);
+
+export const hasNotes = (chart) => !!(chart.character?.notes || "").trim();
+export const printAspect = (chart) => PRINT_W_IN / (PRINT_H_IN - (hasNotes(chart) ? NOTES_H_IN : 0));
+export const pageHeight = (chart) => pageHFor(printAspect(chart));
 
 // `frozen`: lane geometry to reuse instead of recomputing (used while dragging
 // so lanes don't jump around under the pointer).
@@ -110,6 +120,8 @@ export function layoutChart(chart, { frozen = null, floating = null } = {}) {
     contentW,
     lanesHeight: last ? last.top + last.height : 0,
     height: Math.max(last ? last.top + last.height : 0, sidebar.height),
+    pageH: pageHeight(chart),
+    notes: hasNotes(chart),
   };
 }
 

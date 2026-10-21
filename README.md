@@ -96,8 +96,8 @@ Back up that file to back up your work.
 
 ## Edit the character
 
-"Edit character" in the editor's top bar reopens the questionnaire. Changes update the palette and the
-printed header; boxes already on the canvas are left alone.
+"Edit character" in the editor's top bar reopens the questionnaire. Changes update the palette, the
+printed header, and the printed notes; boxes already on the canvas are left alone.
 
 ## Swim lanes
 
@@ -165,6 +165,10 @@ in the same lane and the lane grows taller; boxes already placed are never rearr
 A second dashed line marks the bottom of the printed page. Lanes that run past it still print on one page, but the
 whole chart is scaled down to fit, and the line turns red as a warning. About five standard boxes fit in a row.
 
+The character's **Notes** from the questionnaire print in a strip under the chart. When there are notes, the chart
+area is 0.8in shorter, so the bottom-of-page line moves up to match ("notes print below"). Notes longer than four
+printed lines are cut off.
+
 ## Known limitations
 
 - Tested in Google Chrome. Safari and Firefox should work but haven't been checked.
@@ -176,6 +180,7 @@ whole chart is scaled down to fit, and the line turns red as a warning. About fi
 - Side-column item heights are estimated from the text, so unusual text (many wide capitals) can be clipped; add a
   line break or shorten it.
 - Side-column items can be reordered within their section but not dragged to another section.
+- Printed notes stop after four lines (about 600 characters); keep the table-critical ones first.
 
 ## Development
 

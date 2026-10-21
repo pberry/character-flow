@@ -15,6 +15,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
   edited, get its own color (or "Default" for its type's color), or be removed with Delete. Escape goes back to its box.
 - Lane headers can have badges. Select a lane's flag and use the badge buttons. The flag shrinks to keep its badges
   inside the lane.
+- The character's notes print in a strip under the chart. With notes, the chart area is a little shorter, and the
+  editor's bottom-of-page line moves up to match.
 
 ### Changed
 - Charts now store `badges` on lanes. Older charts load with none.

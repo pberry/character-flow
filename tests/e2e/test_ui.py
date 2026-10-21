@@ -191,6 +191,37 @@ def test_print_sheet_fits_page(page: Page, live_server):
             f.write(pdf)
 
 
+def test_print_notes(page: Page, live_server):
+    create_character(page, live_server)
+    page.evaluate("window.print = () => {}")
+    # No notes: no strip, and the full-height page guide.
+    page.get_by_role("button", name="Print").click()
+    expect(page.locator("#print-sheet .print-notes")).to_have_count(0)
+    expect(page.locator("#print-sheet")).not_to_contain_text("null")
+    expect(page.locator(".page-bottom-label")).to_have_text("Bottom of the printed page")
+    full_h = float(page.locator(".page-bottom").get_attribute("y1"))
+
+    # Notes from the questionnaire print under the chart, even long ones on one page.
+    page.get_by_role("link", name="Edit character").click()
+    long_notes = "Stay at range; Luck before saves.\n" + "Rage when two or more enemies are adjacent. " * 30
+    page.get_by_placeholder("Tactics, personality, anything to remember in a fight").fill(long_notes)
+    page.get_by_role("button", name="Save & open flowchart →").click()
+    expect(page.locator(".page-bottom-label")).to_have_text("Bottom of the printed page (notes print below)")
+    assert float(page.locator(".page-bottom").get_attribute("y1")) < full_h
+
+    page.evaluate("window.print = () => {}")
+    page.get_by_role("button", name="Print").click()
+    notes = page.locator("#print-sheet .print-notes")
+    expect(notes).to_contain_text("Stay at range; Luck before saves.")
+    page.emulate_media(media="print")
+    svg = page.locator("#print-sheet .chart-svg").bounding_box()
+    box = notes.bounding_box()
+    assert abs(svg["height"] - 6 * 96) < 2, "the chart gives up the strip's height"
+    assert box["y"] >= svg["y"] + svg["height"] - 1, "notes sit under the chart"
+    pdf = page.pdf(format="Letter", landscape=True, print_background=True, prefer_css_page_size=True)
+    assert len(re.findall(rb"/Type\s*/Page(?!s)", pdf)) == 1
+
+
 def test_cards_wrap_at_page_edge(page: Page, live_server):
     chart_id = create_character(page, live_server)
 

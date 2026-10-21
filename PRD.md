@@ -86,6 +86,8 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 - Charts that fit the page print at a fixed scale, so 14px box text prints at about 9pt. Taller charts are scaled
   down to fit on one page rather than spilling onto a second.
 - Colors print, because `print-color-adjust: exact` is set.
+- The character's notes print in a strip under the chart (up to four lines). The chart area gives up that height
+  only when there are notes, and the editor's page-bottom guide moves up to match.
 
 ## Decisions log
 
@@ -120,6 +122,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-20 | Badges are selectable, and a selected badge can override its type's color | Player feedback; the shape still identifies the type, so color is free for the player's own meaning |
 | 2026-10-20 | Clicking a badge selects it, but dragging it still moves its box | Selecting badges shouldn't make boxes harder to move |
 | 2026-10-20 | Lane headers can have badges (reverses "badges on boxes only") | Player request; header badges stack inward and the flag shrinks so they never spill into other lanes or onto boxes |
+| 2026-10-20 | Notes print in a strip under the chart, which gets shorter only when there are notes | The player chose this over the header (too little room) or a second page (one sheet at the table) |
 
 ## Roadmap
 
@@ -135,6 +138,7 @@ Tracked as GitHub issues:
 - [#11](https://github.com/pberry/character-flow/issues/11) Colors for tracker items
 - [#12](https://github.com/pberry/character-flow/issues/12) Badges on lane headers
 - [#13](https://github.com/pberry/character-flow/issues/13) Custom badge colors
+- [#14](https://github.com/pberry/character-flow/issues/14) Print the character notes
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
 - [#6](https://github.com/pberry/character-flow/issues/6) Route arrows around boxes
 - [#7](https://github.com/pberry/character-flow/issues/7) Keep lane headers visible when panning

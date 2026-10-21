@@ -5,7 +5,7 @@ import {
   SIDES, anchor, boxAt, edgePoints, nearestSide, pathD,
   polylineMidpoint, routePoints, suggestEdges,
 } from "./geometry.js";
-import { HEADER_BADGES, HEADER_W, PAGE_H, SLOT_GAP_X, boxMaxRight, endOfLane, findSlot, layoutBounds, layoutChart, laneAt } from "./layout.js";
+import { HEADER_BADGES, HEADER_W, SLOT_GAP_X, boxMaxRight, endOfLane, findSlot, layoutBounds, layoutChart, laneAt } from "./layout.js";
 import * as M from "./model.js";
 import { BADGE_FONT, LINE_H, addBadge, badgePathD, badgeType, layoutBadges, removeBadge, setBadgeColor, updateBadge } from "./badges.js";
 import { shapePathD, textArea } from "./shapes.js";
@@ -97,13 +97,16 @@ function drawLanes(layout, { selection, dropLane, interactive }) {
     // Page edges: boxes can't go past the right one; lanes reaching below the
     // bottom one make the printout shrink to fit. Badges may stick out past the
     // right edge, which widens the layout but not the page.
+    // The character's notes print under the chart, so with notes the page ends higher.
     const x = layout.contentW;
-    g.append(s("line", { class: "page-edge", x1: x, y1: 0, x2: x, y2: Math.max(layout.height, PAGE_H) }));
-    const over = layout.height > PAGE_H;
+    const pageH = layout.pageH;
+    g.append(s("line", { class: "page-edge", x1: x, y1: 0, x2: x, y2: Math.max(layout.height, pageH) }));
+    const over = layout.height > pageH;
+    const label = over ? "Bottom of the printed page — the chart will print smaller" : "Bottom of the printed page";
     g.append(
-      s("line", { class: `page-bottom${over ? " over" : ""}`, x1: layout.left, y1: PAGE_H, x2: x, y2: PAGE_H }),
-      s("text", { class: `page-bottom-label${over ? " over" : ""}`, x: x - 6, y: PAGE_H - 6, "text-anchor": "end" },
-        over ? "Bottom of the printed page — the chart will print smaller" : "Bottom of the printed page"),
+      s("line", { class: `page-bottom${over ? " over" : ""}`, x1: layout.left, y1: pageH, x2: x, y2: pageH }),
+      s("text", { class: `page-bottom-label${over ? " over" : ""}`, x: x - 6, y: pageH - 6, "text-anchor": "end" },
+        layout.notes ? `${label} (notes print below)` : label),
     );
     const y = layout.lanesHeight + 10;
     g.append(

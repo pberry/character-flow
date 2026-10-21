@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   layoutChart, laneAt, layoutBounds, HEADER_W, LANE_PAD, MIN_LANE_H, CONTENT_W, PAGE_W, PAGE_H,
   BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y, findSlot, endOfLane, boxMaxRight, HEADER_BADGES, headerInsets,
+  hasNotes, pageHeight, printAspect, PRINT_W_IN, PRINT_H_IN, NOTES_H_IN,
 } from "../../app/static/js/layout.js";
 import { newChart, addBox, setSidebar } from "../../app/static/js/model.js";
 import { SIDE_W, addItem } from "../../app/static/js/sidebar.js";
@@ -177,4 +178,19 @@ test("lane headers: a lane is tall enough for its header's badges", () => {
   const lane = layoutChart(c).lanes[0];
   assert.ok(lane.header.h >= 60);
   assert.equal(lane.height, lane.header.y - lane.top + lane.header.h + headerInsets(c.lanes[0]).bottom);
+});
+
+test("character notes shorten the printed chart area, and so the page height", () => {
+  const c = newChart();
+  assert.equal(pageHeight(c), PAGE_H);
+  assert.equal(printAspect(c), PRINT_W_IN / PRINT_H_IN);
+  c.character.notes = "   \n ";
+  assert.equal(hasNotes(c), false, "blank notes don't count");
+  c.character.notes = "Stay at range";
+  assert.equal(hasNotes(c), true);
+  assert.equal(printAspect(c), PRINT_W_IN / (PRINT_H_IN - NOTES_H_IN));
+  assert.ok(pageHeight(c) < PAGE_H);
+  const layout = layoutChart(c);
+  assert.equal(layout.pageH, pageHeight(c));
+  assert.equal(layout.notes, true);
 });
