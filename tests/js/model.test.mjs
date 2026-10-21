@@ -4,6 +4,7 @@ import {
   newChart, normalizeChart, abilityModifier, formatModifier, addBox, moveBox, resizeBox,
   deleteBox, addEdge, deleteEdge, updateEdge, nextId, paletteGroups, bringToFront, MIN_W,
   addLane, updateLane, moveLane, deleteLane, boxesInLane, defaultLanes, defaultCharacter, setShape, shapeSize, setSidebar,
+  nudgeBoxes,
 } from "../../app/static/js/model.js";
 import { BOX_MAX_RIGHT } from "../../app/static/js/layout.js";
 
@@ -47,6 +48,21 @@ test("boxes can't move or grow past the page's right edge", () => {
   assert.equal(b.x + b.w, BOX_MAX_RIGHT);
   moveBox(c, b.id, "l1", 5000, 10);
   assert.equal(b.x + b.w, BOX_MAX_RIGHT);
+});
+
+test("nudging moves boxes together and stops at the lane and page edges", () => {
+  const c = newChart();
+  const a = addBox(c, { x: 40, y: 30, shape: "diamond" });
+  const b = addBox(c, { x: 300, y: 50, lane: "l2" });
+  nudgeBoxes(c, [a.id], 10, -10);
+  assert.deepEqual([a.lane, a.x, a.y], ["l1", 50, 20]);
+  // The step shrinks for the whole selection, so spacing is kept.
+  nudgeBoxes(c, [a.id, b.id], -50, -50);
+  assert.deepEqual([a.x, a.y, b.x, b.y], [20, 10, 270, 40]);
+  nudgeBoxes(c, [b.id], 5000, 0);
+  assert.equal(b.x + b.w, BOX_MAX_RIGHT);
+  assert.equal(b.lane, "l2");
+  assert.deepEqual(nudgeBoxes(c, ["nope"], 10, 0), []);
 });
 
 test("normalizeChart pulls off-page boxes back onto the page", () => {

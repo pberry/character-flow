@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- Arrow keys nudge the selected box or boxes one grid step; Shift+arrow moves five. Boxes stay in their lane
+  ([#17](https://github.com/pberry/character-flow/issues/17)).
+
 ## [0.10.0] - 2026-10-21
 
 ### Added

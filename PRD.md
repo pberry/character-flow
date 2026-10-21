@@ -127,6 +127,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-20 | Lane headers can have badges (reverses "badges on boxes only") | Player request; header badges stack inward and the flag shrinks so they never spill into other lanes or onto boxes |
 | 2026-10-20 | Notes print in a strip under the chart, which gets shorter only when there are notes | The player chose this over the header (too little room) or a second page (one sheet at the table) |
 | 2026-10-21 | Per-chart print orientation; portrait keeps the canvas width and prints smaller | Tall charts shrank too much on a landscape page. Keeping the width means no boxes move when switching, at the cost of smaller text in portrait |
+| 2026-10-21 | Arrow keys nudge selected boxes within their lane (10px, Shift 50px); lanes and other selections don't nudge | Player request for fine positioning. Crossing lanes stays a drag so a stray keypress can't move a box to a different lane; multi-selections move as a unit so their spacing is kept |
 
 ## Roadmap
 
@@ -144,6 +145,8 @@ Shipped in v0.9.0, once real players were using it: automatic database backups
 ([#14](https://github.com/pberry/character-flow/issues/14)).
 
 Shipped in v0.10.0: portrait printing for tall charts ([#15](https://github.com/pberry/character-flow/issues/15)).
+
+Next release: arrow-key nudging for selected boxes ([#17](https://github.com/pberry/character-flow/issues/17)).
 
 Tracked as GitHub issues:
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature

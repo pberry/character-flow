@@ -70,6 +70,7 @@ Back up that file to back up your work.
 | Add the next step | Select a box, then click a palette card: the new box is placed to its right |
 | Edit text | Double-click a box (or select it and press Enter). Ctrl/Cmd+Enter or click away to finish, Escape to cancel. The first line is shown in bold |
 | Color / shape / delete | Select a box, use the toolbar at the top |
+| Nudge | Select one or more boxes and press the arrow keys to move them 10px (Shift+arrow: 50px). Boxes stay in their lane; drag to change lanes |
 | Add the side column | With nothing selected, click "Add side column" in the toolbar |
 | Add a tracker item | Click a side-column section heading, then "Add item" (or select an item and "Add item below"); type its text |
 | Edit a tracker item | Double-click it (or select it and press Enter). The toolbar sets its color, tick circles, badges, and order, and deletes it |

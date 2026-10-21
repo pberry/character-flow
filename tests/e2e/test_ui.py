@@ -605,3 +605,41 @@ def test_groups(page: Page, live_server):
     page.get_by_role("button", name="Ungroup").click()
     expect(page.locator("#app [data-group]")).to_have_count(0)
     expect(page.locator("#app [data-box]")).to_have_count(3)
+
+
+def test_arrow_keys_nudge_boxes(page: Page, live_server):
+    chart_id = create_character(page, live_server)
+    lane_header(page, "l2").click()
+    page.locator(".card", has_text="Greataxe").click()
+    page.locator(".card", has_text="Rage").click()
+    start = {b["id"]: b for b in chart_data_after_save(page, live_server, chart_id)["boxes"]}
+
+    # One grid step per arrow press, five with Shift.
+    page.mouse.click(*box_center(page, "b1"))
+    page.keyboard.press("ArrowRight")
+    page.keyboard.press("ArrowDown")
+    page.keyboard.press("Shift+ArrowDown")
+    b1 = {b["id"]: b for b in chart_data_after_save(page, live_server, chart_id)["boxes"]}["b1"]
+    assert (b1["x"], b1["y"], b1["lane"]) == (start["b1"]["x"] + 10, start["b1"]["y"] + 60, "l2")
+
+    # A multi-selection moves together.
+    page.keyboard.down("Shift")
+    page.mouse.click(*box_center(page, "b2"))
+    page.keyboard.up("Shift")
+    page.keyboard.press("ArrowLeft")
+    boxes = {b["id"]: b for b in chart_data_after_save(page, live_server, chart_id)["boxes"]}
+    assert boxes["b1"]["x"] == start["b1"]["x"]
+    assert boxes["b2"]["x"] == start["b2"]["x"] - 10
+
+    # Lanes don't move.
+    lane_header(page, "l2").click()
+    page.keyboard.press("ArrowDown")
+    data = chart_data_after_save(page, live_server, chart_id)
+    assert [lane["id"] for lane in data["lanes"]][:2] == ["l1", "l2"]
+    assert {b["id"]: b for b in data["boxes"]} == boxes
+
+
+def chart_data_after_save(page, base, chart_id):
+    page.get_by_role("button", name="Save").click()
+    expect(page.locator(".status")).to_have_text("Saved")
+    return chart_data(base, chart_id)

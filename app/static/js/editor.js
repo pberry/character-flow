@@ -4,7 +4,7 @@ import * as api from "./api.js";
 import { BADGE_TYPES, badgePathD, badgeType } from "./badges.js";
 import { Canvas } from "./canvas.js";
 import { h, s } from "./dom.js";
-import { COLORS } from "./model.js";
+import { COLORS, GRID } from "./model.js";
 import { ORIENTATIONS } from "./layout.js";
 import { renderPalette } from "./palette.js";
 import { buildPrintSheet } from "./print.js";
@@ -13,6 +13,9 @@ import { MAX_COUNT, getItem, getSection } from "./sidebar.js";
 import { GROUP_STYLES, getGroup } from "./groups.js";
 
 const AUTOSAVE_MS = 2000;
+// Arrow keys nudge the selected boxes one grid step; Shift moves five.
+const NUDGE = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+const NUDGE_BIG = 5 * GRID;
 
 function shapeIcon(shape) {
   const w = 24, ht = 18;
@@ -368,6 +371,9 @@ export function showEditor(container, chartRecord) {
     } else if (e.key === "Enter" && (canvas.selection?.type === "box" || canvas.selection?.type === "item")) {
       e.preventDefault();
       canvas.startEdit(canvas.selection.id);
+    } else if (e.key in NUDGE && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      const [dx, dy] = NUDGE[e.key].map((n) => n * (e.shiftKey ? NUDGE_BIG : GRID));
+      if (canvas.nudgeSelection(dx, dy)) e.preventDefault();
     }
   }
   function onBeforePrint() {

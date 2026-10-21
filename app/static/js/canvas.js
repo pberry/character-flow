@@ -410,6 +410,15 @@ export class Canvas {
     if (box && M.setShape(this.chart, box.id, shape)) this.changed();
   }
 
+  // Arrow-key nudge for the selected box or boxes. Returns whether it applied.
+  nudgeSelection(dx, dy) {
+    const sel = this.selection;
+    const ids = sel?.type === "box" ? [sel.id] : sel?.type === "boxes" ? sel.ids : [];
+    if (!M.nudgeBoxes(this.chart, ids, dx, dy).length) return false;
+    this.changed();
+    return true;
+  }
+
   selectedItem() {
     return this.selection?.type === "item" ? T.getItem(this.chart, this.selection.id) : null;
   }

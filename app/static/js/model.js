@@ -160,6 +160,22 @@ export function moveBox(chart, id, lane, x, y) {
   return box && updateBox(chart, id, { lane, x: clampX(x, box.w, boxMaxRight(chart)), y: clampY(y) });
 }
 
+// Shift boxes by (dx, dy) within their lanes, as one unit: the step shrinks
+// so none passes the lane's top or the page's edges, keeping their spacing.
+export function nudgeBoxes(chart, ids, dx, dy) {
+  const boxes = ids.map((id) => getBox(chart, id)).filter(Boolean);
+  if (!boxes.length) return [];
+  const maxRight = boxMaxRight(chart);
+  dx = Math.max(dx, ...boxes.map((b) => BOX_MIN_X - b.x));
+  dx = Math.min(dx, ...boxes.map((b) => maxRight - b.w - b.x));
+  dy = Math.max(dy, ...boxes.map((b) => BOX_MIN_Y - b.y));
+  for (const b of boxes) {
+    b.x += dx;
+    b.y += dy;
+  }
+  return boxes;
+}
+
 export const MIN_W = 60;
 export const MIN_H = 30;
 
