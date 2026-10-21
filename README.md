@@ -7,7 +7,7 @@ laid out as left-to-right **swim lanes**: one horizontal lane per part of your t
 2. Those answers become a palette of cards you drag into lanes. New charts start with
    **Start of turn, Attack, Bonus Actions, Reactions, Other Actions**, and you can rename, recolor, reorder, add, or remove lanes.
 3. Connect boxes with arrows, within or across lanes. Suggested arrows appear faintly; click one to make it real.
-4. Save by name, and print to a single landscape letter page.
+4. Save by name, and print to a single letter page, landscape or portrait.
 
 ## Running with Docker (recommended)
 
@@ -92,7 +92,8 @@ Back up that file to back up your work.
 | Delete a lane | Select it and press Delete or use "Delete lane". Its boxes and their arrows go with it (you're asked first). A chart keeps at least one lane |
 | Pan / zoom | Drag empty canvas / mouse wheel or trackpad pinch / the − + buttons. "Fit" frames the whole chart |
 | Save | Autosaves; or Save button / Ctrl+S / Cmd+S |
-| Print | Print button — prints the chart on one landscape letter page; choose "Save as PDF" in the dialog for a PDF |
+| Print | Print button — prints the chart on one letter page; choose "Save as PDF" in the dialog for a PDF |
+| Print orientation | Landscape / Portrait buttons next to Print. Saved with the chart; new charts start landscape |
 
 ## Edit the character
 
@@ -169,6 +170,10 @@ The character's **Notes** from the questionnaire print in a strip under the char
 area is 0.8in shorter, so the bottom-of-page line moves up to match ("notes print below"). Notes longer than four
 printed lines are cut off.
 
+**Portrait** suits charts with many lanes. The canvas stays the same width, so nothing moves, but the chart prints at
+about three quarters of the landscape size (box text around 7pt) on a page about 1.8 times as tall. Switching
+orientation moves the bottom-of-page line to match.
+
 ## Known limitations
 
 - Tested in Google Chrome. Safari and Firefox should work but haven't been checked.
@@ -180,6 +185,7 @@ printed lines are cut off.
 - Side-column item heights are estimated from the text, so unusual text (many wide capitals) can be clipped; add a
   line break or shorten it.
 - Side-column items can be reordered within their section but not dragged to another section.
+- Portrait prints smaller than landscape, because the canvas keeps its landscape width.
 - Printed notes stop after four lines (about 600 characters); keep the table-critical ones first.
 
 ## Development

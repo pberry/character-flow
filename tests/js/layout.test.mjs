@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   layoutChart, laneAt, layoutBounds, HEADER_W, LANE_PAD, MIN_LANE_H, CONTENT_W, PAGE_W, PAGE_H,
   BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y, findSlot, endOfLane, boxMaxRight, HEADER_BADGES, headerInsets,
-  hasNotes, pageHeight, printAspect, PRINT_W_IN, PRINT_H_IN, NOTES_H_IN,
+  hasNotes, pageHeight, printAspect, PRINT_W_IN, PRINT_H_IN, NOTES_H_IN, PRINT_SIZES_IN, orientation,
 } from "../../app/static/js/layout.js";
 import { newChart, addBox, setSidebar } from "../../app/static/js/model.js";
 import { SIDE_W, addItem } from "../../app/static/js/sidebar.js";
@@ -193,4 +193,21 @@ test("character notes shorten the printed chart area, and so the page height", (
   const layout = layoutChart(c);
   assert.equal(layout.pageH, pageHeight(c));
   assert.equal(layout.notes, true);
+});
+
+test("portrait prints the same width on a taller page", () => {
+  const c = newChart();
+  assert.equal(orientation(c), "landscape");
+  assert.equal(orientation({}), "landscape", "older charts print landscape");
+  c.orientation = "portrait";
+  const { w, h } = PRINT_SIZES_IN.portrait;
+  assert.equal(printAspect(c), w / h);
+  assert.ok(pageHeight(c) > 1.8 * PAGE_H);
+  assert.ok(Math.abs((PAGE_W + 8) / (pageHeight(c) + 8) - w / h) < 0.01);
+  c.character.notes = "Stay at range";
+  assert.equal(printAspect(c), w / (h - NOTES_H_IN));
+  const layout = layoutChart(c);
+  assert.equal(layout.orientation, "portrait");
+  assert.equal(layout.width, PAGE_W, "the canvas keeps its width");
+  assert.equal(layout.pageH, pageHeight(c));
 });

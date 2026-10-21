@@ -222,6 +222,46 @@ def test_print_notes(page: Page, live_server):
     assert len(re.findall(rb"/Type\s*/Page(?!s)", pdf)) == 1
 
 
+def test_print_portrait(page: Page, live_server):
+    chart_id = create_character(page, live_server)
+    expect(page.get_by_role("button", name="Landscape")).to_have_attribute("aria-pressed", "true")
+    landscape_h = float(page.locator(".page-bottom").get_attribute("y1"))
+
+    # Portrait moves the page-bottom guide down, and saves with the chart.
+    page.get_by_role("button", name="Portrait").click()
+    expect(page.get_by_role("button", name="Portrait")).to_have_attribute("aria-pressed", "true")
+    expect(page.get_by_role("button", name="Landscape")).to_have_attribute("aria-pressed", "false")
+    assert float(page.locator(".page-bottom").get_attribute("y1")) > 1.8 * landscape_h
+    page.get_by_role("button", name="Save").click()
+    expect(page.locator(".status")).to_have_text("Saved")
+    assert chart_data(live_server, chart_id)["orientation"] == "portrait"
+    page.reload()
+    expect(page.get_by_role("button", name="Portrait")).to_have_attribute("aria-pressed", "true")
+
+    # It prints on one portrait page, the chart filling the page width.
+    page.evaluate("window.print = () => {}")
+    page.get_by_role("button", name="Print").click()
+    expect(page.locator("#print-sheet")).to_have_class(re.compile(r"\bportrait\b"))
+    page.emulate_media(media="print")
+    svg = page.locator("#print-sheet .chart-svg").bounding_box()
+    assert abs(svg["width"] - 7.7 * 96) < 2
+    assert abs(svg["height"] - 9.3 * 96) < 2
+    pdf = page.pdf(print_background=True, prefer_css_page_size=True)
+    assert len(re.findall(rb"/Type\s*/Page(?!s)", pdf)) == 1
+    width, height = map(float, re.search(rb"/MediaBox\s*\[\s*0 0 ([\d.]+) ([\d.]+)", pdf).groups())
+    assert (round(width), round(height)) == (612, 792), "letter portrait"
+
+    # Back to landscape for the next print.
+    page.emulate_media(media="screen")
+    page.get_by_role("button", name="Landscape").click()
+    page.get_by_role("button", name="Print").click()
+    expect(page.locator("#print-sheet")).not_to_have_class(re.compile(r"\bportrait\b"))
+    page.emulate_media(media="print")
+    pdf = page.pdf(print_background=True, prefer_css_page_size=True)
+    width, height = map(float, re.search(rb"/MediaBox\s*\[\s*0 0 ([\d.]+) ([\d.]+)", pdf).groups())
+    assert (round(width), round(height)) == (792, 612), "letter landscape"
+
+
 def test_cards_wrap_at_page_edge(page: Page, live_server):
     chart_id = create_character(page, live_server)
 

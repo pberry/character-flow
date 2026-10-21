@@ -5,6 +5,7 @@ import { BADGE_TYPES, badgePathD, badgeType } from "./badges.js";
 import { Canvas } from "./canvas.js";
 import { h, s } from "./dom.js";
 import { COLORS } from "./model.js";
+import { ORIENTATIONS } from "./layout.js";
 import { renderPalette } from "./palette.js";
 import { buildPrintSheet } from "./print.js";
 import { SHAPES, shapePathD } from "./shapes.js";
@@ -292,6 +293,25 @@ export function showEditor(container, chartRecord) {
     toolbar.replaceChildren(...items.flat().filter((el) => el != null));
   }
 
+  // Print orientation is saved with the chart; the page-bottom guide follows it.
+  const orientBtns = ORIENTATIONS.map((o) =>
+    h("button", { class: "btn", "data-orientation": o, title: `Print ${o}`, onclick: () => setOrientation(o) },
+      o[0].toUpperCase() + o.slice(1)));
+  function showOrientation() {
+    for (const btn of orientBtns) {
+      const on = btn.dataset.orientation === chart.orientation;
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-pressed", String(on));
+    }
+  }
+  function setOrientation(o) {
+    if (chart.orientation === o) return;
+    chart.orientation = o;
+    showOrientation();
+    canvas.changed();
+  }
+  showOrientation();
+
   function print() {
     buildPrintSheet(document.getElementById("print-sheet"), chartRecord);
     window.print();
@@ -312,6 +332,7 @@ export function showEditor(container, chartRecord) {
       h("button", { class: "btn", title: "Zoom in", onclick: () => canvas.zoomBy(1.2) }, "+"),
       h("button", { class: "btn", onclick: () => canvas.fitView() }, "Fit"),
       h("button", { class: "btn", onclick: () => { dirty = true; save(); } }, "Save"),
+      ...orientBtns,
       h("button", { class: "btn primary", onclick: print }, "Print"),
     ),
     toolbar,

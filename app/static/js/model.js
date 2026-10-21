@@ -1,5 +1,5 @@
 import { COLORS } from "./colors.js";
-import { BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y, boxMaxRight } from "./layout.js";
+import { BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y, boxMaxRight, orientation } from "./layout.js";
 import { normalizeBadges } from "./badges.js";
 import { forgetBox, normalizeGroups } from "./groups.js";
 import { isShape, minSize } from "./shapes.js";
@@ -49,7 +49,7 @@ export function defaultCharacter() {
 }
 
 export function newChart(character = defaultCharacter()) {
-  return { version: 2, character, lanes: defaultLanes(), boxes: [], edges: [], sidebar: null, groups: [] };
+  return { version: 2, character, lanes: defaultLanes(), boxes: [], edges: [], sidebar: null, groups: [], orientation: "landscape" };
 }
 
 // Fill in anything missing from older or hand-edited data.
@@ -59,6 +59,7 @@ export function normalizeChart(data) {
   for (const key of ["abilities", "weapons", "spells", "features"]) {
     if (!Array.isArray(chart.character[key])) chart.character[key] = [];
   }
+  chart.orientation = orientation(chart);
   if (!Array.isArray(chart.lanes) || !chart.lanes.length) chart.lanes = defaultLanes();
   chart.lanes = chart.lanes.map((l) => ({ ...l, badges: normalizeBadges(l.badges) }));
   chart.sidebar = normalizeSidebar(chart.sidebar);

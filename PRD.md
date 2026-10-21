@@ -19,7 +19,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 1. Answer a short questionnaire about the character and get a palette of that character's options.
 2. Build a turn flowchart as **swim lanes** (one lane per part of the turn), using LucidChart-style boxes and
    arrows, with as little friction as possible.
-3. Print the chart on **one sheet of 8.5x11 color paper, landscape**, readable at the table.
+3. Print the chart on **one sheet of 8.5x11 color paper**, landscape or portrait, readable at the table.
 4. Save charts by name and come back to them later.
 
 ## Non-goals (for now)
@@ -81,8 +81,11 @@ build a one-page, character-specific combat flowchart and print it to keep at th
   data isn't snapshotted again. The newest 48 snapshots are kept, plus the last one of each day for 90 days.
 
 ### Printing
-- The browser's Print button produces one landscape letter page with a character summary header. Use
+- The browser's Print button produces one letter page with a character summary header. Use
   "Save as PDF" in the print dialog to get a PDF.
+- Each chart has a print orientation, landscape (the default) or portrait, saved with the chart. Portrait keeps
+  the canvas width, so it prints at about 75% of the landscape scale on a page about 1.8x as tall. The editor's
+  page-bottom guide follows the orientation.
 - Charts that fit the page print at a fixed scale, so 14px box text prints at about 9pt. Taller charts are scaled
   down to fit on one page rather than spilling onto a second.
 - Colors print, because `print-color-adjust: exact` is set.
@@ -123,6 +126,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-20 | Clicking a badge selects it, but dragging it still moves its box | Selecting badges shouldn't make boxes harder to move |
 | 2026-10-20 | Lane headers can have badges (reverses "badges on boxes only") | Player request; header badges stack inward and the flag shrinks so they never spill into other lanes or onto boxes |
 | 2026-10-20 | Notes print in a strip under the chart, which gets shorter only when there are notes | The player chose this over the header (too little room) or a second page (one sheet at the table) |
+| 2026-10-21 | Per-chart print orientation; portrait keeps the canvas width and prints smaller | Tall charts shrank too much on a landscape page. Keeping the width means no boxes move when switching, at the cost of smaller text in portrait |
 
 ## Roadmap
 
@@ -141,6 +145,7 @@ Shipped in v0.9.0, once real players were using it: automatic database backups
 
 Tracked as GitHub issues:
 
+- [#15](https://github.com/pberry/character-flow/issues/15) Print in portrait orientation for tall charts (done, unreleased)
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
 - [#6](https://github.com/pberry/character-flow/issues/6) Route arrows around boxes
 - [#7](https://github.com/pberry/character-flow/issues/7) Keep lane headers visible when panning
