@@ -19,10 +19,33 @@ Then open `http://<this-machine>:5050/` from any device on the network.
 
 - Charts live in the `character-flow_charflow-data` Docker volume (`/data/charflow.db` in the container), so they survive restarts and rebuilds.
 - Use a different host port with `CHARFLOW_PORT=8765 docker compose up -d`.
-- Back up: `docker compose cp charflow:/data/charflow.db ./charflow-backup.db`
 - Update after code changes: `docker compose up -d --build`. Logs: `docker compose logs -f`.
 
 The container runs the app with gunicorn as a non-root user.
+
+### Backups
+
+The `backup` service snapshots the database every hour into `./backups/` on the host (set `CHARFLOW_BACKUPS` to
+use another folder). The snapshots live outside the Docker volume, so they survive even `docker compose down -v`.
+
+- A snapshot is only written when the data changed since the last one, and each is integrity-checked.
+- The newest 48 are kept, plus the last snapshot of each day for 90 days.
+- The live database is mounted read-only in the backup container.
+- Snapshot now (e.g. before an upgrade): `docker compose exec backup python -m app.backup --db /data/charflow.db --dest /backups`
+- Check it's running: `docker compose logs backup`.
+- On a Linux host, create the folder first (`mkdir backups`) and make sure uid 1000 can write to it.
+
+Restore a snapshot. This replaces every chart with the snapshot's contents. The current data is snapshotted first,
+so a restore can be undone the same way.
+
+```sh
+docker compose stop charflow
+docker compose run --rm --no-deps -v ./backups:/backups charflow \
+  python -m app.backup --db /data/charflow.db --dest /backups --restore /backups/charflow-YYYYMMDD-HHMMSS.db
+docker compose start charflow
+```
+
+To look inside a snapshot first, open it with any SQLite tool: `sqlite3 backups/<file> "select name, updated_at from charts"`.
 
 ## Running locally without Docker
 
@@ -169,10 +192,12 @@ Project layout:
 | `app/__init__.py` | `create_app()` factory; reads `CHARFLOW_DB` |
 | `app/db.py` | SQLite schema and CRUD; each chart is a name plus a JSON document |
 | `app/routes.py` | JSON API (`/api/charts`) and the index page |
+| `app/backup.py` | Database snapshots and rotation (`python -m app.backup`), run by the `backup` service |
 | `tests/test_api.py` | API tests |
+| `tests/test_backup.py` | Backup and rotation tests |
 | `tests/e2e/` | Playwright browser tests covering the full flow and print layout |
 | `tests/js/` | Node tests for the pure frontend modules |
-| `Dockerfile`, `compose.yaml` | Container image (gunicorn, non-root) and service definition |
+| `Dockerfile`, `compose.yaml` | Container image (gunicorn, non-root), the app service, and the backup service |
 
 The frontend is plain ES modules + SVG with no build step, in `app/static/`:
 

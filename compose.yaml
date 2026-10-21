@@ -8,5 +8,17 @@ services:
       - charflow-data:/data
     restart: unless-stopped
 
+  # Snapshots the database every hour (skipping unchanged data) into a host
+  # folder, so backups survive even if the data volume is deleted.
+  backup:
+    image: character-flow:latest
+    command: ["python", "-m", "app.backup", "--db", "/data/charflow.db", "--dest", "/backups", "--every", "3600"]
+    volumes:
+      - charflow-data:/data:ro
+      - "${CHARFLOW_BACKUPS:-./backups}:/backups"
+    depends_on:
+      - charflow
+    restart: unless-stopped
+
 volumes:
   charflow-data:

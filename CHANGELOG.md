@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- Automatic backups: a `backup` service in `compose.yaml` snapshots the database every hour into `./backups/` on
+  the host. Unchanged data is skipped, and old snapshots are thinned out (the newest 48, plus one a day for 90 days).
+  The README explains how to restore one.
+
 ## [0.8.0] - 2026-10-16
 
 ### Added

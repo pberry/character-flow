@@ -7,3 +7,6 @@ __pycache__/
 
 # Reference mock-up, kept out of the repo
 Meren abilities.pdf
+
+# Database snapshots from the backup service
+backups/

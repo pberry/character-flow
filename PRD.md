@@ -11,6 +11,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 ## Users
 
 - **One player at a time.** The project owner builds charts for, and with, a player. Single user, no accounts.
+- **Real players use it now** (since 2026-10-20), so losing a saved chart is the worst failure the app can have.
 - Runs on a home LAN. Not exposed to the internet.
 
 ## Goals
@@ -74,6 +75,8 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 ### Saving
 - Charts are saved by unique name in SQLite. You can rename, duplicate, and delete them.
 - Changes autosave 2 seconds after the last edit. Ctrl/Cmd+S saves immediately.
+- The Docker setup snapshots the database every hour into a host folder outside the data volume. Unchanged
+  data isn't snapshotted again. The newest 48 snapshots are kept, plus the last one of each day for 90 days.
 
 ### Printing
 - The browser's Print button produces one landscape letter page with a character summary header. Use
@@ -98,6 +101,8 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-14 | Fixed page width, wrap new cards, no automatic reflow, page-bottom guide | Keep printouts readable; respect hand placement |
 | 2026-10-16 | Box shapes (flag, diamond, star, document, block arrow) suggest a use but carry no enforced meaning | The mock-up picked shapes to tell boxes apart, not for their ISO flowchart meanings |
 | 2026-10-16 | Four badge types, each with its own shape: cost (circle), duration (not a circle), recharge (plus), modifier (triangle) | The mock-up drew cost and duration as the same circle; separate shapes keep them distinct in print |
+| 2026-10-20 | Hourly database snapshots by a separate backup container, into a host folder | Real players now; backups must survive a deleted volume, and a separate read-only container can't damage the live data or slow the app |
+| 2026-10-20 | Snapshots use SQLite's online backup API and skip unchanged data | Safe while the app runs, and quiet weeks don't push older snapshots out |
 | 2026-10-16 | Lane headers drawn as flags | The player described the start of a swim lane as a flag |
 | 2026-10-16 | Arrows meet a shape's outline, not its bounding box | Arrows ending in empty space beside a star point or diamond edge look wrong |
 | 2026-10-16 | One corner per badge type: cost top right, duration top left, recharge bottom right, modifier bottom left | Corners keep badges off the side midpoints where arrows attach; cost and recharge match the mock-up |
@@ -120,6 +125,7 @@ Lucidchart mock-up of Meren (a Wood Elf Monk, Warrior of the Elements, level 3),
 
 Tracked as GitHub issues:
 
+- [#10](https://github.com/pberry/character-flow/issues/10) Automatic database backups
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
 - [#6](https://github.com/pberry/character-flow/issues/6) Route arrows around boxes
 - [#7](https://github.com/pberry/character-flow/issues/7) Keep lane headers visible when panning
