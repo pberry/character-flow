@@ -1,7 +1,7 @@
 # Character Flow — Product Requirements
 
 > **Living document.** Update this file whenever a goal, decision, or requirement changes, in the same change
-> that implements it. Record *why* a decision was made, not just what. Last updated for **v0.8.0**.
+> that implements it. Record *why* a decision was made, not just what. Last updated for **v0.9.0**.
 
 ## Problem
 
@@ -132,13 +132,15 @@ badges on boxes ([#2](https://github.com/pberry/character-flow/issues/2), v0.6.0
 ([#4](https://github.com/pberry/character-flow/issues/4), v0.8.0). Those were all the items from the player's
 Lucidchart mock-up of Meren (a Wood Elf Monk, Warrior of the Elements, level 3), which is kept out of the repo.
 
+Shipped in v0.9.0, once real players were using it: automatic database backups
+([#10](https://github.com/pberry/character-flow/issues/10)), and from player feedback, colors for tracker items
+([#11](https://github.com/pberry/character-flow/issues/11)), badges on lane headers
+([#12](https://github.com/pberry/character-flow/issues/12)), custom badge colors
+([#13](https://github.com/pberry/character-flow/issues/13)), and printed notes
+([#14](https://github.com/pberry/character-flow/issues/14)).
+
 Tracked as GitHub issues:
 
-- [#10](https://github.com/pberry/character-flow/issues/10) Automatic database backups
-- [#11](https://github.com/pberry/character-flow/issues/11) Colors for tracker items
-- [#12](https://github.com/pberry/character-flow/issues/12) Badges on lane headers
-- [#13](https://github.com/pberry/character-flow/issues/13) Custom badge colors
-- [#14](https://github.com/pberry/character-flow/issues/14) Print the character notes
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
 - [#6](https://github.com/pberry/character-flow/issues/6) Route arrows around boxes
 - [#7](https://github.com/pberry/character-flow/issues/7) Keep lane headers visible when panning
