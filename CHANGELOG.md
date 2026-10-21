@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-21
+
 ### Added
 - Charts can print in portrait as well as landscape
   ([#15](https://github.com/pberry/character-flow/issues/15)). Use the Landscape / Portrait buttons next to Print.

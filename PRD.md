@@ -1,7 +1,7 @@
 # Character Flow — Product Requirements
 
 > **Living document.** Update this file whenever a goal, decision, or requirement changes, in the same change
-> that implements it. Record *why* a decision was made, not just what. Last updated for **v0.9.0**.
+> that implements it. Record *why* a decision was made, not just what. Last updated for **v0.10.0**.
 
 ## Problem
 
@@ -143,9 +143,9 @@ Shipped in v0.9.0, once real players were using it: automatic database backups
 ([#13](https://github.com/pberry/character-flow/issues/13)), and printed notes
 ([#14](https://github.com/pberry/character-flow/issues/14)).
 
-Tracked as GitHub issues:
+Shipped in v0.10.0: portrait printing for tall charts ([#15](https://github.com/pberry/character-flow/issues/15)).
 
-- [#15](https://github.com/pberry/character-flow/issues/15) Print in portrait orientation for tall charts (done, unreleased)
+Tracked as GitHub issues:
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
 - [#6](https://github.com/pberry/character-flow/issues/6) Route arrows around boxes
 - [#7](https://github.com/pberry/character-flow/issues/7) Keep lane headers visible when panning
