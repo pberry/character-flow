@@ -23,13 +23,13 @@ function shapeIcon(shape) {
   );
 }
 
-function badgeIcon(type) {
+function badgeIcon(type, color = null) {
   const t = badgeType(type);
   const w = 16, ht = type === "duration" ? 10 : type === "modifier" ? 14 : 16;
   return s(
     "svg",
     { class: "badge-icon", width: 18, height: 18, viewBox: "-9 -9 18 18", "aria-hidden": "true" },
-    s("path", { d: badgePathD(type, w, ht), fill: t.fill, stroke: t.stroke }),
+    s("path", { d: badgePathD(type, w, ht), fill: color || t.fill, stroke: t.stroke }),
   );
 }
 
@@ -46,15 +46,16 @@ function swatches(current, onPick) {
   );
 }
 
-// Badge chips and add buttons for a box or tracker item (`box`).
+// Badge chips and add buttons for a box, tracker item, or lane (`box`).
 function badgeControls(canvas, box) {
   const chips = (box.badges || []).map((b, i) => {
     const name = badgeType(b.type)?.name || b.type;
     return h(
       "span",
       { class: "badge-chip" },
-      h("button", { class: "btn chip-text", title: `Edit ${name.toLowerCase()} badge`, onclick: () => canvas.editBadge(box.id, i) },
-        badgeIcon(b.type), b.text),
+      h("button", { class: "btn chip-text", title: `Select this ${name.toLowerCase()} badge to edit or recolor it`,
+        "aria-label": `Select ${name.toLowerCase()} badge ${b.text}`, onclick: () => canvas.selectBadge(box.id, i) },
+        badgeIcon(b.type, b.color), b.text),
       h("button", { class: "btn chip-remove", title: "Remove badge", "aria-label": `Remove ${name.toLowerCase()} badge ${b.text}`,
         onclick: () => canvas.removeBadge(box.id, i) }, "×"),
     );
@@ -147,6 +148,33 @@ export function showEditor(container, chartRecord) {
         h("button", { class: "btn danger", onclick: () => canvas.deleteSelection() }, "Delete box"),
         h("button", { class: "btn", title: "Draw a bracket around this box", onclick: () => canvas.groupSelection() }, "Group"),
         h("span", { class: "hint" }, "Faint dashed arrows are suggestions — click one to keep it. Shift-click to select more boxes."),
+      );
+    } else if (selection?.type === "badge" && canvas.selectedBadge()) {
+      const { badge } = canvas.selectedBadge();
+      const type = badgeType(badge.type);
+      const owner = canvas.ownerSelection(selection.owner);
+      const ownerName = owner?.type || "box";
+      const text = h("input", { class: "lane-name-input", value: badge.text, "aria-label": "Badge text" });
+      // Commit on Enter/blur; empty text removes the badge.
+      text.addEventListener("change", () => canvas.setBadgeText(text.value));
+      text.addEventListener("keydown", (e) => { if (e.key === "Enter") text.blur(); });
+      items.push(
+        h("span", { class: "label" }, `${type.name} badge`),
+        text,
+        h("span", { class: "sep" }),
+        h("span", { class: "label" }, "Color"),
+        h("button", {
+          class: `swatch default-color${badge.color ? "" : " active"}`,
+          title: `Default ${type.name.toLowerCase()} color`,
+          "aria-label": "Default color",
+          style: { background: type.fill },
+          onclick: () => canvas.setBadgeColor(null),
+        }),
+        swatches(badge.color, (c) => canvas.setBadgeColor(c)),
+        h("span", { class: "sep" }),
+        h("button", { class: "btn", onclick: () => { canvas.select(owner); canvas.render(); } }, `Select ${ownerName}`),
+        h("button", { class: "btn danger", onclick: () => canvas.deleteSelection() }, "Remove badge"),
+        h("span", { class: "hint" }, "Empty text removes the badge. Esc goes back to its " + ownerName + "."),
       );
     } else if (selection?.type === "lane") {
       const lane = canvas.selectedLane();
@@ -311,7 +339,8 @@ export function showEditor(container, chartRecord) {
       e.preventDefault();
       canvas.deleteSelection();
     } else if (e.key === "Escape") {
-      canvas.select(null);
+      // From a badge, Escape goes back to the badge's box (or item or lane).
+      canvas.select(canvas.selection?.type === "badge" ? canvas.ownerSelection(canvas.selection.owner) : null);
       canvas.render();
     } else if (e.key === "Enter" && (canvas.selection?.type === "box" || canvas.selection?.type === "item")) {
       e.preventDefault();

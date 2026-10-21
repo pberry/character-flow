@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   BADGE_TYPES, badgeType, badgeSize, badgePathD, layoutBadges, wrapText, badgeOverhang,
-  addBadge, updateBadge, removeBadge, normalizeBadges,
+  addBadge, updateBadge, removeBadge, normalizeBadges, setBadgeColor, badgeFill,
 } from "../../app/static/js/badges.js";
 import { nearestOutlinePoint, shapePoints } from "../../app/static/js/shapes.js";
 
@@ -135,4 +135,22 @@ test("badgeOverhang measures badges sticking out above, right, and below", () =>
   const o = badgeOverhang({ w: 160, h: 70, shape: "rect", badges: [{ type: "cost", text: "1 FP" }] });
   assert.ok(o.top > 0 && o.right > 0);
   assert.equal(o.bottom, 0);
+});
+
+test("badges can have their own color, or fall back to their type's", () => {
+  const target = { badges: [] };
+  addBadge(target, "cost", "1 FP");
+  assert.equal(badgeFill(target.badges[0]), badgeType("cost").fill);
+  setBadgeColor(target, 0, "#bbf7d0");
+  assert.equal(target.badges[0].color, "#bbf7d0");
+  assert.equal(layoutBadges(box(target.badges))[0].fill, "#bbf7d0");
+  updateBadge(target, 0, "2 FP");
+  assert.equal(target.badges[0].color, "#bbf7d0", "editing the text keeps the color");
+  setBadgeColor(target, 0, null);
+  assert.deepEqual(target.badges[0], { type: "cost", text: "2 FP" });
+  assert.equal(setBadgeColor(target, 5, "#bbf7d0"), null);
+  assert.deepEqual(
+    normalizeBadges([{ type: "cost", text: "1", color: "#fecaca" }, { type: "cost", text: "2", color: "blue" }]),
+    [{ type: "cost", text: "1", color: "#fecaca" }, { type: "cost", text: "2" }],
+  );
 });

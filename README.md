@@ -72,12 +72,13 @@ Back up that file to back up your work.
 | Color / shape / delete | Select a box, use the toolbar at the top |
 | Add the side column | With nothing selected, click "Add side column" in the toolbar |
 | Add a tracker item | Click a side-column section heading, then "Add item" (or select an item and "Add item below"); type its text |
-| Edit a tracker item | Double-click it (or select it and press Enter). The toolbar sets tick circles, badges, order, and deletes it |
+| Edit a tracker item | Double-click it (or select it and press Enter). The toolbar sets its color, tick circles, badges, and order, and deletes it |
 | Select several boxes | Shift-click boxes (Shift-click a selected box to drop it) |
 | Group boxes | Select one or more boxes, click "Group" in the toolbar |
 | Edit a group | Click its line. Edit the label and style in the toolbar, or double-click the line to edit the label. Shift-click boxes to add or remove them. "Ungroup" removes the line; the boxes stay |
 | Add a badge | Select a box, click "+ Cost", "+ Duration", "+ Recharge", or "+ Modifier" in the toolbar |
-| Edit / remove a badge | Double-click the badge, or use its chip in the toolbar (× removes it; clearing its text does too) |
+| Select a badge | Click it, or click its chip in the box's toolbar. The toolbar then edits its text, picks its color (or "Default" for its type's color), and removes it. Escape goes back to its box |
+| Edit / remove a badge | Double-click the badge to edit its text. × on its chip removes it, as do clearing its text and Delete while it's selected |
 | Move | Drag a box (arrows follow). Drop it in another lane to move it there; the target lane is highlighted |
 | Resize | Drag the small handle at a box's bottom-right corner |
 | Draw an arrow | Hover a box, drag from one of the four side dots to another box |
@@ -125,7 +126,8 @@ stay distinct when printed in black and white:
 | Recharge | Plus | Bottom right | `SR` (short rest), `LR` (long rest) |
 | Modifier | Triangle | Bottom left | `2x`, `2x + 9' reach` |
 
-The text is free; the type only picks the look. A box can have several badges, and more of the same type line up
+The text is free; the type picks the shape and corner. Each badge starts in its type's color, and a selected badge can
+be given any swatch color instead (the shape still tells types apart in black and white). A box can have several badges, and more of the same type line up
 outward from their corner. On shaped boxes a badge sits on the outline nearest its corner (a star's arm tips, for
 example). Longer text wraps onto short lines. Lanes grow to fit badges that hang below a box.
 

@@ -11,6 +11,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
   The README explains how to restore one.
 - Tracker items in the side column can have a color, picked from the same swatches as boxes. Items stay white
   unless you pick one.
+- Badges can be selected: click one on the chart or its chip in the toolbar. A selected badge can have its text
+  edited, get its own color (or "Default" for its type's color), or be removed with Delete. Escape goes back to its box.
+
+### Changed
+- Clicking a badge chip in the toolbar now selects the badge instead of opening a text prompt (double-clicking a badge
+  still edits its text).
 
 ## [0.8.0] - 2026-10-16
 

@@ -51,7 +51,8 @@ build a one-page, character-specific combat flowchart and print it to keep at th
   "Decision?" card starts as a diamond.
 - A box **keeps its color** when moved to another lane. The lane color is only the default for "Blank box" cards.
 - **Badges** on box corners show cost, duration, recharge, or a modifier: free text, with a shape, color, and
-  corner per type (circle top right, pill top left, plus bottom right, triangle bottom left). Badges attach to
+  corner per type (circle top right, pill top left, plus bottom right, triangle bottom left). A badge can be
+  selected and given its own color; otherwise it uses its type's. Badges attach to
   boxes only. On shaped boxes they sit on the outline nearest their corner, and lanes grow to fit them.
 - **Arrows** anchor only at the **midpoint of a box side**. You can add a label to an arrow (e.g. yes/no).
 - **Suggested arrows**: when a box is selected, faint dashed arrows to nearby boxes appear; one click makes a
@@ -101,6 +102,8 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-14 | Fixed page width, wrap new cards, no automatic reflow, page-bottom guide | Keep printouts readable; respect hand placement |
 | 2026-10-16 | Box shapes (flag, diamond, star, document, block arrow) suggest a use but carry no enforced meaning | The mock-up picked shapes to tell boxes apart, not for their ISO flowchart meanings |
 | 2026-10-16 | Four badge types, each with its own shape: cost (circle), duration (not a circle), recharge (plus), modifier (triangle) | The mock-up drew cost and duration as the same circle; separate shapes keep them distinct in print |
+| 2026-10-20 | Badges are selectable, and a selected badge can override its type's color | Player feedback; the shape still identifies the type, so color is free for the player's own meaning |
+| 2026-10-20 | Clicking a badge selects it, but dragging it still moves its box | Selecting badges shouldn't make boxes harder to move |
 | 2026-10-20 | Tracker items get an optional color from the same swatches as boxes | Player feedback; reusing the box swatches keeps printed colors consistent |
 | 2026-10-20 | Hourly database snapshots by a separate backup container, into a host folder | Real players now; backups must survive a deleted volume, and a separate read-only container can't damage the live data or slow the app |
 | 2026-10-20 | Snapshots use SQLite's online backup API and skip unchanged data | Safe while the app runs, and quiet weeks don't push older snapshots out |
@@ -128,6 +131,7 @@ Tracked as GitHub issues:
 
 - [#10](https://github.com/pberry/character-flow/issues/10) Automatic database backups
 - [#11](https://github.com/pberry/character-flow/issues/11) Colors for tracker items
+- [#13](https://github.com/pberry/character-flow/issues/13) Custom badge colors
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
 - [#6](https://github.com/pberry/character-flow/issues/6) Route arrows around boxes
 - [#7](https://github.com/pberry/character-flow/issues/7) Keep lane headers visible when panning

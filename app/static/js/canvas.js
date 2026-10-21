@@ -7,7 +7,7 @@ import {
 } from "./geometry.js";
 import { HEADER_W, PAGE_H, SLOT_GAP_X, boxMaxRight, endOfLane, findSlot, layoutBounds, layoutChart, laneAt } from "./layout.js";
 import * as M from "./model.js";
-import { BADGE_FONT, LINE_H, addBadge, badgePathD, badgeType, layoutBadges, removeBadge, updateBadge } from "./badges.js";
+import { BADGE_FONT, LINE_H, addBadge, badgePathD, badgeType, layoutBadges, removeBadge, setBadgeColor, updateBadge } from "./badges.js";
 import { shapePathD, textArea } from "./shapes.js";
 import * as T from "./sidebar.js";
 import * as G from "./groups.js";
@@ -52,14 +52,16 @@ function boxText(text) {
   );
 }
 
-function drawBadges(box, opts) {
+// `selection` highlights the selected badge when it belongs to `box`.
+function drawBadges(box, opts, selection) {
+  const sel = selection?.type === "badge" && selection.owner === box.id ? selection.index : -1;
   return layoutBadges(box, opts).map((b) => {
     const type = badgeType(b.type);
     return s(
       "g",
-      { class: `badge badge-${b.type}`, "data-badge": b.index, transform: `translate(${b.x} ${b.y})` },
+      { class: `badge badge-${b.type}${b.index === sel ? " selected" : ""}`, "data-badge": b.index, transform: `translate(${b.x} ${b.y})` },
       s("title", {}, `${type.name}: ${b.text}`),
-      s("path", { class: "badge-shape", d: badgePathD(b.type, b.w, b.h), fill: type.fill, stroke: type.stroke }),
+      s("path", { class: "badge-shape", d: badgePathD(b.type, b.w, b.h), fill: b.fill, stroke: type.stroke }),
       s("text", { class: "badge-text", "font-size": BADGE_FONT, "text-anchor": "middle", "dominant-baseline": "central" },
         b.lines.map((line, i) => s("tspan", { x: 0, y: b.textY + (i - (b.lines.length - 1) / 2) * LINE_H }, line))),
     );
@@ -173,7 +175,7 @@ function drawSidebar(layout, { selection, interactive }) {
       s("rect", { class: "item-rect", width: item.w, height: item.h, rx: 6, fill: item.color || "#fff" }),
       s("foreignObject", { x: 0, y: 0, width: item.w, height: item.textH }, boxText(item.text)),
       ...item.ticks.map((t) => s("circle", { class: "tick", cx: t.x, cy: t.y, r: 5.5 })),
-      ...drawBadges(item, T.ITEM_BADGES),
+      ...drawBadges(item, T.ITEM_BADGES, selection),
     );
     g.append(ig);
   }
@@ -221,7 +223,7 @@ export function drawChart(g, chart, layout, opts = {}) {
       : s("rect", { class: "box-rect", width: box.w, height: box.h, rx: 6, fill: box.color }));
     const ta = textArea(box.shape, box.w, box.h);
     bg.append(s("foreignObject", { x: ta.x, y: ta.y, width: ta.w, height: ta.h }, boxText(box.text)));
-    bg.append(...drawBadges(box));
+    bg.append(...drawBadges(box, {}, selection));
     if (interactive) {
       const local = { x: 0, y: 0, w: box.w, h: box.h, shape: box.shape };
       for (const side of SIDES) {
@@ -357,6 +359,11 @@ export class Canvas {
   deleteSelection() {
     const sel = this.selection;
     if (!sel) return;
+    if (sel.type === "badge") {
+      // Only the badge goes; its owner stays selected.
+      this.removeBadge(sel.owner, sel.index);
+      return;
+    }
     if (sel.type === "box") M.deleteBox(this.chart, sel.id);
     else if (sel.type === "boxes") sel.ids.forEach((id) => M.deleteBox(this.chart, id));
     else if (sel.type === "group") G.deleteGroup(this.chart, sel.id); // ungroup: the boxes stay
@@ -423,13 +430,49 @@ export class Canvas {
     if (!badge) return;
     const text = window.prompt(`${badgeType(badge.type).name} badge text. Leave empty to remove it:`, badge.text);
     if (text === null) return;
-    updateBadge(target, index, text);
+    const removed = !updateBadge(target, index, text);
+    if (removed && this.selection?.type === "badge" && this.selection.owner === ownerId) this.select(this.ownerSelection(ownerId));
     this.changed();
   }
 
   removeBadge(ownerId, index) {
     removeBadge(this.owner(ownerId), index);
+    if (this.selection?.type === "badge" && this.selection.owner === ownerId) this.select(this.ownerSelection(ownerId));
     this.changed();
+  }
+
+  // The selection for a badge's owner (a box, tracker item, or lane).
+  ownerSelection(id) {
+    const type = M.getBox(this.chart, id) ? "box" : T.getItem(this.chart, id) ? "item" : M.getLane(this.chart, id) ? "lane" : null;
+    return type ? { type, id } : null;
+  }
+
+  selectBadge(ownerId, index) {
+    if (!this.owner(ownerId)?.badges?.[index]) return;
+    this.select({ type: "badge", owner: ownerId, index });
+    this.render();
+  }
+
+  // {target, badge, index} for the selected badge, or null.
+  selectedBadge() {
+    const sel = this.selection;
+    if (sel?.type !== "badge") return null;
+    const target = this.owner(sel.owner);
+    const badge = target?.badges?.[sel.index];
+    return badge ? { target, badge, index: sel.index } : null;
+  }
+
+  setBadgeText(text) {
+    const found = this.selectedBadge();
+    if (!found) return;
+    if (!updateBadge(found.target, found.index, text)) this.select(this.ownerSelection(this.selection.owner));
+    this.changed();
+  }
+
+  // null goes back to the badge type's color.
+  setBadgeColor(color) {
+    const found = this.selectedBadge();
+    if (found && setBadgeColor(found.target, found.index, color)) this.changed();
   }
 
   // ---- groups ------------------------------------------------------------
@@ -722,7 +765,8 @@ export class Canvas {
       this.drag = { type: "resize", id: box.id, start: pt, w: box.w, h: box.h, moved: false };
     } else if (boxEl) {
       const box = this.absBox(boxEl.dataset.box);
-      this.select({ type: "box", id: box.id });
+      // Clicking a badge selects it; dragging it still moves the box.
+      this.select(badgeEl ? { type: "badge", owner: box.id, index: Number(badgeEl.dataset.badge) } : { type: "box", id: box.id });
       M.bringToFront(this.chart, box.id);
       this.drag = {
         type: "move", id: box.id, dx: pt.x - box.x, dy: pt.y - box.y,
@@ -731,7 +775,8 @@ export class Canvas {
     } else if (groupEl) {
       this.select({ type: "group", id: groupEl.dataset.group });
     } else if (itemEl) {
-      this.select({ type: "item", id: itemEl.dataset.item });
+      const id = itemEl.dataset.item;
+      this.select(badgeEl ? { type: "badge", owner: id, index: Number(badgeEl.dataset.badge) } : { type: "item", id });
     } else if (sectionEl) {
       this.select({ type: "section", id: sectionEl.dataset.section });
     } else if (sidebarEl) {

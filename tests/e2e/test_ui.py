@@ -285,6 +285,8 @@ def test_badges(page: Page, live_server):
     x, y = (badge["x"] + badge["width"] / 2, badge["y"] + badge["height"] / 2)
     page.mouse.dblclick(x, y)
     expect(page.locator('[data-box="b1"] .badge-cost .badge-text')).to_have_text("2 FP")
+    # The badge is now selected; Escape goes back to its box.
+    page.keyboard.press("Escape")
     page.get_by_role("button", name="Remove recharge badge SR").click()
     expect(page.locator('[data-box="b1"] [data-badge]')).to_have_count(2)
 
@@ -292,10 +294,37 @@ def test_badges(page: Page, live_server):
     page.get_by_role("button", name="Add duration badge").click()
     expect(page.locator('[data-box="b1"] [data-badge]')).to_have_count(2)
 
+    # Click a badge to select it, then give it a color and change it back.
+    cost = page.locator('[data-box="b1"] .badge-cost')
+    cost.click()
+    expect(page.locator(".toolbar")).to_contain_text("Cost badge")
+    expect(cost).to_have_class(re.compile(r"\bselected\b"))
+    expect(page.get_by_label("Badge text")).to_have_value("2 FP")
+    page.get_by_role("button", name="Green", exact=True).click()
+    expect(cost.locator(".badge-shape")).to_have_attribute("fill", "#bbf7d0")
+    page.get_by_role("button", name="Default color").click()
+    expect(cost.locator(".badge-shape")).to_have_attribute("fill", "#c7d2fe")
+    page.get_by_role("button", name="Blue", exact=True).click()
+    # Edit its text from the toolbar.
+    page.get_by_label("Badge text").fill("3 FP")
+    page.keyboard.press("Enter")
+    expect(cost.locator(".badge-text")).to_have_text("3 FP")
+    # Escape goes back to the box; a chip selects the badge again.
+    page.keyboard.press("Escape")
+    expect(page.get_by_role("button", name="Delete box")).to_be_visible()
+    page.get_by_role("button", name="Select recharge badge LR").click()
+    expect(page.locator(".toolbar")).to_contain_text("Recharge badge")
+    # Delete removes only the badge; the box stays and is selected.
+    page.keyboard.press("Delete")
+    expect(page.locator('[data-box="b1"] [data-badge]')).to_have_count(1)
+    expect(page.get_by_role("button", name="Delete box")).to_be_visible()
+    answers.append("LR")
+    page.get_by_role("button", name="Add recharge badge").click()
+
     page.get_by_role("button", name="Save").click()
     expect(page.locator(".status")).to_have_text("Saved")
     box_data = chart_data(live_server, chart_id)["boxes"][0]
-    assert box_data["badges"] == [{"type": "cost", "text": "2 FP"}, {"type": "recharge", "text": "LR"}]
+    assert box_data["badges"] == [{"type": "cost", "text": "3 FP", "color": "#bfdbfe"}, {"type": "recharge", "text": "LR"}]
 
     # Badges survive a reload and print.
     page.reload()
@@ -303,6 +332,7 @@ def test_badges(page: Page, live_server):
     page.evaluate("window.print = () => {}")
     page.get_by_role("button", name="Print").click()
     expect(page.locator("#print-sheet .badge")).to_have_count(2)
+    expect(page.locator("#print-sheet .badge-cost .badge-shape")).to_have_attribute("fill", "#bfdbfe")
 
 
 def test_side_column(page: Page, live_server):

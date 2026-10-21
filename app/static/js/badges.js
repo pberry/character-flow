@@ -1,8 +1,10 @@
 // Badges: small labels on a box's corners for cost, duration, recharge, or a
 // modifier. Each type has its own shape so they read apart even in black and
-// white. Text is free; the type only picks the shape, color, and corner.
+// white. Text is free; the type picks the shape, corner, and default color,
+// and a badge can be given its own fill color.
 // Pure functions in box-local coordinates, no DOM.
 
+import { isColor } from "./colors.js";
 import { nearestOutlinePoint } from "./shapes.js";
 
 // `corner` is [dx, dy]: which bounding-box corner the badge sits on. Corners
@@ -18,14 +20,17 @@ const BY_ID = new Map(BADGE_TYPES.map((t) => [t.id, t]));
 export const badgeType = (id) => BY_ID.get(id) || null;
 
 // ---- badge lists ----------------------------------------------------------
-// These work on anything with a `badges` array: boxes and tracker items.
+// These work on anything with a `badges` array: boxes, tracker items, and lanes.
 
-// Valid badges only, with trimmed text.
+// Valid badges only, with trimmed text. `color` is kept only when it's valid.
 export function normalizeBadges(list) {
   return (Array.isArray(list) ? list : [])
     .filter((g) => g && badgeType(g.type) && typeof g.text === "string" && g.text.trim())
-    .map((g) => ({ type: g.type, text: g.text.trim() }));
+    .map((g) => ({ type: g.type, text: g.text.trim(), ...(isColor(g.color) ? { color: g.color } : {}) }));
 }
+
+// The fill a badge is drawn with: its own color, or its type's.
+export const badgeFill = (badge) => (isColor(badge.color) ? badge.color : badgeType(badge.type)?.fill);
 
 // Returns the new badge, or null for an unknown type or empty text.
 export function addBadge(target, type, text) {
@@ -47,6 +52,15 @@ export function updateBadge(target, index, text) {
     return null;
   }
   badge.text = clean;
+  return badge;
+}
+
+// A color that isn't valid (e.g. null) goes back to the type's default.
+export function setBadgeColor(target, index, color) {
+  const badge = target?.badges?.[index];
+  if (!badge) return null;
+  if (isColor(color)) badge.color = color;
+  else delete badge.color;
   return badge;
 }
 
@@ -141,7 +155,7 @@ export function layoutBadges(box, { inward = false } = {}) {
     const corner = nearestOutlinePoint(box.shape, box.w, box.h, dx > 0 ? box.w : 0, dy > 0 ? box.h : 0);
     const step = (inward ? -dx : dx) * (prev ? prev.w / 2 + GAP + size.w / 2 : 0);
     const x = prev ? prev.x + step : corner.x;
-    const placed = { index, type: badge.type, text: badge.text, x, y: corner.y, ...size };
+    const placed = { index, type: badge.type, text: badge.text, fill: badgeFill(badge), x, y: corner.y, ...size };
     last.set(badge.type, placed);
     out.push(placed);
   }
