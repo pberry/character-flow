@@ -5,6 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- Charts can print in portrait as well as landscape
+  ([#15](https://github.com/pberry/character-flow/issues/15)). Use the Landscape / Portrait buttons next to Print.
+  Portrait fits a much taller chart on the page, printed a little smaller. The bottom-of-page line follows the
+  choice, which is saved with the chart.
+
+### Changed
+- Charts now store `orientation`. Older charts load as landscape.
+
 ## [0.9.0] - 2026-10-21
 
 ### Added

@@ -229,3 +229,10 @@ test("normalizeChart keeps a valid side column and pulls boxes onto the narrower
   assert.equal(c.boxes[0].x + c.boxes[0].w, BOX_MAX_RIGHT - 200);
   assert.equal(normalizeChart({}).sidebar, null);
 });
+
+test("charts default to landscape printing; unknown orientations fall back to it", () => {
+  assert.equal(newChart().orientation, "landscape");
+  assert.equal(normalizeChart({}).orientation, "landscape");
+  assert.equal(normalizeChart({ orientation: "sideways" }).orientation, "landscape");
+  assert.equal(normalizeChart({ orientation: "portrait" }).orientation, "portrait");
+});

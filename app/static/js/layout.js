@@ -50,20 +50,27 @@ export const BOX_MAX_RIGHT = CONTENT_W - 20;   // boxes end left of this x
 export const contentWidth = (chart) => CONTENT_W - sideWidth(chart);
 export const boxMaxRight = (chart) => BOX_MAX_RIGHT - sideWidth(chart);
 export const PAGE_W = HEADER_W + CONTENT_W;
-// Printable chart area on landscape letter is 10.2 x 6.8in (see print.css).
-// Character notes print in a strip under the chart, which takes its height
-// from the chart area.
-export const PRINT_W_IN = 10.2;
-export const PRINT_H_IN = 6.8;
+// Printable chart area on letter paper, per orientation (see print.css).
+// Portrait keeps the same canvas width, so it prints smaller but fits a much
+// taller chart. Character notes print in a strip under the chart, which takes
+// its height from the chart area.
+export const PRINT_SIZES_IN = { landscape: { w: 10.2, h: 6.8 }, portrait: { w: 7.7, h: 9.3 } };
+export const ORIENTATIONS = Object.keys(PRINT_SIZES_IN);
+export const PRINT_W_IN = PRINT_SIZES_IN.landscape.w;
+export const PRINT_H_IN = PRINT_SIZES_IN.landscape.h;
 export const NOTES_H_IN = 0.8;
 export const PRINT_ASPECT = PRINT_W_IN / PRINT_H_IN;
 export const PRINT_PAD = 4;
 const pageHFor = (aspect) => Math.floor((PAGE_W + 2 * PRINT_PAD) / aspect - 2 * PRINT_PAD);
-// Height that still prints at full scale; anything taller shrinks the page.
+// Height that still prints at full scale in landscape; anything taller shrinks the page.
 export const PAGE_H = pageHFor(PRINT_ASPECT);
 
+export const orientation = (chart) => (chart.orientation === "portrait" ? "portrait" : "landscape");
 export const hasNotes = (chart) => !!(chart.character?.notes || "").trim();
-export const printAspect = (chart) => PRINT_W_IN / (PRINT_H_IN - (hasNotes(chart) ? NOTES_H_IN : 0));
+export function printAspect(chart) {
+  const { w, h } = PRINT_SIZES_IN[orientation(chart)];
+  return w / (h - (hasNotes(chart) ? NOTES_H_IN : 0));
+}
 export const pageHeight = (chart) => pageHFor(printAspect(chart));
 
 // `frozen`: lane geometry to reuse instead of recomputing (used while dragging
@@ -122,6 +129,7 @@ export function layoutChart(chart, { frozen = null, floating = null } = {}) {
     height: Math.max(last ? last.top + last.height : 0, sidebar.height),
     pageH: pageHeight(chart),
     notes: hasNotes(chart),
+    orientation: orientation(chart),
   };
 }
 
