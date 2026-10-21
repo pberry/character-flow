@@ -13,8 +13,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
   unless you pick one.
 - Badges can be selected: click one on the chart or its chip in the toolbar. A selected badge can have its text
   edited, get its own color (or "Default" for its type's color), or be removed with Delete. Escape goes back to its box.
+- Lane headers can have badges. Select a lane's flag and use the badge buttons. The flag shrinks to keep its badges
+  inside the lane.
 
 ### Changed
+- Charts now store `badges` on lanes. Older charts load with none.
 - Clicking a badge chip in the toolbar now selects the badge instead of opening a text prompt (double-clicking a badge
   still edits its text).
 

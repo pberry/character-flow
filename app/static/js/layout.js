@@ -11,6 +11,36 @@ export const MIN_LANE_H = 110;
 export const BOX_MIN_X = 20;     // boxes stay right of the header column
 export const BOX_MIN_Y = 10;     // ...and below their lane's top edge
 
+// The lane header is a flag inset in the header column. Badges on it stack
+// inward, and the flag shrinks to keep them inside the lane and the header
+// column, clear of the page's left edge and of badges on the lane's boxes.
+const HEADER_INSET = 10;
+const HEADER_RIGHT = -20;        // the flag's right edge without badges
+const HEADER_REACH = -4;         // header badges end this far right of x = 0
+const HEADER_MIN_H = 60;
+export const HEADER_BADGES = { inward: true };
+
+// Space around the flag in its lane, from its badges. Badge positions on a
+// flag barely depend on its size, so a nominal size is used.
+export function headerInsets(lane) {
+  const nominal = { w: HEADER_W + HEADER_RIGHT - HEADER_INSET, h: 100, shape: "flag", badges: lane.badges };
+  const over = badgeOverhang(nominal, HEADER_BADGES);
+  const pad = (n) => Math.max(HEADER_INSET, Math.ceil(n) + 4);
+  return {
+    top: pad(over.top),
+    bottom: pad(over.bottom),
+    left: pad(over.left),
+    right: Math.max(-HEADER_RIGHT, Math.ceil(over.right) - HEADER_REACH),
+  };
+}
+
+// The flag's absolute rectangle in a lane placed at `top` with `height`.
+function placeHeader(lane, top, height) {
+  const ins = headerInsets(lane);
+  const x = -HEADER_W + ins.left;
+  return { x, y: top + ins.top, w: Math.max(40, -ins.right - x), h: height - ins.top - ins.bottom, shape: "flag", badges: lane.badges || [] };
+}
+
 // The chart is a fixed page width so it always prints at a readable size
 // (14px box text comes out around 9pt). Lanes grow downward, never sideways.
 export const CONTENT_W = 1000;
@@ -37,7 +67,8 @@ export function layoutChart(chart, { frozen = null, floating = null } = {}) {
   if (frozen) {
     lanes = chart.lanes.map((lane) => {
       const f = frozen.find((g) => g.id === lane.id);
-      return { ...lane, top: f ? f.top : 0, height: f ? f.height : MIN_LANE_H };
+      const top = f ? f.top : 0, height = f ? f.height : MIN_LANE_H;
+      return { ...lane, top, height, header: placeHeader(lane, top, height) };
     });
   } else {
     let top = 0;
@@ -47,8 +78,9 @@ export function layoutChart(chart, { frozen = null, floating = null } = {}) {
         // Badges hanging below a box count too, so they don't spill into the next lane.
         if (laneOf(b) === lane.id) bottom = Math.max(bottom, b.y + b.h + badgeOverhang(b).bottom);
       }
-      const height = Math.max(MIN_LANE_H, bottom + LANE_PAD);
-      const placed = { ...lane, top, height };
+      const ins = headerInsets(lane);
+      const height = Math.max(MIN_LANE_H, bottom + LANE_PAD, ins.top + ins.bottom + HEADER_MIN_H);
+      const placed = { ...lane, top, height, header: placeHeader(lane, top, height) };
       top += height;
       return placed;
     });

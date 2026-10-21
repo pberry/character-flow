@@ -131,7 +131,7 @@ test("normalizeBadges keeps valid badges only", () => {
 });
 
 test("badgeOverhang measures badges sticking out above, right, and below", () => {
-  assert.deepEqual(badgeOverhang({ w: 160, h: 70, shape: "rect", badges: [] }), { top: 0, right: 0, bottom: 0 });
+  assert.deepEqual(badgeOverhang({ w: 160, h: 70, shape: "rect", badges: [] }), { top: 0, right: 0, bottom: 0, left: 0 });
   const o = badgeOverhang({ w: 160, h: 70, shape: "rect", badges: [{ type: "cost", text: "1 FP" }] });
   assert.ok(o.top > 0 && o.right > 0);
   assert.equal(o.bottom, 0);

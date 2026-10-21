@@ -335,6 +335,48 @@ def test_badges(page: Page, live_server):
     expect(page.locator("#print-sheet .badge-cost .badge-shape")).to_have_attribute("fill", "#bfdbfe")
 
 
+def test_lane_header_badges(page: Page, live_server):
+    chart_id = create_character(page, live_server)
+    answers = []
+    page.on("dialog", lambda d: d.accept(answers.pop(0)) if answers else d.dismiss())
+
+    lane_header(page, "l1").click()
+    answers.extend(["1/turn", "10 min"])
+    page.get_by_role("button", name="Add cost badge").click()
+    page.get_by_role("button", name="Add duration badge").click()
+    header = page.locator('#app [data-lane="l1"]')
+    expect(header.locator("[data-badge]")).to_have_count(2)
+
+    # The badges stay inside the lane and left of the boxes.
+    band = page.locator("#app .lane-band").first.bounding_box()
+    for i in range(2):
+        b = header.locator(f'[data-badge="{i}"] .badge-shape').bounding_box()
+        assert b["y"] >= band["y"] - 1 and b["y"] + b["height"] <= band["y"] + band["height"] + 1
+        assert b["x"] >= band["x"] - 1
+
+    # Clicking a header badge selects it; double-clicking edits it.
+    header.locator('[data-badge="0"]').click()
+    expect(page.locator(".toolbar")).to_contain_text("Cost badge")
+    page.get_by_role("button", name="Pink", exact=True).click()
+    answers.append("2/turn")
+    b = header.locator('[data-badge="0"] .badge-shape').bounding_box()
+    page.mouse.dblclick(b["x"] + b["width"] / 2, b["y"] + b["height"] / 2)
+    expect(header.locator('[data-badge="0"] .badge-text')).to_have_text("2/turn")
+    page.keyboard.press("Escape")
+    expect(page.get_by_label("Lane name")).to_have_value("Start of turn")
+
+    page.get_by_role("button", name="Save").click()
+    expect(page.locator(".status")).to_have_text("Saved")
+    lane = chart_data(live_server, chart_id)["lanes"][0]
+    assert lane["badges"] == [{"type": "cost", "text": "2/turn", "color": "#fbcfe8"}, {"type": "duration", "text": "10 min"}]
+
+    page.reload()
+    expect(page.locator('#app [data-lane="l1"] [data-badge]')).to_have_count(2)
+    page.evaluate("window.print = () => {}")
+    page.get_by_role("button", name="Print").click()
+    expect(page.locator('#print-sheet [data-lane="l1"] .badge')).to_have_count(2)
+
+
 def test_side_column(page: Page, live_server):
     chart_id = create_character(page, live_server)
     answers = []

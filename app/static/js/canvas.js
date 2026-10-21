@@ -5,7 +5,7 @@ import {
   SIDES, anchor, boxAt, edgePoints, nearestSide, pathD,
   polylineMidpoint, routePoints, suggestEdges,
 } from "./geometry.js";
-import { HEADER_W, PAGE_H, SLOT_GAP_X, boxMaxRight, endOfLane, findSlot, layoutBounds, layoutChart, laneAt } from "./layout.js";
+import { HEADER_BADGES, HEADER_W, PAGE_H, SLOT_GAP_X, boxMaxRight, endOfLane, findSlot, layoutBounds, layoutChart, laneAt } from "./layout.js";
 import * as M from "./model.js";
 import { BADGE_FONT, LINE_H, addBadge, badgePathD, badgeType, layoutBadges, removeBadge, setBadgeColor, updateBadge } from "./badges.js";
 import { shapePathD, textArea } from "./shapes.js";
@@ -77,12 +77,13 @@ function drawLanes(layout, { selection, dropLane, interactive }) {
     const lg = s("g", { class: `lane${selected ? " selected" : ""}${dropLane === lane.id ? " drop-target" : ""}` });
     lg.append(s("rect", { class: "lane-band", x: left, y: lane.top, width: right - left, height: lane.height }));
     const header = s("g", { class: "lane-header", "data-lane": lane.id });
-    const hx = left + 10, hy = lane.top + 10, hw = HEADER_W - 30, hh = lane.height - 20;
+    const { x: hx, y: hy, w: hw, h: hh } = lane.header;
     // Lane headers are flags: the start of each swim lane.
     const ta = textArea("flag", hw, hh);
     header.append(
       s("path", { class: "lane-header-rect", d: shapePathD("flag", hw, hh), transform: `translate(${hx} ${hy})`, fill: lane.color }),
       s("foreignObject", { x: hx + ta.x, y: hy + ta.y, width: ta.w, height: ta.h }, h("div", { class: "lane-name" }, lane.name)),
+      s("g", { transform: `translate(${hx} ${hy})` }, ...drawBadges({ ...lane.header, id: lane.id }, HEADER_BADGES, selection)),
     );
     if (interactive) header.append(s("title", {}, "Click to edit this lane"));
     lg.append(header);
@@ -410,13 +411,13 @@ export class Canvas {
     return this.selection?.type === "item" ? T.getItem(this.chart, this.selection.id) : null;
   }
 
-  // A box or tracker item, by id. Both carry text and badges.
+  // A box or tracker item (both carry text and badges), or a lane (badges only), by id.
   owner(id) {
-    return M.getBox(this.chart, id) || T.getItem(this.chart, id);
+    return M.getBox(this.chart, id) || T.getItem(this.chart, id) || M.getLane(this.chart, id);
   }
 
   addBadge(type) {
-    const target = this.selectedBox() || this.selectedItem();
+    const target = this.selectedBox() || this.selectedItem() || this.selectedLane();
     const t = badgeType(type);
     if (!target || !t) return;
     const text = window.prompt(`${t.name} badge text (e.g. ${t.example}):`, t.example);
@@ -629,7 +630,7 @@ export class Canvas {
   startEdit(id) {
     this.finishEdit(true);
     const target = this.owner(id);
-    if (!target) return;
+    if (!target || typeof target.text !== "string") return;
     const ta = h("textarea", { class: "box-editor", spellcheck: "false" });
     ta.value = target.text;
     ta.addEventListener("keydown", (e) => {
@@ -717,7 +718,7 @@ export class Canvas {
     const sectionEl = t.closest("[data-section]");
     const sidebarEl = t.closest("[data-sidebar]");
     const groupEl = t.closest("[data-group]");
-    const ownerId = boxEl?.dataset.box || itemEl?.dataset.item;
+    const ownerId = boxEl?.dataset.box || itemEl?.dataset.item || laneEl?.dataset.lane;
 
     // Our own double-click detection: rendering replaces elements between
     // clicks, which makes native dblclick unreliable.
@@ -784,7 +785,8 @@ export class Canvas {
     } else if (edgeEl) {
       this.select({ type: "edge", id: edgeEl.dataset.edge });
     } else if (laneEl) {
-      this.select({ type: "lane", id: laneEl.dataset.lane });
+      const id = laneEl.dataset.lane;
+      this.select(badgeEl ? { type: "badge", owner: id, index: Number(badgeEl.dataset.badge) } : { type: "lane", id });
     } else {
       this.select(null);
       this.drag = { type: "pan", sx: e.clientX, sy: e.clientY, vx: this.view.x, vy: this.view.y };

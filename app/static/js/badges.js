@@ -164,11 +164,12 @@ export function layoutBadges(box, { inward = false } = {}) {
 
 // How far a box's badges stick out past its edges (0 where they don't).
 export function badgeOverhang(box, opts) {
-  let top = 0, right = 0, bottom = 0;
+  let top = 0, right = 0, bottom = 0, left = 0;
   for (const b of layoutBadges(box, opts)) {
     top = Math.max(top, b.h / 2 - b.y);
     right = Math.max(right, b.x + b.w / 2 - box.w);
     bottom = Math.max(bottom, b.y + b.h / 2 - box.h);
+    left = Math.max(left, b.w / 2 - b.x);
   }
-  return { top, right, bottom };
+  return { top, right, bottom, left };
 }

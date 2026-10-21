@@ -2,11 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   layoutChart, laneAt, layoutBounds, HEADER_W, LANE_PAD, MIN_LANE_H, CONTENT_W, PAGE_W, PAGE_H,
-  BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y, findSlot, endOfLane, boxMaxRight,
+  BOX_MAX_RIGHT, BOX_MIN_X, BOX_MIN_Y, findSlot, endOfLane, boxMaxRight, HEADER_BADGES, headerInsets,
 } from "../../app/static/js/layout.js";
 import { newChart, addBox, setSidebar } from "../../app/static/js/model.js";
 import { SIDE_W, addItem } from "../../app/static/js/sidebar.js";
-import { badgeOverhang } from "../../app/static/js/badges.js";
+import { badgeOverhang, layoutBadges } from "../../app/static/js/badges.js";
 
 test("empty default chart stacks five minimum-height lanes", () => {
   const layout = layoutChart(newChart());
@@ -149,4 +149,32 @@ test("a tall side column makes the layout taller than the lanes", () => {
   const l = layoutChart(chart);
   assert.ok(l.height > l.lanesHeight);
   assert.equal(l.height, l.sidebar.height);
+});
+
+test("lane headers: the flag fills the header column, and shrinks to keep its badges in the lane", () => {
+  const c = newChart();
+  const plain = layoutChart(c).lanes[0].header;
+  assert.deepEqual(plain, { x: -HEADER_W + 10, y: 10, w: HEADER_W - 30, h: MIN_LANE_H - 20, shape: "flag", badges: [] });
+
+  c.lanes[0].badges = [{ type: "cost", text: "1 FP each" }, { type: "duration", text: "1 minute" }, { type: "modifier", text: "2x" }];
+  const layout = layoutChart(c);
+  const lane = layout.lanes[0];
+  const hd = lane.header;
+  assert.ok(hd.y > lane.top + 10 && hd.x > -HEADER_W + 10, "the flag moves in to make room");
+  // Every badge stays inside the lane and the header column.
+  for (const b of layoutBadges(hd, HEADER_BADGES)) {
+    assert.ok(hd.y + b.y - b.h / 2 >= lane.top, `${b.type} top`);
+    assert.ok(hd.y + b.y + b.h / 2 <= lane.top + lane.height, `${b.type} bottom`);
+    assert.ok(hd.x + b.x - b.w / 2 >= -HEADER_W, `${b.type} left`);
+    assert.ok(hd.x + b.x + b.w / 2 <= 0, `${b.type} right`);
+  }
+  assert.equal(layout.lanes[1].top, lane.top + lane.height);
+});
+
+test("lane headers: a lane is tall enough for its header's badges", () => {
+  const c = newChart();
+  c.lanes[0].badges = ["cost", "duration", "recharge", "modifier"].map((type) => ({ type, text: "a long badge text here" }));
+  const lane = layoutChart(c).lanes[0];
+  assert.ok(lane.header.h >= 60);
+  assert.equal(lane.height, lane.header.y - lane.top + lane.header.h + headerInsets(c.lanes[0]).bottom);
 });

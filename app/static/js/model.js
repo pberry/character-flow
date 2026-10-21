@@ -60,6 +60,7 @@ export function normalizeChart(data) {
     if (!Array.isArray(chart.character[key])) chart.character[key] = [];
   }
   if (!Array.isArray(chart.lanes) || !chart.lanes.length) chart.lanes = defaultLanes();
+  chart.lanes = chart.lanes.map((l) => ({ ...l, badges: normalizeBadges(l.badges) }));
   chart.sidebar = normalizeSidebar(chart.sidebar);
   const laneIds = new Set(chart.lanes.map((l) => l.id));
   chart.boxes = (Array.isArray(chart.boxes) ? chart.boxes : []).map((b) => {

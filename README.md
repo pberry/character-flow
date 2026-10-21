@@ -76,7 +76,7 @@ Back up that file to back up your work.
 | Select several boxes | Shift-click boxes (Shift-click a selected box to drop it) |
 | Group boxes | Select one or more boxes, click "Group" in the toolbar |
 | Edit a group | Click its line. Edit the label and style in the toolbar, or double-click the line to edit the label. Shift-click boxes to add or remove them. "Ungroup" removes the line; the boxes stay |
-| Add a badge | Select a box, click "+ Cost", "+ Duration", "+ Recharge", or "+ Modifier" in the toolbar |
+| Add a badge | Select a box, tracker item, or lane header, then click "+ Cost", "+ Duration", "+ Recharge", or "+ Modifier" in the toolbar |
 | Select a badge | Click it, or click its chip in the box's toolbar. The toolbar then edits its text, picks its color (or "Default" for its type's color), and removes it. Escape goes back to its box |
 | Edit / remove a badge | Double-click the badge to edit its text. × on its chip removes it, as do clearing its text and Delete while it's selected |
 | Move | Drag a box (arrows follow). Drop it in another lane to move it there; the target lane is highlighted |
@@ -87,7 +87,7 @@ Back up that file to back up your work.
 | Label an arrow | Double-click the arrow, or select it and use "Edit label" |
 | Delete | Select a box or arrow and press Delete / Backspace, or use the toolbar |
 | Deselect | Escape, or click empty canvas |
-| Edit a lane | Click its header: the toolbar renames, recolors, moves it up/down, adds a lane below, or deletes it. Double-click a header to rename |
+| Edit a lane | Click its header: the toolbar renames, recolors, adds badges, moves it up/down, adds a lane below, or deletes it. Double-click a header to rename |
 | Add a lane | "+ Add lane" under the last lane, or "Add lane below" in the lane toolbar |
 | Delete a lane | Select it and press Delete or use "Delete lane". Its boxes and their arrows go with it (you're asked first). A chart keeps at least one lane |
 | Pan / zoom | Drag empty canvas / mouse wheel or trackpad pinch / the − + buttons. "Fit" frames the whole chart |
@@ -130,6 +130,9 @@ The text is free; the type picks the shape and corner. Each badge starts in its 
 be given any swatch color instead (the shape still tells types apart in black and white). A box can have several badges, and more of the same type line up
 outward from their corner. On shaped boxes a badge sits on the outline nearest its corner (a star's arm tips, for
 example). Longer text wraps onto short lines. Lanes grow to fit badges that hang below a box.
+
+Lane headers (the flag at the start of each lane) can have badges too. They line up inward from their corners, and
+the flag shrinks to make room, so they stay inside the lane and the header column.
 
 ## Groups
 

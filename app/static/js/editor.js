@@ -192,6 +192,8 @@ export function showEditor(container, chartRecord) {
         h("span", { class: "label" }, "Color"),
         swatches(lane.color, (c) => canvas.setColor(c)),
         h("span", { class: "sep" }),
+        badgeControls(canvas, lane),
+        h("span", { class: "sep" }),
         h("button", { class: "btn icon", title: "Move lane up", "aria-label": "Move lane up", disabled: i === 0, onclick: () => canvas.moveLane(-1) }, "↑"),
         h("button", { class: "btn icon", title: "Move lane down", "aria-label": "Move lane down", disabled: i === chart.lanes.length - 1, onclick: () => canvas.moveLane(1) }, "↓"),
         h("button", { class: "btn", onclick: () => canvas.addLane(lane.id) }, "Add lane below"),
