@@ -10,6 +10,9 @@ laid out as left-to-right **swim lanes**: one horizontal lane per part of your t
 3. Connect boxes with arrows, within or across lanes. Suggested arrows appear faintly; click one to make it real.
 4. Charts save automatically, and you print them on a single letter page, landscape or portrait.
 
+New to it? The home page links an example chart for Sable, a level 5 rogue (`/#/example/sable`). Open it read-only,
+then **Make a copy** to get your own editable version.
+
 ## Links instead of accounts
 
 There are no accounts. Each chart has two secret links, shown when you create it and from the editor's **Links**
@@ -322,8 +325,9 @@ npm test                # frontend logic tests (Node 22+, no dependencies to ins
 
 No Chrome? Run `uv run playwright install chromium` and remove `--browser-channel chrome` from `pyproject.toml`.
 
-The home page video (`app/static/media/demo.mp4` and its `demo.png` poster) is recorded by a script. Re-record it
-after UI changes that show up in it:
+The home page video (`app/static/media/demo.mp4` and its `demo.png` poster) and the example chart it builds
+(`app/static/examples/sable.json`, opened at `#/example/sable`) come from one script. Re-run it after UI changes
+that show up in them:
 
 ```sh
 uv run playwright install ffmpeg        # once; Playwright's own encoder for recording
@@ -342,7 +346,7 @@ Project layout:
 | `app/backup.py` | Database snapshots and rotation (`python -m app.backup`), run by the `backup` service |
 | `tests/test_api.py`, `tests/test_db.py`, `tests/test_admin.py` | API, storage and migration, and admin tests |
 | `tests/test_backup.py` | Backup and rotation tests |
-| `scripts/record_demo.py` | Records the home page demo video with Playwright and ffmpeg |
+| `scripts/record_demo.py` | Records the home page demo video with Playwright and ffmpeg, and saves the example chart |
 | `tests/e2e/` | Playwright browser tests covering the full flow and print layout |
 | `tests/js/` | Node tests for the pure frontend modules |
 | `Dockerfile`, `compose.yaml` | Container image (gunicorn, Litestream, non-root), the app service, and the backup service |

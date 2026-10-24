@@ -103,6 +103,8 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 - Says what the app is, who it's for, and how it works, and explains links instead of accounts.
 - Shows a short, silent, looping video of a chart being built (paused for players who prefer reduced motion),
   recorded by a script so it can be refreshed after UI changes. Room for more screenshots or videos.
+- Links to an example chart (the one in the video), shown read-only with Print and Make a copy, so a new player
+  doesn't have to start from a blank page.
 
 ### Static pages
 - Hand-written HTML pages (starting with an FAQ) share the app's styles, header, and footer.
@@ -165,6 +167,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-23 | SQLite WAL mode only when `CHARFLOW_WAL=1` | Litestream needs WAL, but the local backup container reads the database from a read-only mount, which WAL can break |
 | 2026-10-24 | Release public hosting as v1.0.0, not v0.11.0 | It's the first public release, and it breaks old `#/chart/<id>` links, so a major version marks both |
 | 2026-10-24 | Fix the audit's low-severity findings now; track the storage budget, Litestream checksum, and digest pinning as issues | The header, redirect, and parsing fixes are small and testable. The other three change capacity limits, the image build, or CI, so each gets its own change ([#23](https://github.com/pberry/character-flow/issues/23), [#24](https://github.com/pberry/character-flow/issues/24), [#25](https://github.com/pberry/character-flow/issues/25)) |
+| 2026-10-24 | Example charts ship as static JSON (`app/static/examples/<name>.json`) at `#/example/<name>`, not as a database chart behind a view link | A view link would only work on the one server whose database holds that chart; a static file works on every install, is versioned with the code, and is regenerated with the demo video so the two always match |
 | 2026-10-24 | Home page demo is an MP4 recorded by a Playwright script, not a GIF or hand-made screen capture | Playwright is already a dev dependency and records video directly; MP4 is about a tenth the size of an equivalent GIF and sharper. A script keeps the demo reproducible when the UI changes. Uses a made-up rogue so no real player's character is shown |
 | 2026-10-24 | Static pages are Jinja templates extending one base layout, served at `/<name>` | The FAQ is the first of possibly several pages. Flask already ships Jinja, so pages share one head and footer with no new dependency, build step, or CMS; the owner writes the HTML |
 | 2026-10-24 | Pin actions by commit SHA and base images by digest, updated by monthly Dependabot PRs | A moved tag in the deploy job could take over the app with `FLY_API_TOKEN`. Dependabot keeps the pins from going stale, so base-image security fixes still arrive, as reviewable PRs |

@@ -1,0 +1,213 @@
+{
+  "name": "Sable Quickfingers",
+  "data": {
+    "boxes": [
+      {
+        "badges": [],
+        "color": "#bbf7d0",
+        "h": 70,
+        "id": "b5",
+        "lane": "l2",
+        "shape": "rect",
+        "text": "Sneak Attack\n3d6, once per turn",
+        "w": 160,
+        "x": 720,
+        "y": 20
+      },
+      {
+        "badges": [],
+        "color": "#fecaca",
+        "h": 70,
+        "id": "b3",
+        "lane": "l2",
+        "shape": "rect",
+        "text": "Rapier\n+7 to hit, 1d8+4 piercing",
+        "w": 160,
+        "x": 150,
+        "y": 20
+      },
+      {
+        "badges": [],
+        "color": "#fde68a",
+        "h": 90,
+        "id": "b4",
+        "lane": "l2",
+        "shape": "diamond",
+        "text": "Hit?",
+        "w": 160,
+        "x": 440,
+        "y": 10
+      },
+      {
+        "badges": [],
+        "color": "#fde68a",
+        "h": 90,
+        "id": "b1",
+        "lane": "l1",
+        "shape": "diamond",
+        "text": "Hidden?",
+        "w": 160,
+        "x": 440,
+        "y": 10
+      },
+      {
+        "badges": [],
+        "color": "#fde68a",
+        "h": 90,
+        "id": "b2",
+        "lane": "l1",
+        "shape": "diamond",
+        "text": "Ally next to target?",
+        "w": 160,
+        "x": 720,
+        "y": 10
+      }
+    ],
+    "character": {
+      "abilities": [
+        {
+          "name": "STR",
+          "score": 8
+        },
+        {
+          "name": "DEX",
+          "score": 18
+        },
+        {
+          "name": "CON",
+          "score": 14
+        },
+        {
+          "name": "INT",
+          "score": 14
+        },
+        {
+          "name": "WIS",
+          "score": 10
+        },
+        {
+          "name": "CHA",
+          "score": 12
+        }
+      ],
+      "class": "Rogue (Arcane Trickster)",
+      "features": [
+        {
+          "name": "Sneak Attack",
+          "notes": "3d6, once per turn"
+        },
+        {
+          "name": "Cunning Action",
+          "notes": "Bonus: Dash, Disengage, Hide"
+        },
+        {
+          "name": "Uncanny Dodge",
+          "notes": "Reaction, halve damage"
+        },
+        {
+          "name": "Expertise",
+          "notes": "Stealth, Thieves' tools"
+        }
+      ],
+      "level": 5,
+      "name": "Sable Quickfingers",
+      "notes": "",
+      "spells": [
+        {
+          "name": "Mage Hand",
+          "notes": "Cantrip, bonus action to steer"
+        },
+        {
+          "name": "Booming Blade",
+          "notes": "Cantrip, melee hit + 1d8 thunder"
+        },
+        {
+          "name": "Shield",
+          "notes": "Reaction, +5 AC"
+        }
+      ],
+      "weapons": [
+        {
+          "name": "Rapier",
+          "notes": "+7 to hit, 1d8+4 piercing"
+        },
+        {
+          "name": "Shortbow",
+          "notes": "+7 to hit, 1d6+4, range 80/320"
+        },
+        {
+          "name": "Dagger",
+          "notes": "+7 to hit, 1d4+4, thrown"
+        }
+      ]
+    },
+    "edges": [
+      {
+        "from": {
+          "box": "b3",
+          "side": "right"
+        },
+        "id": "e1",
+        "label": "",
+        "to": {
+          "box": "b4",
+          "side": "left"
+        }
+      },
+      {
+        "from": {
+          "box": "b4",
+          "side": "right"
+        },
+        "id": "e2",
+        "label": "",
+        "to": {
+          "box": "b5",
+          "side": "left"
+        }
+      },
+      {
+        "from": {
+          "box": "b1",
+          "side": "right"
+        },
+        "id": "e3",
+        "label": "",
+        "to": {
+          "box": "b2",
+          "side": "left"
+        }
+      },
+      {
+        "from": {
+          "box": "b2",
+          "side": "bottom"
+        },
+        "id": "e4",
+        "label": "",
+        "to": {
+          "box": "b5",
+          "side": "top"
+        }
+      }
+    ],
+    "groups": [],
+    "lanes": [
+      {
+        "badges": [],
+        "color": "#bbf7d0",
+        "id": "l1",
+        "name": "Start of turn"
+      },
+      {
+        "badges": [],
+        "color": "#fecaca",
+        "id": "l2",
+        "name": "Attack"
+      }
+    ],
+    "orientation": "landscape",
+    "sidebar": null,
+    "version": 2
+  }
+}
