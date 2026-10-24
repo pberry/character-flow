@@ -1,0 +1,42 @@
+# Runs both test suites and checks the image builds. Called by deploy.yml too,
+# so a release tag is tested before it ships.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.14"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: uv sync --frozen
+      - run: npm test
+      # The pytest config uses --browser-channel chrome; GitHub's Ubuntu runners
+      # ship Google Chrome, so only Playwright's system dependencies are needed.
+      - run: uv run playwright install-deps chromium
+      - run: uv run pytest --tracing retain-on-failure
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          if-no-files-found: ignore
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build .
