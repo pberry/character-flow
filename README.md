@@ -134,7 +134,7 @@ Links print with `CHARFLOW_BASE_URL` (default `https://characterflow.app`); pass
 | `GUNICORN_WORKERS` | 2 | Gunicorn worker processes (1 on Fly's 256MB machine) |
 | `LITESTREAM_REPLICA_URL` | unset (Tigris bucket in `fly.toml`) | Turns on Litestream replication and restore. Keys come from `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` |
 
-Requests over 1MB are refused (413). Access logs leave out request paths, because paths contain chart keys. API
+Requests over 1MB are refused (413), and so is JSON nested more than 64 levels deep (400). Access logs leave out request paths, because paths contain chart keys. API
 responses are never cached (`Cache-Control: no-store`), and responses over HTTPS send `Strict-Transport-Security`.
 
 ## Running locally without Docker
