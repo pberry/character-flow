@@ -45,12 +45,19 @@ jobs:
       - uses: superfly/flyctl-actions/setup-flyctl@1.6
 
       # Startup migrations touch the only copy of players' data, so every deploy
-      # gets a restore point first.
+      # gets a restore point first. A volume that has never been attached to a
+      # machine holds no data and can't be snapshotted, so the first deploy skips it.
       - name: Snapshot the data volume
         run: |
           vol=$(flyctl volumes list --json | jq -r '.[] | select(.name == "charflow_data") | .id' | head -1)
           test -n "$vol" || { echo "::error::no charflow_data volume"; exit 1; }
-          flyctl volumes snapshots create "$vol"
+          status=0
+          out=$(flyctl volumes snapshots create "$vol" 2>&1) || status=$?
+          echo "$out"
+          if [ "$status" -ne 0 ]; then
+            grep -q "uninitialized volume" <<<"$out" || exit "$status"
+            echo "::notice::$vol has never been used, so there is nothing to snapshot"
+          fi
 
       - run: flyctl deploy --remote-only
 
