@@ -102,6 +102,10 @@ the volume snapshot taken just before it (`fly volumes snapshots list charflow_d
 
 CI (`.github/workflows/ci.yml`) runs both test suites and a Docker build on every pull request and push to `main`.
 
+Actions are pinned to commit SHAs (the version is in a comment) and the `Dockerfile` base images to digests, so a
+moved tag can't change what runs with the Fly token. Dependabot (`.github/dependabot.yml`) opens a monthly pull
+request for each group of updates; review and merge those rather than editing the pins by hand.
+
 ### Backups on Fly
 
 - **Litestream** streams every change to the Tigris bucket while the app runs. When the machine starts with an
