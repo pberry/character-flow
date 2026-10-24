@@ -151,6 +151,7 @@ function showHome() {
       ),
       h("footer", { class: "site-footer muted" },
         "Character Flow is a free hobby project. ",
+        h("a", { href: "/faq" }, "FAQ"), " · ",
         h("a", { href: SOURCE_URL }, "Source on GitHub"), "."),
     ),
   );

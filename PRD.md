@@ -102,6 +102,10 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 - Says what the app is, who it's for, and how it works, and explains links instead of accounts.
 - Has room for screenshots or a video (hidden until added).
 
+### Static pages
+- Hand-written HTML pages (starting with an FAQ) share the app's styles, header, and footer.
+- Adding a page means adding one file; there is no CMS or in-app editing.
+
 ### Printing
 - The browser's Print button produces one letter page with a character summary header. Use
   "Save as PDF" in the print dialog to get a PDF.
@@ -159,6 +163,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-23 | SQLite WAL mode only when `CHARFLOW_WAL=1` | Litestream needs WAL, but the local backup container reads the database from a read-only mount, which WAL can break |
 | 2026-10-24 | Release public hosting as v1.0.0, not v0.11.0 | It's the first public release, and it breaks old `#/chart/<id>` links, so a major version marks both |
 | 2026-10-24 | Fix the audit's low-severity findings now; track the storage budget, Litestream checksum, and digest pinning as issues | The header, redirect, and parsing fixes are small and testable. The other three change capacity limits, the image build, or CI, so each gets its own change ([#23](https://github.com/pberry/character-flow/issues/23), [#24](https://github.com/pberry/character-flow/issues/24), [#25](https://github.com/pberry/character-flow/issues/25)) |
+| 2026-10-24 | Static pages are Jinja templates extending one base layout, served at `/<name>` | The FAQ is the first of possibly several pages. Flask already ships Jinja, so pages share one head and footer with no new dependency, build step, or CMS; the owner writes the HTML |
 | 2026-10-21 | Arrow keys nudge selected boxes within their lane (10px, Shift 50px); lanes and other selections don't nudge | Player request for fine positioning. Crossing lanes stays a drag so a stray keypress can't move a box to a different lane; multi-selections move as a unit so their spacing is kept |
 
 ## Roadmap

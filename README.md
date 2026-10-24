@@ -265,6 +265,25 @@ printed lines are cut off.
 about three quarters of the landscape size (box text around 7pt) on a page about 1.8 times as tall. Switching
 orientation moves the bottom-of-page line to match.
 
+## Static pages
+
+Pages like the FAQ are plain HTML in `app/templates/pages/`. A file named `<name>.html` is served at `/<name>`
+(lowercase letters, digits, and hyphens only). Each page extends `app/templates/base.html`, which supplies the
+stylesheet, header, and footer, and fills three blocks:
+
+```html
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+{% block description %}One sentence for search results.{% endblock %}
+{% block content %}
+<h1>About</h1>
+<section class="panel"><p>Anything you like.</p></section>
+{% endblock %}
+```
+
+No route is needed: add the file, link to it, and redeploy. Scripts on these pages must be
+files under `/static/`, because the Content-Security-Policy blocks inline scripts.
+
 ## Known limitations
 
 - Tested in Google Chrome. Safari and Firefox should work but haven't been checked.
@@ -301,7 +320,8 @@ Project layout:
 | --- | --- |
 | `app/__init__.py` | `create_app()` factory; reads the settings above |
 | `app/db.py` | SQLite schema, keys, and migration; each chart is a name plus a JSON document |
-| `app/routes.py` | JSON API (`/api/charts`, `/api/edit/<key>`, `/api/view/<key>`), security headers, `/healthz` |
+| `app/routes.py` | JSON API (`/api/charts`, `/api/edit/<key>`, `/api/view/<key>`), security headers, static pages, `/healthz` |
+| `app/templates/` | `base.html` layout and static pages (`pages/<name>.html`, served at `/<name>`) |
 | `app/admin.py` | Operator commands (`python -m app.admin list`, `reset-link`) |
 | `app/backup.py` | Database snapshots and rotation (`python -m app.backup`), run by the `backup` service |
 | `tests/test_api.py`, `tests/test_db.py`, `tests/test_admin.py` | API, storage and migration, and admin tests |

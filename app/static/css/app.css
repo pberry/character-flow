@@ -255,6 +255,11 @@ input:focus, textarea:focus { outline: 2px solid var(--select); outline-offset: 
 .media figcaption { color: var(--muted); font-size: 13px; margin-top: 6px; }
 .site-footer { margin-top: 40px; text-align: center; }
 .site-footer a { color: inherit; }
+/* ---- static pages (app/templates/pages/) ---- */
+.site-header { margin-bottom: 24px; }
+.site-header .brand { font-weight: 700; text-decoration: none; }
+.prose p, .prose li { line-height: 1.5; }
+.prose .panel h2 { margin-top: 0; }
 @media (max-width: 560px) {
   .new-chart { flex-direction: column; }
   .home .brand { font-size: 32px; }

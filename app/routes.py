@@ -1,17 +1,22 @@
-"""JSON API and static index.
+"""JSON API, static index, and static pages.
 
 There is no chart list: a chart is reached only by its edit key (read and
 write) or its view key (read and copy). Unknown keys are a plain 404, so the
 API never confirms whether a key exists.
 """
 
+import re
 from urllib.parse import urlsplit
 
-from flask import Blueprint, abort, current_app, g, jsonify, make_response, redirect, request
+from flask import Blueprint, abort, current_app, g, jsonify, make_response, redirect, render_template, request
+from jinja2 import TemplateNotFound
 
 from . import db
 
 bp = Blueprint("main", __name__)
+
+# Page slugs are plain names, so a URL can never reach outside templates/pages/.
+PAGE_SLUG = re.compile(r"[a-z0-9-]+")
 
 SECURITY_HEADERS = {
     "Referrer-Policy": "no-referrer",
@@ -132,6 +137,17 @@ def _create(name, data):
 @bp.get("/")
 def index():
     return current_app.send_static_file("index.html")
+
+
+@bp.get("/<slug>")
+def page(slug):
+    """A static page: app/templates/pages/<slug>.html, wrapped in base.html."""
+    if not PAGE_SLUG.fullmatch(slug):
+        abort(404)
+    try:
+        return render_template(f"pages/{slug}.html")
+    except TemplateNotFound:
+        abort(404)
 
 
 @bp.get("/healthz")
