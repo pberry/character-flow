@@ -745,6 +745,32 @@ def test_home_page_demo_video_respects_reduced_motion(page: Page, live_server):
     assert video.evaluate("v => !v.autoplay && v.paused")
 
 
+def test_example_chart_from_home_page(page: Page, live_server):
+    page.goto(live_server)
+    page.get_by_role("link", name="See an example chart for Sable the rogue").click()
+    expect(page.locator(".chart-name")).to_have_text("Sable Quickfingers")
+    sheet = page.locator(".view-sheet")
+    for text in ("Start of turn", "Attack", "Hidden?", "Sneak Attack"):
+        expect(sheet.get_by_text(text).first).to_be_visible()
+
+    # A copy is an ordinary editable chart with the example's boxes and arrows.
+    page.on("dialog", lambda d: d.accept("Sable, my copy"))
+    page.get_by_role("button", name="Make a copy").click()
+    expect(page.get_by_text("Bookmark your chart")).to_be_visible()
+    page.get_by_role("button", name="Done").click()
+    expect(page.locator(".chart-name")).to_have_text("Sable, my copy")
+    edit_key = page.url.rsplit("/", 1)[-1]
+    data = chart_data(live_server, edit_key)
+    assert [l["name"] for l in data["lanes"]] == ["Start of turn", "Attack"]
+    assert (len(data["boxes"]), len(data["edges"])) == (5, 4)
+
+
+def test_missing_example_goes_home(page: Page, live_server):
+    page.on("dialog", lambda d: d.accept())
+    page.goto(live_server + "/#/example/nobody")
+    expect(page.get_by_role("heading", name="Start a chart")).to_be_visible()
+
+
 def test_faq_page_from_home_footer(page: Page, live_server):
     page.goto(live_server)
     page.locator(".site-footer").get_by_role("link", name="FAQ").click()

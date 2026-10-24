@@ -8,6 +8,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 ### Added
 - The home page shows a short looping video of a chart being built for Sable Quickfingers, a level 5 rogue. It
   stays paused for players who prefer reduced motion. `scripts/record_demo.py` re-records it after UI changes.
+- An example chart for Sable, linked from the home page's "Start a chart" panel (`#/example/sable`), so new
+  players can see a finished chart and make their own editable copy instead of starting from a blank page.
 
 ### Security
 - Each client can make 20 new charts (creates and copies) an hour, so one script can't fill the server

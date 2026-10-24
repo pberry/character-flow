@@ -1,5 +1,5 @@
 // App bootstrap and hash routing: #/ (home), #/edit/<key>/intro, #/edit/<key>,
-// #/view/<key>. Keys live in the URL fragment, so page loads never send them
+// #/view/<key>, #/example/<name>. Keys live in the URL fragment, so page loads never send them
 // to the server.
 
 import * as api from "./api.js";
@@ -128,7 +128,11 @@ function showHome() {
         h("p", { class: "lead" },
           "Generic \u201cwhat can I do on my turn?\u201d charts don't fit a real character. Answer a few questions, "
           + "lay out your options turn by turn, and print one sheet you can glance at when it's your go."),
-        h("section", { class: "panel start" }, h("h2", {}, "Start a chart"), form, error),
+        h("section", { class: "panel start" }, h("h2", {}, "Start a chart"), form,
+          h("p", { class: "example" }, "Rather not start from a blank page? ",
+            h("a", { href: "#/example/sable" }, "See an example chart for Sable the rogue"),
+            ", then make your own copy to edit."),
+          error),
       ),
       recentPanel,
       h(
@@ -227,6 +231,29 @@ async function showViewPage(key) {
   });
 }
 
+// Example charts ship as static JSON ({name, data}) so they work on any install,
+// with no database row behind them. A copy becomes an ordinary new chart.
+async function showExamplePage(name) {
+  let record;
+  try {
+    const resp = await fetch(`/static/examples/${name}.json`);
+    if (!resp.ok) throw new Error(resp.status === 404 ? "There's no example by that name." : resp.statusText);
+    record = await resp.json();
+  } catch (err) {
+    alert(`Couldn't open the example: ${err.message}`);
+    return go("#/");
+  }
+  record.data = normalizeChart(record.data);
+  cleanup = showView(app, record, {
+    onCopy: async (copyName) => {
+      const chart = await api.createChart(copyName, record.data);
+      rememberChart(chart);
+      justCreated = chart.edit_key;
+      go(`#/edit/${chart.edit_key}`);
+    },
+  });
+}
+
 async function route() {
   const previous = cleanup;
   cleanup = null;
@@ -236,6 +263,8 @@ async function route() {
   if (edit) return showChart(edit[1], Boolean(edit[2]));
   const view = location.hash.match(/^#\/view\/([\w-]+)$/);
   if (view) return showViewPage(view[1]);
+  const example = location.hash.match(/^#\/example\/([\w-]+)$/);
+  if (example) return showExamplePage(example[1]);
   showHome();
 }
 

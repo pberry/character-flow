@@ -4,9 +4,11 @@
 
 Starts the app on a throwaway database, drives the UI with Playwright while
 recording video, then uses ffmpeg to write app/static/media/demo.mp4 and a
-poster frame, demo.png. Re-run it after UI changes to refresh the video.
+poster frame, demo.png. The finished chart is saved as the home page's example,
+app/static/examples/sable.json. Re-run it after UI changes to refresh all three.
 """
 
+import json
 import logging
 import shutil
 import subprocess
@@ -24,6 +26,7 @@ sys.path.insert(0, str(ROOT))
 from app import create_app  # noqa: E402
 
 MEDIA = ROOT / "app" / "static" / "media"
+EXAMPLE = ROOT / "app" / "static" / "examples" / "sable.json"
 SIZE = {"width": 1280, "height": 800}
 
 CHARACTER = {
@@ -219,6 +222,10 @@ def record(base, video_dir, poster):
         click(page, page.get_by_role("button", name="Done"))
 
         build_chart(page)
+        edit_key = page.url.rsplit("/", 1)[-1]
+        data = page.request.get(f"{base}/api/edit/{edit_key}").json()["data"]
+        EXAMPLE.parent.mkdir(exist_ok=True)
+        EXAMPLE.write_text(json.dumps({"name": CHARACTER["name"], "data": data}, indent=2) + "\n")
         page.screenshot(path=poster, style="#demo-cursor { display: none; }")
         video = page.video.path()
         context.close()
@@ -242,8 +249,8 @@ def main():
              "-movflags", "+faststart", "-an", str(MEDIA / "demo.mp4")],
             check=True,
         )
-    for name in ("demo.mp4", "demo.png"):
-        print(f"{MEDIA / name}: {(MEDIA / name).stat().st_size // 1024} KB")
+    for path in (MEDIA / "demo.mp4", MEDIA / "demo.png", EXAMPLE):
+        print(f"{path}: {path.stat().st_size // 1024} KB")
 
 
 if __name__ == "__main__":
