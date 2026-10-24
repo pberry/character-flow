@@ -146,3 +146,9 @@ def test_www_redirects_to_bare_domain(client):
     resp = client.get("/static/favicon.svg", base_url="https://www.characterflow.app")
     assert resp.status_code == 301
     assert resp.headers["Location"] == "https://characterflow.app/static/favicon.svg"
+
+
+def test_www_redirect_keeps_https_behind_a_proxy(client):
+    resp = client.get("/", base_url="http://www.characterflow.app", headers={"X-Forwarded-Proto": "https"})
+    assert resp.status_code == 301
+    assert resp.headers["Location"] == "https://characterflow.app/"
