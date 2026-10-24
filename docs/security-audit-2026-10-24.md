@@ -18,16 +18,19 @@ I found no critical or high-severity issues. The biggest risk is **availability*
 use up the chart limit or the disk, because no rate limit exists and the database has no size limit. The other
 findings are hardening.
 
-| # | Finding | Severity |
-|---|---------|----------|
-| 1 | Anonymous clients can fill the server (chart limit and disk) | Medium |
-| 2 | The Litestream binary is downloaded without a checksum check | Medium |
-| 3 | Deeply nested JSON returns a 500 instead of a 400 | Low |
-| 4 | The `www.` redirect trusts the `Host` header (open redirect) | Low |
-| 5 | No `Strict-Transport-Security` header | Low |
-| 6 | Responses that contain an edit key have no `Cache-Control: no-store` | Low |
-| 7 | GitHub Actions and base images are pinned by tag, not by digest | Low |
-| 8 | CSP has no `base-uri` or `form-action` | Informational |
+| # | Finding | Severity | Status |
+|---|---------|----------|--------|
+| 1 | Anonymous clients can fill the server (chart limit and disk) | Medium | Open: [#19](https://github.com/pberry/character-flow/issues/19) (rate limit), [#23](https://github.com/pberry/character-flow/issues/23) (byte budget) |
+| 2 | The Litestream binary is downloaded without a checksum check | Medium | Open: [#24](https://github.com/pberry/character-flow/issues/24) |
+| 3 | Deeply nested JSON returns a 500 instead of a 400 | Low | Fixed (Unreleased) |
+| 4 | The `www.` redirect trusts the `Host` header (open redirect) | Low | Fixed (Unreleased) |
+| 5 | No `Strict-Transport-Security` header | Low | Fixed (Unreleased) |
+| 6 | Responses that contain an edit key have no `Cache-Control: no-store` | Low | Fixed (Unreleased) |
+| 7 | GitHub Actions and base images are pinned by tag, not by digest | Low | Open: [#25](https://github.com/pberry/character-flow/issues/25) |
+| 8 | CSP has no `base-uri` or `form-action` | Informational | Fixed (Unreleased) |
+
+While fixing #3, a top-level JSON body that isn't an object (`[1]`) was also found to return a 500. It's fixed in the
+same change.
 
 ## Findings
 

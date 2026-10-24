@@ -158,6 +158,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-23 | Deploy from release tags in GitHub Actions, with a volume snapshot first | Matches the existing release habit (check the docs, then tag). Migrations touch the only copy of players' data |
 | 2026-10-23 | SQLite WAL mode only when `CHARFLOW_WAL=1` | Litestream needs WAL, but the local backup container reads the database from a read-only mount, which WAL can break |
 | 2026-10-24 | Release public hosting as v1.0.0, not v0.11.0 | It's the first public release, and it breaks old `#/chart/<id>` links, so a major version marks both |
+| 2026-10-24 | Fix the audit's low-severity findings now; track the storage budget, Litestream checksum, and digest pinning as issues | The header, redirect, and parsing fixes are small and testable. The other three change capacity limits, the image build, or CI, so each gets its own change ([#23](https://github.com/pberry/character-flow/issues/23), [#24](https://github.com/pberry/character-flow/issues/24), [#25](https://github.com/pberry/character-flow/issues/25)) |
 | 2026-10-21 | Arrow keys nudge selected boxes within their lane (10px, Shift 50px); lanes and other selections don't nudge | Player request for fine positioning. Crossing lanes stays a drag so a stray keypress can't move a box to a different lane; multi-selections move as a unit so their spacing is kept |
 
 ## Roadmap
@@ -186,6 +187,10 @@ Tracked as GitHub issues:
 - [#7](https://github.com/pberry/character-flow/issues/7) Keep lane headers visible when panning
 - [#8](https://github.com/pberry/character-flow/issues/8) Touch support
 - [#9](https://github.com/pberry/character-flow/issues/9) Undo and version history
+- [#19](https://github.com/pberry/character-flow/issues/19) Per-IP rate limiting for chart creation
+- [#23](https://github.com/pberry/character-flow/issues/23) Cap total stored bytes, not just the chart count
+- [#24](https://github.com/pberry/character-flow/issues/24) Verify the Litestream download's checksum
+- [#25](https://github.com/pberry/character-flow/issues/25) Pin GitHub Actions and base images by digest
 - [#19](https://github.com/pberry/character-flow/issues/19) Per-IP rate limiting for chart creation
 
 ## Constraints
