@@ -1,6 +1,7 @@
 import pytest
 
 from app import create_app
+from app.routes import MAX_DEPTH
 
 
 @pytest.fixture
@@ -163,11 +164,29 @@ def test_non_object_body_is_400(client, body):
         assert resp.get_json() == {"error": "body must be a JSON object"}
 
 
-def test_deeply_nested_json_is_400_not_500(client):
-    deep = "[" * 100_000 + "]" * 100_000
-    resp = client.post("/api/charts", data=f'{{"name":"A","data":{{"x":{deep}}}}}', content_type="application/json")
-    assert resp.status_code == 400
-    assert resp.get_json() == {"error": "JSON is nested too deeply"}
+def nested(depth):
+    """A chart body whose deepest list sits `depth` levels down (the body itself is level 1)."""
+    lists = depth - 2
+    return f'{{"name":"A","data":{{"x":{"[" * lists}{"]" * lists}}}}}'
+
+
+def test_nesting_up_to_the_limit_is_allowed(client):
+    resp = client.post("/api/charts", data=nested(MAX_DEPTH), content_type="application/json")
+    assert resp.status_code == 201
+
+
+@pytest.mark.parametrize("depth", [MAX_DEPTH + 1, 100_000])
+def test_deeply_nested_json_is_400_not_500(client, depth):
+    # 100,000 levels hits Python's parser limit on some versions and parses on others; both are refused.
+    chart = create(client)
+    for method, url in (
+        ("post", "/api/charts"),
+        ("put", f"/api/edit/{chart['edit_key']}"),
+        ("post", f"/api/view/{chart['view_key']}/copy"),
+    ):
+        resp = getattr(client, method)(url, data=nested(depth), content_type="application/json")
+        assert resp.status_code == 400
+        assert resp.get_json() == {"error": "JSON is nested too deeply"}
 
 
 def test_healthz(client):

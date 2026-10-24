@@ -29,6 +29,10 @@ findings are hardening.
 | 7 | GitHub Actions and base images are pinned by tag, not by digest | Low | Open: [#25](https://github.com/pberry/character-flow/issues/25) |
 | 8 | CSP has no `base-uri` or `form-action` | Informational | Fixed (Unreleased) |
 
+Where Python's JSON parser gives up depends on the version and the C stack: Python 3.14 on GitHub's runners parsed
+100,000 levels. The fix for #3 is therefore an explicit limit of 64 levels (real charts use about 7), not a catch of
+`RecursionError` alone.
+
 While fixing #3, a top-level JSON body that isn't an object (`[1]`) was also found to return a 500. It's fixed in the
 same change.
 

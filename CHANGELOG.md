@@ -6,8 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 ## [Unreleased]
 
 ### Fixed
-- A request body that isn't a JSON object, or is nested too deeply to parse, is now refused with a 400 instead of
-  failing with a 500.
+- A request body that isn't a JSON object, or nests more than 64 levels deep, is now refused with a 400 instead of
+  failing with a 500 or being stored.
 
 ### Security
 - The `www.` redirect only applies to the host in `CHARFLOW_BASE_URL`, so a forged `Host` header can't send

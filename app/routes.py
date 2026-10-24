@@ -68,12 +68,35 @@ def too_large(_e):
     return error("chart is too large", 413)
 
 
+# Real charts nest about 7 levels deep. Python's own parser limit depends on the
+# version and the C stack, so this one is enforced explicitly.
+MAX_DEPTH = 64
+
+
+def _too_deep(value):
+    """Whether lists and objects in `value` nest deeper than MAX_DEPTH, checked
+    without recursion."""
+    stack = [(value, 1)]
+    while stack:
+        v, depth = stack.pop()
+        if isinstance(v, (dict, list)):
+            if depth > MAX_DEPTH:
+                return True
+            stack.extend((child, depth + 1) for child in (v.values() if isinstance(v, dict) else v))
+    return False
+
+
 def json_body():
     """The request's JSON object, or {} without one. A body that isn't an object,
-    or is nested too deeply for Python's parser, is a 400, not a 500."""
+    or nests deeper than MAX_DEPTH, is a 400, not a 500."""
     try:
         body = request.get_json(silent=True)
     except RecursionError:
+        body = None
+        too_deep = True
+    else:
+        too_deep = _too_deep(body)
+    if too_deep:
         abort(make_response(error("JSON is nested too deeply", 400)))
     if body is not None and not isinstance(body, dict):
         abort(make_response(error("body must be a JSON object", 400)))
