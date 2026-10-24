@@ -5,6 +5,7 @@ write) or its view key (read and copy). Unknown keys are a plain 404, so the
 API never confirms whether a key exists.
 """
 
+import math
 import re
 from urllib.parse import urlsplit
 
@@ -126,7 +127,23 @@ def viewable(chart):
     return {k: chart[k] for k in ("name", "data", "updated_at")}
 
 
+def client_ip():
+    """The caller's address: from the proxy's header when one is configured
+    (Fly-Client-IP on Fly), else the connection. Clients can't set it otherwise."""
+    header = current_app.config["CLIENT_IP_HEADER"]
+    return (header and request.headers.get(header)) or request.remote_addr
+
+
 def _create(name, data):
+    limiter = current_app.extensions["create_limiter"]
+    if limiter is not None:
+        wait = limiter.hit(client_ip())
+        if wait:
+            minutes = math.ceil(wait / 60)
+            resp, status = error(
+                f"too many new charts from your network; please try again in {minutes} minute{'s' * (minutes != 1)}", 429)
+            resp.headers["Retry-After"] = str(wait)
+            return resp, status
     conn = get_conn()
     if db.count_charts(conn) >= current_app.config["MAX_CHARTS"]:
         return error("this server is full; please try again later", 503)

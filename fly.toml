@@ -8,6 +8,8 @@ primary_region = "sjc"
   CHARFLOW_WAL = "1"
   CHARFLOW_BASE_URL = "https://characterflow.app"
   GUNICORN_WORKERS = "1"
+  # Set by Fly's proxy, so the per-client limit on new charts sees real addresses.
+  CHARFLOW_CLIENT_IP_HEADER = "Fly-Client-IP"
   # Litestream backups to the Tigris bucket made by `fly storage create`, which also
   # sets the access-key secrets. Change the bucket name here if that one was taken.
   LITESTREAM_REPLICA_URL = "s3://characterflow-backups/charflow.db?endpoint=fly.storage.tigris.dev&region=auto"

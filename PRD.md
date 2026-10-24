@@ -87,7 +87,8 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 - There is **no list of all charts** in the app. The home page lists the charts this browser has opened. A new
   chart opens with a "bookmark your chart" dialog, and the editor's Links button shows both links.
 - A lost edit link can be replaced by the operator (`python -m app.admin reset-link`), never looked up.
-- Abuse limits: request bodies up to 1MB, and a cap on the total number of charts.
+- Abuse limits: request bodies up to 1MB, a cap on the total number of charts, and a per-client hourly limit on
+  new charts and copies.
 
 ### Hosting and backups
 - Fly.io, one machine that stops when idle, with SQLite on a volume. Deploys run from GitHub Actions when a
@@ -165,6 +166,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-24 | Fix the audit's low-severity findings now; track the storage budget, Litestream checksum, and digest pinning as issues | The header, redirect, and parsing fixes are small and testable. The other three change capacity limits, the image build, or CI, so each gets its own change ([#23](https://github.com/pberry/character-flow/issues/23), [#24](https://github.com/pberry/character-flow/issues/24), [#25](https://github.com/pberry/character-flow/issues/25)) |
 | 2026-10-24 | Static pages are Jinja templates extending one base layout, served at `/<name>` | The FAQ is the first of possibly several pages. Flask already ships Jinja, so pages share one head and footer with no new dependency, build step, or CMS; the owner writes the HTML |
 | 2026-10-24 | Pin actions by commit SHA and base images by digest, updated by monthly Dependabot PRs | A moved tag in the deploy job could take over the app with `FLY_API_TOKEN`. Dependabot keeps the pins from going stale, so base-image security fixes still arrive, as reviewable PRs |
+| 2026-10-24 | Limit new charts to 20 per client IP per sliding hour, counted in memory | One machine with one worker sees every request, so no new dependency or store is needed. The hour is generous enough for a GM making charts for a table on shared Wi-Fi, yet one IP can't fill the 5000-chart cap. The client IP header is trusted only when configured, so it can't be forged around the limit off Fly |
 | 2026-10-21 | Arrow keys nudge selected boxes within their lane (10px, Shift 50px); lanes and other selections don't nudge | Player request for fine positioning. Crossing lanes stays a drag so a stray keypress can't move a box to a different lane; multi-selections move as a unit so their spacing is kept |
 
 ## Roadmap
@@ -193,7 +195,6 @@ Tracked as GitHub issues:
 - [#7](https://github.com/pberry/character-flow/issues/7) Keep lane headers visible when panning
 - [#8](https://github.com/pberry/character-flow/issues/8) Touch support
 - [#9](https://github.com/pberry/character-flow/issues/9) Undo and version history
-- [#19](https://github.com/pberry/character-flow/issues/19) Per-IP rate limiting for chart creation
 - [#23](https://github.com/pberry/character-flow/issues/23) Cap total stored bytes, not just the chart count
 - [#24](https://github.com/pberry/character-flow/issues/24) Verify the Litestream download's checksum
 
