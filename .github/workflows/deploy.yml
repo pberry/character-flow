@@ -30,7 +30,7 @@ jobs:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       TAG: ${{ inputs.ref || github.ref_name }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.TAG }}
 
@@ -42,7 +42,7 @@ jobs:
           grep -q "^## \[$version\]" CHANGELOG.md \
             || { echo "::error::CHANGELOG.md has no section for $version"; exit 1; }
 
-      - uses: superfly/flyctl-actions/setup-flyctl@1.6
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
 
       # Startup migrations touch the only copy of players' data, so every deploy
       # gets a restore point first. A volume that has never been attached to a

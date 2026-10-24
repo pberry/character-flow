@@ -1,6 +1,6 @@
-FROM python:3.14-slim
+FROM python:3.14-slim@sha256:35caba83af2fe6da9a5d922f9b0156f21d1246a48278c58a08bd253303ba42e8
 
-COPY --from=ghcr.io/astral-sh/uv:0.11.14 /uv /bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.11.14@sha256:1025398289b62de8269e70c45b91ffa37c373f38118d7da036fb8bb8efc85d97 /uv /bin/uv
 
 # Litestream streams the database to object storage on Fly.io (see litestream.yml).
 # Release assets call amd64 "x86_64".
