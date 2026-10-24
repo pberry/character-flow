@@ -6,8 +6,29 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 ## [Unreleased]
 
 ### Added
+- Charts now have a private **edit link** and a shareable, read-only **view link**, shown when a chart is created
+  and from the new **Links** button in the editor. The view link opens the chart as it prints, with Print and
+  **Make a copy**.
+- A home page that explains what Character Flow is, who it's for, and how links work, with page metadata and an
+  icon.
+- Hosting on Fly.io at characterflow.app: a `fly.toml`, Litestream backups to Cloudflare R2, and GitHub Actions
+  for CI on every pull request and deploys from release tags.
+- `python -m app.admin` lists charts and reissues lost edit links.
+- `/healthz` for health checks.
 - Arrow keys nudge the selected box or boxes one grid step; Shift+arrow moves five. Boxes stay in their lane
   ([#17](https://github.com/pberry/character-flow/issues/17)).
+
+### Changed
+- **Breaking:** old `#/chart/<id>` links no longer work. Existing charts get new keys when the database is upgraded,
+  and the operator hands out new links with `python -m app.admin reset-link`.
+- The home page lists only the charts opened in this browser, not every chart on the server.
+- Chart names no longer have to be unique.
+- Gunicorn access logs no longer include request paths, which now contain chart keys.
+
+### Security
+- Charts can only be read or changed with their keys, and only a hash of each edit key is stored.
+- Requests over 1MB are refused, and the total number of charts is capped (`CHARFLOW_MAX_CHARTS`).
+- Responses send `Content-Security-Policy`, `Referrer-Policy: no-referrer`, and `X-Content-Type-Options` headers.
 
 ## [0.10.0] - 2026-10-21
 

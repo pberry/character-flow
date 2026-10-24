@@ -1,13 +1,28 @@
 # Character Flow
 
-A small local-network web app for building a **character-specific combat flowchart** for tabletop RPGs like D&D,
-laid out as left-to-right **swim lanes**: one horizontal lane per part of your turn.
+A small web app for building a **character-specific combat flowchart** for tabletop RPGs like D&D,
+laid out as left-to-right **swim lanes**: one horizontal lane per part of your turn. It runs at
+[characterflow.app](https://characterflow.app), and you can also run it yourself with Docker.
 
 1. Answer a short questionnaire about your character (abilities, weapons, spells, features).
 2. Those answers become a palette of cards you drag into lanes. New charts start with
    **Start of turn, Attack, Bonus Actions, Reactions, Other Actions**, and you can rename, recolor, reorder, add, or remove lanes.
 3. Connect boxes with arrows, within or across lanes. Suggested arrows appear faintly; click one to make it real.
-4. Save by name, and print to a single letter page, landscape or portrait.
+4. Charts save automatically, and you print them on a single letter page, landscape or portrait.
+
+## Links instead of accounts
+
+There are no accounts. Each chart has two secret links, shown when you create it and from the editor's **Links**
+button:
+
+- The **edit link** (`/#/edit/<key>`) opens the editor. Anyone with it can change or delete the chart, so keep it
+  private.
+- The **view link** (`/#/view/<key>`) shows the chart read-only, with Print and **Make a copy**. Share this one.
+
+Keys are 128 random bits. The server stores only a hash of each edit key, so a copy of the database can't be used
+to edit charts. The home page lists the charts this browser has opened (kept in the browser's local storage, with
+Rename, Duplicate, and Delete). If an edit link is lost, the operator can issue a new one; see the admin commands
+below.
 
 ## Running with Docker (recommended)
 
@@ -35,6 +50,10 @@ use another folder). The snapshots live outside the Docker volume, so they survi
 - Check it's running: `docker compose logs backup`.
 - On a Linux host, create the folder first (`mkdir backups`) and make sure uid 1000 can write to it.
 
+The image runs gunicorn through `docker-entrypoint.sh`. It starts as root only to take ownership of `/data`, then
+runs as the `charflow` user. Litestream (below) is only used when `LITESTREAM_REPLICA_URL` is set, so local Docker
+runs exactly as before.
+
 Restore a snapshot. This replaces every chart with the snapshot's contents. The current data is snapshotted first,
 so a restore can be undone the same way.
 
@@ -46,6 +65,76 @@ docker compose start charflow
 ```
 
 To look inside a snapshot first, open it with any SQLite tool: `sqlite3 backups/<file> "select name, updated_at from charts"`.
+
+## Hosting on Fly.io
+
+The public site runs on [Fly.io](https://fly.io) as one small machine (`fly.toml`) that stops when idle and starts
+on the next request, which takes a second or two. SQLite lives on a Fly volume at `/data`, so the app must run
+**exactly one machine**. Expect roughly $1–3 a month.
+
+### One-time setup
+
+```sh
+fly launch --no-deploy --copy-config          # uses fly.toml; change `app` if the name is taken
+fly volumes create charflow_data --size 1     # in fly.toml's primary_region
+fly secrets set \
+  LITESTREAM_REPLICA_URL='s3://<bucket>/charflow.db?endpoint=https://<account-id>.r2.cloudflarestorage.com&region=auto' \
+  LITESTREAM_ACCESS_KEY_ID=<r2-access-key> LITESTREAM_SECRET_ACCESS_KEY=<r2-secret>
+fly certs add characterflow.app && fly certs add www.characterflow.app   # then add the DNS records it prints
+fly tokens create deploy                      # store as FLY_API_TOKEN in the GitHub "production" environment
+```
+
+Create the R2 bucket and an API token limited to that bucket in the Cloudflare dashboard first. Requests to
+`www.` redirect to the bare domain.
+
+### Releasing
+
+Push a tag (`git tag v0.11.0 && git push origin v0.11.0`) and the **Deploy** workflow
+(`.github/workflows/deploy.yml`):
+
+1. runs the full CI suite on the tag;
+2. checks that the tag matches `pyproject.toml`'s version and has a `CHANGELOG.md` section;
+3. snapshots the Fly volume;
+4. runs `flyctl deploy --remote-only` (Fly builds the image);
+5. checks `https://characterflow.app/healthz` and the home page.
+
+To roll back, run the Deploy workflow by hand ("Run workflow") with an older tag. If a release damaged data, restore
+the volume snapshot taken just before it (`fly volumes snapshots list charflow_data`).
+
+CI (`.github/workflows/ci.yml`) runs both test suites and a Docker build on every pull request and push to `main`.
+
+### Backups on Fly
+
+- **Litestream** streams every change to the R2 bucket while the app runs. When the machine starts with an empty
+  volume, it restores the database from R2 first.
+- **Fly volume snapshots** are taken daily and kept for 30 days (`snapshot_retention` in `fly.toml`), plus one before
+  every deploy.
+- The hourly `backup` service in `compose.yaml` is for local Docker only.
+
+### Admin commands
+
+There's no admin page. Run these where the database lives:
+
+```sh
+fly ssh console -C "python -m app.admin list"                # id, last update, and name of every chart
+fly ssh console -C "python -m app.admin reset-link 4"        # prints a new edit link; the old one stops working
+```
+
+Locally: `docker compose exec charflow python -m app.admin list` (or `uv run python -m app.admin --db charflow.db list`).
+Links print with `CHARFLOW_BASE_URL` (default `https://characterflow.app`); pass `--base-url` to change it.
+
+### Settings
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `CHARFLOW_DB` | `charflow.db` (`/data/charflow.db` in the image) | SQLite file |
+| `CHARFLOW_WAL` | off | `1` turns on SQLite WAL mode (needed by Litestream; set in `fly.toml`) |
+| `CHARFLOW_MAX_CHARTS` | 5000 | New charts are refused (503) past this many, to bound disk use |
+| `CHARFLOW_BASE_URL` | `https://characterflow.app` | Base for links printed by `app.admin` |
+| `GUNICORN_WORKERS` | 2 | Gunicorn worker processes (1 on Fly's 256MB machine) |
+| `LITESTREAM_REPLICA_URL` and keys | unset | Turns on Litestream replication and restore |
+
+Requests over 1MB are refused (413). Access logs leave out request paths, because paths contain chart keys.
 
 ## Running locally without Docker
 
@@ -179,8 +268,11 @@ orientation moves the bottom-of-page line to match.
 
 - Tested in Google Chrome. Safari and Firefox should work but haven't been checked.
 - On touch screens, cards can't be dragged from the palette (tap a card to add it instead), and there's no pinch zoom.
-- No undo or version history yet. Use "Duplicate" on the chart list to keep a snapshot before big changes.
-- Single user: if two browsers edit the same chart, the last save wins.
+- No undo or version history yet. Use "Duplicate" on the home page to keep a snapshot before big changes.
+- Lose your edit link and only the operator can reissue it (`app.admin reset-link`); there's no self-service recovery.
+- The home page only lists charts opened in that browser. Clearing site data forgets them (the links still work).
+- If two people edit the same chart at once, the last save wins.
+- No per-IP rate limiting yet; only the request size and total chart count are capped.
 - Arrows take simple right-angle routes and don't steer around boxes in their way; nudge boxes or pick other sides.
 - Lane headers are part of the canvas, so they scroll out of view if you pan far to the right.
 - Side-column item heights are estimated from the text, so unusual text (many wide capitals) can be clipped; add a
@@ -206,15 +298,19 @@ Project layout:
 
 | Path | Role |
 | --- | --- |
-| `app/__init__.py` | `create_app()` factory; reads `CHARFLOW_DB` |
-| `app/db.py` | SQLite schema and CRUD; each chart is a name plus a JSON document |
-| `app/routes.py` | JSON API (`/api/charts`) and the index page |
+| `app/__init__.py` | `create_app()` factory; reads the settings above |
+| `app/db.py` | SQLite schema, keys, and migration; each chart is a name plus a JSON document |
+| `app/routes.py` | JSON API (`/api/charts`, `/api/edit/<key>`, `/api/view/<key>`), security headers, `/healthz` |
+| `app/admin.py` | Operator commands (`python -m app.admin list`, `reset-link`) |
 | `app/backup.py` | Database snapshots and rotation (`python -m app.backup`), run by the `backup` service |
-| `tests/test_api.py` | API tests |
+| `tests/test_api.py`, `tests/test_db.py`, `tests/test_admin.py` | API, storage and migration, and admin tests |
 | `tests/test_backup.py` | Backup and rotation tests |
 | `tests/e2e/` | Playwright browser tests covering the full flow and print layout |
 | `tests/js/` | Node tests for the pure frontend modules |
-| `Dockerfile`, `compose.yaml` | Container image (gunicorn, non-root), the app service, and the backup service |
+| `Dockerfile`, `compose.yaml` | Container image (gunicorn, Litestream, non-root), the app service, and the backup service |
+| `docker-entrypoint.sh`, `gunicorn.conf.py`, `litestream.yml` | Container startup, gunicorn settings, Litestream replica |
+| `fly.toml` | Fly.io app, volume, health check, and machine size |
+| `.github/workflows/` | CI (`ci.yml`) and tag-triggered deploys (`deploy.yml`) |
 
 The frontend is plain ES modules + SVG with no build step, in `app/static/`:
 
@@ -232,7 +328,10 @@ The frontend is plain ES modules + SVG with no build step, in `app/static/`:
 | `js/editor.js` | Editor screen: toolbar, palette, autosave, keyboard shortcuts |
 | `js/intro.js` | Character questionnaire |
 | `js/print.js` | Builds the one-page print layout |
-| `js/main.js` | Hash routing between the chart list, questionnaire, and editor |
+| `js/main.js` | Home page and hash routing between home, questionnaire, editor, and view page |
+| `js/recent.js` | Pure list of this browser's charts, kept in localStorage |
+| `js/links.js` | The edit and view links dialog |
+| `js/view.js` | Read-only view page (reuses the print layout) |
 | `js/palette.js` | Sidebar character summary and palette cards |
 | `js/api.js`, `js/dom.js` | Fetch wrappers and tiny element builders |
 | `css/app.css`, `css/print.css` | Screen and print styles |

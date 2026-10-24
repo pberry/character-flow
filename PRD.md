@@ -10,9 +10,11 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 
 ## Users
 
-- **One player at a time.** The project owner builds charts for, and with, a player. Single user, no accounts.
+- **Players and game masters, no accounts.** Anyone can make a chart. A chart belongs to whoever holds its edit link.
 - **Real players use it now** (since 2026-10-20), so losing a saved chart is the worst failure the app can have.
-- Runs on a home LAN. Not exposed to the internet.
+  Defacing someone else's chart must not be possible.
+- **Public** at [characterflow.app](https://characterflow.app), hosted on Fly.io. Running costs must stay at a
+  few dollars a month.
 
 ## Goals
 
@@ -20,11 +22,13 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 2. Build a turn flowchart as **swim lanes** (one lane per part of the turn), using LucidChart-style boxes and
    arrows, with as little friction as possible.
 3. Print the chart on **one sheet of 8.5x11 color paper**, landscape or portrait, readable at the table.
-4. Save charts by name and come back to them later.
+4. Save charts and come back to them later with a private link, and share a read-only link with the table.
+5. Explain itself on the home page to people who have never heard of it.
 
 ## Non-goals (for now)
 
-- Multiple users, authentication, sharing, or real-time collaboration.
+- Accounts, passwords, or sign-in. Links replace them.
+- Real-time collaboration.
 - Undo or version history ([#9](https://github.com/pberry/character-flow/issues/9)). Use Duplicate as a snapshot.
 - Rules knowledge: the app is **system-agnostic** and doesn't validate anything against D&D rules.
 - Multi-page charts.
@@ -74,11 +78,29 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 - The column **takes its width from the lanes** (200 units, about four boxes per row instead of five), so the print
   scale is unchanged. Boxes past the narrower edge are pulled back in.
 
-### Saving
-- Charts are saved by unique name in SQLite. You can rename, duplicate, and delete them.
+### Saving and links
+- Charts are saved in SQLite. Names don't have to be unique. Charts can be renamed, duplicated, and deleted.
 - Changes autosave 2 seconds after the last edit. Ctrl/Cmd+S saves immediately.
-- The Docker setup snapshots the database every hour into a host folder outside the data volume. Unchanged
-  data isn't snapshotted again. The newest 48 snapshots are kept, plus the last one of each day for 90 days.
+- Each chart has an **edit link** and a **view link**, both with 128-bit random keys in the URL fragment. The
+  edit link reads, saves, renames, and deletes; the view link only reads, prints, and copies. Only a hash of the
+  edit key is stored. Unknown keys get a 404.
+- There is **no list of all charts** in the app. The home page lists the charts this browser has opened. A new
+  chart opens with a "bookmark your chart" dialog, and the editor's Links button shows both links.
+- A lost edit link can be replaced by the operator (`python -m app.admin reset-link`), never looked up.
+- Abuse limits: request bodies up to 1MB, and a cap on the total number of charts.
+
+### Hosting and backups
+- Fly.io, one machine that stops when idle, with SQLite on a volume. Deploys run from GitHub Actions when a
+  release tag is pushed, after the tests pass and a volume snapshot is taken.
+- Litestream streams the database to Cloudflare R2 and restores an empty volume from it. Fly keeps daily volume
+  snapshots for 30 days.
+- Locally, the Docker setup still snapshots the database every hour into a host folder outside the data volume.
+  Unchanged data isn't snapshotted again. The newest 48 snapshots are kept, plus the last one of each day for 90
+  days.
+
+### Home page
+- Says what the app is, who it's for, and how it works, and explains links instead of accounts.
+- Has room for screenshots or a video (hidden until added).
 
 ### Printing
 - The browser's Print button produces one letter page with a character summary header. Use
@@ -127,6 +149,14 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-20 | Lane headers can have badges (reverses "badges on boxes only") | Player request; header badges stack inward and the flag shrinks so they never spill into other lanes or onto boxes |
 | 2026-10-20 | Notes print in a strip under the chart, which gets shorter only when there are notes | The player chose this over the header (too little room) or a second page (one sheet at the table) |
 | 2026-10-21 | Per-chart print orientation; portrait keeps the canvas width and prints smaller | Tall charts shrank too much on a landscape page. Keeping the width means no boxes move when switching, at the cost of smaller text in portrait |
+| 2026-10-23 | Host publicly on Fly.io (one auto-stopping machine plus a volume) | Cost is the main constraint. The app stays Flask and SQLite with no rewrite, and idle time costs almost nothing |
+| 2026-10-23 | Secret edit and view links instead of accounts | No sign-up for players, but charts can't be found or defaced by strangers. A view link lets the table see a chart without being able to change it |
+| 2026-10-23 | Store only a hash of edit keys | A leaked database or backup can't be used to edit charts. The cost is that a lost link can be reissued but not recovered |
+| 2026-10-23 | Chart names are no longer unique; no global chart list | On a public site, one player's "Meren" must not block another's, and nobody should see other people's charts |
+| 2026-10-23 | The home page lists charts from the browser's local storage | Returning players find their charts without accounts or a server-side list |
+| 2026-10-23 | Litestream to Cloudflare R2, plus Fly volume snapshots | The hourly backup container can't run on a machine that sleeps. Litestream runs only while the app does, and R2's free tier covers it |
+| 2026-10-23 | Deploy from release tags in GitHub Actions, with a volume snapshot first | Matches the existing release habit (check the docs, then tag). Migrations touch the only copy of players' data |
+| 2026-10-23 | SQLite WAL mode only when `CHARFLOW_WAL=1` | Litestream needs WAL, but the local backup container reads the database from a read-only mount, which WAL can break |
 | 2026-10-21 | Arrow keys nudge selected boxes within their lane (10px, Shift 50px); lanes and other selections don't nudge | Player request for fine positioning. Crossing lanes stays a drag so a stray keypress can't move a box to a different lane; multi-selections move as a unit so their spacing is kept |
 
 ## Roadmap
@@ -146,7 +176,8 @@ Shipped in v0.9.0, once real players were using it: automatic database backups
 
 Shipped in v0.10.0: portrait printing for tall charts ([#15](https://github.com/pberry/character-flow/issues/15)).
 
-Next release: arrow-key nudging for selected boxes ([#17](https://github.com/pberry/character-flow/issues/17)).
+Next release: public hosting at characterflow.app with secret edit and view links, a new home page, and
+arrow-key nudging for selected boxes ([#17](https://github.com/pberry/character-flow/issues/17)).
 
 Tracked as GitHub issues:
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
@@ -162,3 +193,4 @@ Tracked as GitHub issues:
 - Small commits and semver tags. Introduce ADRs as the project approaches 2.0; until then this decisions log
   serves that purpose.
 - Any port you choose must be confirmed free on the host first.
+- Hosting costs stay at a few dollars a month. Prefer scale-to-zero and free tiers over always-on services.
