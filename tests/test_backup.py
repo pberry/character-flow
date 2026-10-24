@@ -86,7 +86,8 @@ def test_restore_replaces_data_and_saves_the_old(live, tmp_path):
     assert charts_in(before) == ["Meren", "Brakka"]
     # The restored database still works with the app.
     with db.connect(live) as conn:
-        assert db.get_chart(conn, 1)["data"] == {"boxes": [{"id": "b1"}]}
+        key = db.reset_edit_key(conn, 1)
+        assert db.get_by_edit_key(conn, key)["data"] == {"boxes": [{"id": "b1"}]}
 
 
 def test_restore_rejects_a_bad_file(live, tmp_path):

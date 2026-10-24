@@ -19,9 +19,11 @@ async function request(method, url, body) {
   return json;
 }
 
-export const listCharts = () => request("GET", "/api/charts");
-export const getChart = (id) => request("GET", `/api/charts/${id}`);
+// Charts are reached only by key: the edit key reads and writes, the view key
+// reads and copies.
 export const createChart = (name, data) => request("POST", "/api/charts", { name, data });
-export const updateChart = (id, fields) => request("PUT", `/api/charts/${id}`, fields);
-export const deleteChart = (id) => request("DELETE", `/api/charts/${id}`);
-export const copyChart = (id, name) => request("POST", `/api/charts/${id}/copy`, { name });
+export const getChart = (editKey) => request("GET", `/api/edit/${encodeURIComponent(editKey)}`);
+export const updateChart = (editKey, fields) => request("PUT", `/api/edit/${encodeURIComponent(editKey)}`, fields);
+export const deleteChart = (editKey) => request("DELETE", `/api/edit/${encodeURIComponent(editKey)}`);
+export const viewChart = (viewKey) => request("GET", `/api/view/${encodeURIComponent(viewKey)}`);
+export const copyChart = (viewKey, name) => request("POST", `/api/view/${encodeURIComponent(viewKey)}/copy`, { name });
