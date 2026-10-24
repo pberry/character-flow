@@ -1,6 +1,6 @@
 import pytest
 
-from app import create_app
+from app import create_app, db
 from app.routes import MAX_DEPTH
 
 
@@ -111,10 +111,51 @@ def test_copy_from_view_key(client):
 
 
 def test_body_size_limit(client):
-    big = {"notes": "x" * (1024 * 1024)}
+    create(client, "A", {"notes": "x" * 100_000})
+    big = {"notes": "x" * (128 * 1024)}
     resp = client.post("/api/charts", json={"name": "A", "data": big})
     assert resp.status_code == 413
     assert resp.get_json() == {"error": "chart is too large"}
+
+
+def budget_app(tmp_path, room):
+    """An app whose byte budget leaves `room` bytes over the empty database."""
+    path = str(tmp_path / "budget.db")
+    db.init(path)
+    conn = db.connect(path)
+    used = db.used_bytes(conn)
+    conn.close()
+    return create_app(path, max_bytes=used + room).test_client()
+
+
+def assert_out_of_space(resp):
+    assert resp.status_code == 503
+    assert resp.get_json()["error"].startswith("this server is out of space")
+
+
+def test_byte_budget_refuses_new_charts(tmp_path):
+    client = budget_app(tmp_path, 100_000)
+    chart = create(client, "A", {"notes": "x" * 60_000})
+    assert_out_of_space(client.post("/api/charts", json={"name": "B", "data": {"notes": "x" * 60_000}}))
+    assert_out_of_space(client.post(f"/api/view/{chart['view_key']}/copy", json={"name": "A copy"}))
+    create(client, "small", SAMPLE)
+
+
+def test_byte_budget_refuses_growing_updates_only(tmp_path):
+    client = budget_app(tmp_path, 100_000)
+    key = create(client, "A", {"notes": "x" * 60_000})["edit_key"]
+    assert_out_of_space(client.put(f"/api/edit/{key}", json={"data": {"notes": "x" * 120_000}}))
+    assert client.put(f"/api/edit/{key}", json={"name": "Renamed"}).status_code == 200
+    assert client.put(f"/api/edit/{key}", json={"data": {"notes": "x" * 50_000}}).status_code == 200
+    assert client.put(f"/api/edit/{key}", json={"data": {"notes": "x" * 55_000}}).status_code == 200
+    assert client.put("/api/edit/nope", json={"data": SAMPLE}).status_code == 404
+
+
+def test_deleting_frees_byte_budget(tmp_path):
+    client = budget_app(tmp_path, 100_000)
+    key = create(client, "A", {"notes": "x" * 60_000})["edit_key"]
+    assert client.delete(f"/api/edit/{key}").status_code == 204
+    create(client, "B", {"notes": "x" * 60_000})
 
 
 def test_chart_cap(client):
@@ -175,9 +216,10 @@ def test_nesting_up_to_the_limit_is_allowed(client):
     assert resp.status_code == 201
 
 
-@pytest.mark.parametrize("depth", [MAX_DEPTH + 1, 100_000])
+@pytest.mark.parametrize("depth", [MAX_DEPTH + 1, 60_000])
 def test_deeply_nested_json_is_400_not_500(client, depth):
-    # 100,000 levels hits Python's parser limit on some versions and parses on others; both are refused.
+    # 60,000 levels is about the deepest body under the size limit. It can hit Python's parser
+    # limit on some versions and parse on others; both are refused.
     chart = create(client)
     for method, url in (
         ("post", "/api/charts"),

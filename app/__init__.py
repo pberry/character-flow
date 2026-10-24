@@ -11,12 +11,15 @@ from .ratelimit import RateLimiter
 from .routes import bp
 
 
-def create_app(db_path=None, max_charts=None, create_limit=None):
+def create_app(db_path=None, max_charts=None, create_limit=None, max_bytes=None):
     app = Flask(__name__, static_folder="static", static_url_path="/static")
     app.config["DB_PATH"] = db_path or os.environ.get("CHARFLOW_DB", "charflow.db")
-    # Bounds disk use on a public server: one request body, and the whole database.
-    app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024
+    # Bounds disk use on a public server: one request body, the chart count, and the database's size.
+    # The largest real chart is about 11 KB, so 128 KiB leaves room to grow.
+    app.config["MAX_CONTENT_LENGTH"] = 128 * 1024
     app.config["MAX_CHARTS"] = max_charts or int(os.environ.get("CHARFLOW_MAX_CHARTS", 5000))
+    # A quarter of Fly's 1 GB volume, leaving room for the WAL and Litestream's copy of it.
+    app.config["MAX_BYTES"] = max_bytes or int(os.environ.get("CHARFLOW_MAX_BYTES", 256 * 1024 * 1024))
     # New charts (creates and copies) per client per hour, so one client can't fill MAX_CHARTS. 0 turns it off.
     if create_limit is None:
         create_limit = int(os.environ.get("CHARFLOW_CREATE_LIMIT", 20))

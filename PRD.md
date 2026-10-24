@@ -87,8 +87,8 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 - There is **no list of all charts** in the app. The home page lists the charts this browser has opened. A new
   chart opens with a "bookmark your chart" dialog, and the editor's Links button shows both links.
 - A lost edit link can be replaced by the operator (`python -m app.admin reset-link`), never looked up.
-- Abuse limits: request bodies up to 1MB, a cap on the total number of charts, and a per-client hourly limit on
-  new charts and copies.
+- Abuse limits: request bodies up to 128 KiB, a cap on the total number of charts, a budget on the database's
+  size, and a per-client hourly limit on new charts and copies.
 
 ### Hosting and backups
 - Fly.io, one machine that stops when idle, with SQLite on a volume. Deploys run from GitHub Actions when a
@@ -172,6 +172,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-24 | Static pages are Jinja templates extending one base layout, served at `/<name>` | The FAQ is the first of possibly several pages. Flask already ships Jinja, so pages share one head and footer with no new dependency, build step, or CMS; the owner writes the HTML |
 | 2026-10-24 | Pin actions by commit SHA and base images by digest, updated by monthly Dependabot PRs | A moved tag in the deploy job could take over the app with `FLY_API_TOKEN`. Dependabot keeps the pins from going stale, so base-image security fixes still arrive, as reviewable PRs |
 | 2026-10-24 | Pin Litestream's SHA-256 per architecture, with a monthly workflow that opens an issue for new releases | The binary runs with the Tigris keys and reads the whole database, so a replaced release asset must fail the build ([#24](https://github.com/pberry/character-flow/issues/24)). Dependabot can't track a version in an `ARG`; an issue was chosen over a watch notification so the reminder lives with the repo, and over Renovate to avoid a second update bot |
+| 2026-10-24 | Cap the database at 256 MiB (`CHARFLOW_MAX_BYTES`) of used pages, and request bodies at 128 KiB | 5000 charts × 1 MiB could fill the 1 GB volume and break saves for everyone ([#23](https://github.com/pberry/character-flow/issues/23)). Used pages (`page_count` − `freelist_count`) are read in constant time and count real disk use, unlike summing `length(data)` on every write. A quarter of the volume leaves room for the WAL and Litestream's copy of it. Saves that don't grow a chart are always allowed, so a full server never traps a player's edits. The largest real chart is about 11 KB, so 128 KiB leaves over 10× room |
 | 2026-10-24 | Limit new charts to 20 per client IP per sliding hour, counted in memory | One machine with one worker sees every request, so no new dependency or store is needed. The hour is generous enough for a GM making charts for a table on shared Wi-Fi, yet one IP can't fill the 5000-chart cap. The client IP header is trusted only when configured, so it can't be forged around the limit off Fly |
 | 2026-10-21 | Arrow keys nudge selected boxes within their lane (10px, Shift 50px); lanes and other selections don't nudge | Player request for fine positioning. Crossing lanes stays a drag so a stray keypress can't move a box to a different lane; multi-selections move as a unit so their spacing is kept |
 
@@ -201,7 +202,6 @@ Tracked as GitHub issues:
 - [#7](https://github.com/pberry/character-flow/issues/7) Keep lane headers visible when panning
 - [#8](https://github.com/pberry/character-flow/issues/8) Touch support
 - [#9](https://github.com/pberry/character-flow/issues/9) Undo and version history
-- [#23](https://github.com/pberry/character-flow/issues/23) Cap total stored bytes, not just the chart count
 
 ## Constraints
 
