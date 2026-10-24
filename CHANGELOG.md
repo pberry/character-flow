@@ -6,6 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 ## [Unreleased]
 
 ### Security
+- Each client can make 20 new charts (creates and copies) an hour, so one script can't fill the server
+  ([#19](https://github.com/pberry/character-flow/issues/19)). Past that it gets a 429 saying when to try again.
+  Set `CHARFLOW_CREATE_LIMIT` to change it.
 - GitHub Actions are pinned to commit SHAs and the Docker base images to digests, with Dependabot proposing
   updates monthly ([#25](https://github.com/pberry/character-flow/issues/25)).
 

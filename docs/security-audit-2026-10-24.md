@@ -20,14 +20,14 @@ findings are hardening.
 
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
-| 1 | Anonymous clients can fill the server (chart limit and disk) | Medium | Open: [#19](https://github.com/pberry/character-flow/issues/19) (rate limit), [#23](https://github.com/pberry/character-flow/issues/23) (byte budget) |
+| 1 | Anonymous clients can fill the server (chart limit and disk) | Medium | Rate limit fixed (Unreleased): [#19](https://github.com/pberry/character-flow/issues/19). Byte budget open: [#23](https://github.com/pberry/character-flow/issues/23) |
 | 2 | The Litestream binary is downloaded without a checksum check | Medium | Open: [#24](https://github.com/pberry/character-flow/issues/24) |
-| 3 | Deeply nested JSON returns a 500 instead of a 400 | Low | Fixed (Unreleased) |
-| 4 | The `www.` redirect trusts the `Host` header (open redirect) | Low | Fixed (Unreleased) |
-| 5 | No `Strict-Transport-Security` header | Low | Fixed (Unreleased) |
-| 6 | Responses that contain an edit key have no `Cache-Control: no-store` | Low | Fixed (Unreleased) |
-| 7 | GitHub Actions and base images are pinned by tag, not by digest | Low | Open: [#25](https://github.com/pberry/character-flow/issues/25) |
-| 8 | CSP has no `base-uri` or `form-action` | Informational | Fixed (Unreleased) |
+| 3 | Deeply nested JSON returns a 500 instead of a 400 | Low | Fixed in 1.0.2 |
+| 4 | The `www.` redirect trusts the `Host` header (open redirect) | Low | Fixed in 1.0.2 |
+| 5 | No `Strict-Transport-Security` header | Low | Fixed in 1.0.2 |
+| 6 | Responses that contain an edit key have no `Cache-Control: no-store` | Low | Fixed in 1.0.2 |
+| 7 | GitHub Actions and base images are pinned by tag, not by digest | Low | Fixed (Unreleased): [#25](https://github.com/pberry/character-flow/issues/25) |
+| 8 | CSP has no `base-uri` or `form-action` | Informational | Fixed in 1.0.2 |
 
 Where Python's JSON parser gives up depends on the version and the C stack: Python 3.14 on GitHub's runners parsed
 100,000 levels. The fix for #3 is therefore an explicit limit of 64 levels (real charts use about 7), not a catch of

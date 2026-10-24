@@ -243,3 +243,59 @@ def test_static_page_uses_shared_layout(client):
 def test_unknown_or_odd_page_is_404(client):
     for path in ("/nope", "/base", "/FAQ", "/faq.html", "/..%2Fbase"):
         assert client.get(path).status_code == 404, path
+
+
+@pytest.fixture
+def limited(tmp_path):
+    app = create_app(str(tmp_path / "limited.db"), create_limit=2)
+    return app, app.test_client()
+
+
+def test_new_charts_are_rate_limited(limited):
+    _app, client = limited
+    create(client)
+    create(client)
+    resp = client.post("/api/charts", json={"name": "C"})
+    assert resp.status_code == 429
+    assert resp.get_json()["error"] == "too many new charts from your network; please try again in 60 minutes"
+    assert int(resp.headers["Retry-After"]) > 3500
+    assert resp.headers["Cache-Control"] == "no-store"
+
+
+def test_copies_count_toward_the_limit(limited):
+    _app, client = limited
+    chart = create(client)
+    assert client.post(f"/api/view/{chart['view_key']}/copy", json={"name": "B"}).status_code == 201
+    assert client.post(f"/api/view/{chart['view_key']}/copy", json={"name": "C"}).status_code == 429
+
+
+def test_invalid_requests_dont_use_up_the_limit(limited):
+    _app, client = limited
+    for _ in range(3):
+        assert client.post("/api/charts", json={}).status_code == 400
+        assert client.post("/api/view/nope/copy", json={"name": "B"}).status_code == 404
+    create(client)
+    create(client)
+
+
+def test_limit_is_per_client(limited):
+    _app, client = limited
+    for _ in range(2):
+        client.post("/api/charts", json={"name": "A"}, environ_base={"REMOTE_ADDR": "10.0.0.1"})
+    resp = client.post("/api/charts", json={"name": "A"}, environ_base={"REMOTE_ADDR": "10.0.0.2"})
+    assert resp.status_code == 201
+
+
+def test_client_ip_header_trusted_only_when_configured(limited):
+    app, client = limited
+    spoof = lambda ip: client.post("/api/charts", json={"name": "A"}, headers={"Fly-Client-IP": ip})
+    # Unconfigured: a client can't dodge the limit by inventing addresses.
+    assert [spoof(ip).status_code for ip in ("1.1.1.1", "2.2.2.2", "3.3.3.3")] == [201, 201, 429]
+    app.config["CLIENT_IP_HEADER"] = "Fly-Client-IP"
+    assert spoof("4.4.4.4").status_code == 201
+
+
+def test_limit_zero_turns_it_off(tmp_path):
+    client = create_app(str(tmp_path / "off.db"), create_limit=0).test_client()
+    for _ in range(25):
+        create(client)

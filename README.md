@@ -134,11 +134,14 @@ Links print with `CHARFLOW_BASE_URL` (default `https://characterflow.app`); pass
 | `CHARFLOW_DB` | `charflow.db` (`/data/charflow.db` in the image) | SQLite file |
 | `CHARFLOW_WAL` | off | `1` turns on SQLite WAL mode (needed by Litestream; set in `fly.toml`) |
 | `CHARFLOW_MAX_CHARTS` | 5000 | New charts are refused (503) past this many, to bound disk use |
+| `CHARFLOW_CREATE_LIMIT` | 20 | New charts (creates and copies) one client can make per hour; past it they get a 429. `0` turns it off |
+| `CHARFLOW_CLIENT_IP_HEADER` | unset (`Fly-Client-IP` in `fly.toml`) | Header holding the client's address for that limit. Set it only behind a proxy that sets it; otherwise the connection's address is used |
 | `CHARFLOW_BASE_URL` | `https://characterflow.app` | The public address: base for links printed by `app.admin`, and `www.` of its host redirects here |
 | `GUNICORN_WORKERS` | 2 | Gunicorn worker processes (1 on Fly's 256MB machine) |
 | `LITESTREAM_REPLICA_URL` | unset (Tigris bucket in `fly.toml`) | Turns on Litestream replication and restore. Keys come from `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` |
 
-Requests over 1MB are refused (413), and so is JSON nested more than 64 levels deep (400). Access logs leave out request paths, because paths contain chart keys. API
+The create limit is counted in memory, so it resets when the app restarts, and with several Gunicorn workers each
+keeps its own count. Requests over 1MB are refused (413), and so is JSON nested more than 64 levels deep (400). Access logs leave out request paths, because paths contain chart keys. API
 responses are never cached (`Cache-Control: no-store`), and responses over HTTPS send `Strict-Transport-Security`.
 
 ## Running locally without Docker
@@ -296,7 +299,8 @@ files under `/static/`, because the Content-Security-Policy blocks inline script
 - Lose your edit link and only the operator can reissue it (`app.admin reset-link`); there's no self-service recovery.
 - The home page only lists charts opened in that browser. Clearing site data forgets them (the links still work).
 - If two people edit the same chart at once, the last save wins.
-- No per-IP rate limiting yet; only the request size and total chart count are capped.
+- The limit on new charts is per IP address, so players sharing one network (a game store's Wi-Fi) share it too.
+  Raise `CHARFLOW_CREATE_LIMIT` if a busy table hits it.
 - Arrows take simple right-angle routes and don't steer around boxes in their way; nudge boxes or pick other sides.
 - Lane headers are part of the canvas, so they scroll out of view if you pan far to the right.
 - Side-column item heights are estimated from the text, so unusual text (many wide capitals) can be clipped; add a
