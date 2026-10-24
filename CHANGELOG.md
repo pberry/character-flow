@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-24
+
 ### Added
 - Charts now have a private **edit link** and a shareable, read-only **view link**, shown when a chart is created
   and from the new **Links** button in the editor. The view link opens the chart as it prints, with Print and

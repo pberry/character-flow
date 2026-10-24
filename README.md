@@ -88,7 +88,7 @@ Requests to `www.` redirect to the bare domain.
 
 ### Releasing
 
-Push a tag (`git tag v0.11.0 && git push origin v0.11.0`) and the **Deploy** workflow
+Push a tag (`git tag v1.0.0 && git push origin v1.0.0`) and the **Deploy** workflow
 (`.github/workflows/deploy.yml`):
 
 1. runs the full CI suite on the tag;
