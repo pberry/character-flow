@@ -6,8 +6,10 @@ import { Canvas } from "./canvas.js";
 import { h, s } from "./dom.js";
 import { COLORS, GRID } from "./model.js";
 import { ORIENTATIONS } from "./layout.js";
+import { showLinksDialog } from "./links.js";
 import { renderPalette } from "./palette.js";
 import { buildPrintSheet } from "./print.js";
+import { rememberChart } from "./recent.js";
 import { SHAPES, shapePathD } from "./shapes.js";
 import { MAX_COUNT, getItem, getSection } from "./sidebar.js";
 import { GROUP_STYLES, getGroup } from "./groups.js";
@@ -98,7 +100,7 @@ export function showEditor(container, chartRecord) {
       dirty = false;
       setStatus("Saving…");
       try {
-        await api.updateChart(chartRecord.id, { data: chart });
+        rememberChart(await api.updateChart(chartRecord.edit_key, { data: chart }));
         setStatus(dirty ? "Unsaved changes" : "Saved");
       } catch (err) {
         dirty = true;
@@ -119,7 +121,8 @@ export function showEditor(container, chartRecord) {
     const name = window.prompt("Rename chart:", chartRecord.name);
     if (!name || !name.trim() || name.trim() === chartRecord.name) return;
     try {
-      const updated = await api.updateChart(chartRecord.id, { name: name.trim() });
+      const updated = await api.updateChart(chartRecord.edit_key, { name: name.trim() });
+      rememberChart(updated);
       chartRecord.name = updated.name;
       nameEl.textContent = updated.name;
     } catch (err) {
@@ -326,9 +329,10 @@ export function showEditor(container, chartRecord) {
     h(
       "header",
       { class: "topbar" },
-      h("a", { class: "btn", href: "#/" }, "← Charts"),
+      h("a", { class: "btn", href: "#/" }, "← Home"),
       nameEl,
-      h("a", { class: "btn", href: `#/chart/${chartRecord.id}/intro` }, "Edit character"),
+      h("a", { class: "btn", href: `#/edit/${chartRecord.edit_key}/intro` }, "Edit character"),
+      h("button", { class: "btn", title: "Edit and view links for this chart", onclick: () => showLinksDialog(chartRecord) }, "Links"),
       h("span", { class: "spacer" }),
       status,
       h("button", { class: "btn", title: "Zoom out", onclick: () => canvas.zoomBy(1 / 1.2) }, "−"),

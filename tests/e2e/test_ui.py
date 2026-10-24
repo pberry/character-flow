@@ -10,8 +10,8 @@ import urllib.request
 from playwright.sync_api import Page, expect
 
 
-def chart_data(base, chart_id):
-    with urllib.request.urlopen(f"{base}/api/charts/{chart_id}") as resp:
+def chart_data(base, edit_key):
+    with urllib.request.urlopen(f"{base}/api/edit/{edit_key}") as resp:
         return json.load(resp)["data"]
 
 
@@ -34,7 +34,11 @@ def create_character(page: Page, base):
     page.get_by_placeholder("Second Wind").fill("Rage")
     page.get_by_role("button", name="Save & open flowchart →").click()
     expect(page.locator(".chart-name")).to_have_text("Brakka")
-    return int(page.url.rsplit("/", 1)[-1])
+    # A new chart opens with its links, since they're the only way back to it.
+    expect(page.get_by_text("Bookmark your chart")).to_be_visible()
+    page.get_by_role("button", name="Done").click()
+    assert re.search(r"#/edit/[\w-]{22,}$", page.url)
+    return page.url.rsplit("/", 1)[-1]
 
 
 def lane_header(page, lane_id):
@@ -643,3 +647,68 @@ def chart_data_after_save(page, base, chart_id):
     page.get_by_role("button", name="Save").click()
     expect(page.locator(".status")).to_have_text("Saved")
     return chart_data(base, chart_id)
+
+
+def test_links_home_list_and_view_page(page: Page, live_server):
+    edit_key = create_character(page, live_server)
+    page.on("dialog", lambda d: d.accept() if d.type != "prompt" else d.accept("Brakka (copy)"))
+    lane_header(page, "l2").click()
+    page.locator(".card", has_text="Greataxe").click()
+    page.get_by_role("button", name="Save").click()
+    expect(page.locator(".status")).to_have_text("Saved")
+
+    # The Links dialog shows both links; the view link is a different key.
+    page.get_by_role("button", name="Links").click()
+    edit_link = page.get_by_label("Edit link").input_value()
+    view_link = page.get_by_label("View link").input_value()
+    assert edit_link.endswith(f"#/edit/{edit_key}")
+    view_key = view_link.rsplit("/", 1)[-1]
+    assert view_key != edit_key
+    page.get_by_role("button", name="Done").click()
+
+    # Home lists the chart from this browser, and nothing else.
+    page.get_by_role("link", name="← Home").click()
+    expect(page.locator(".chart-link")).to_have_text(["Brakka"])
+
+    # The view page draws the chart with no editing controls, and the old id URLs go home.
+    page.goto(view_link)
+    expect(page.locator(".view-sheet [data-box]")).to_have_count(1)
+    expect(page.get_by_text("View only")).to_be_visible()
+    expect(page.get_by_role("button", name="Edit character")).to_have_count(0)
+    expect(page.locator(".palette")).to_have_count(0)
+    expect(page.locator(".view-sheet")).not_to_contain_text("edit")
+    assert edit_key not in page.content()
+
+    # "Make a copy" opens a new, separately editable chart.
+    page.get_by_role("button", name="Make a copy").click()
+    expect(page.get_by_text("Bookmark your chart")).to_be_visible()
+    page.get_by_role("button", name="Done").click()
+    copy_key = page.url.rsplit("/", 1)[-1]
+    assert copy_key not in (edit_key, view_key)
+    expect(page.locator(".chart-name")).to_have_text("Brakka (copy)")
+    assert len(chart_data(live_server, copy_key)["boxes"]) == 1
+
+    page.goto(f"{live_server}/#/chart/1")
+    expect(page.get_by_role("button", name="Create chart")).to_be_visible()
+
+
+def test_deleted_chart_leaves_home_list(page: Page, live_server):
+    edit_key = create_character(page, live_server)
+    page.on("dialog", lambda d: d.accept("Renamed"))
+    page.get_by_role("link", name="← Home").click()
+    expect(page.locator(".chart-link")).to_have_count(1)
+    req = urllib.request.Request(f"{live_server}/api/edit/{edit_key}", method="DELETE")
+    urllib.request.urlopen(req)
+    page.get_by_role("button", name="Rename").click()
+    expect(page.locator(".error")).to_contain_text("no longer exists")
+    expect(page.locator(".chart-link")).to_have_count(0)
+
+
+def test_no_html_injection_sinks():
+    """Chart text from strangers shows up on view pages, so it must never be
+    parsed as HTML (it could read edit links from localStorage)."""
+    js = os.path.join(os.path.dirname(__file__), "..", "..", "app", "static", "js")
+    for name in os.listdir(js):
+        source = open(os.path.join(js, name)).read()
+        for sink in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval("):
+            assert sink not in source, f"{sink} in {name}"

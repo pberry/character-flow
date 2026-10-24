@@ -1,10 +1,22 @@
-"""JSON API and static index."""
+"""JSON API and static index.
+
+There is no chart list: a chart is reached only by its edit key (read and
+write) or its view key (read and copy). Unknown keys are a plain 404, so the
+API never confirms whether a key exists.
+"""
 
 from flask import Blueprint, current_app, g, jsonify, request
 
 from . import db
 
 bp = Blueprint("main", __name__)
+
+SECURITY_HEADERS = {
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
+    # print.js sets the @page size in a <style> element, so inline styles stay allowed.
+    "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'",
+}
 
 
 def get_conn():
@@ -20,8 +32,20 @@ def close_conn(_exc):
         conn.close()
 
 
+@bp.after_app_request
+def security_headers(resp):
+    for name, value in SECURITY_HEADERS.items():
+        resp.headers.setdefault(name, value)
+    return resp
+
+
 def error(message, status):
     return jsonify({"error": message}), status
+
+
+@bp.app_errorhandler(413)
+def too_large(_e):
+    return error("chart is too large", 413)
 
 
 def _clean_name(value):
@@ -30,14 +54,35 @@ def _clean_name(value):
     return value.strip()
 
 
+def editable(chart, edit_key):
+    """What the edit-link holder sees: everything but the internal id."""
+    out = {k: v for k, v in chart.items() if k != "id"}
+    out["edit_key"] = edit_key
+    return out
+
+
+def viewable(chart):
+    """What a view-link holder sees: no keys."""
+    return {k: chart[k] for k in ("name", "data", "updated_at")}
+
+
+def _create(name, data):
+    conn = get_conn()
+    if db.count_charts(conn) >= current_app.config["MAX_CHARTS"]:
+        return error("this server is full; please try again later", 503)
+    chart = db.create_chart(conn, name, data)
+    return jsonify(editable(chart, chart["edit_key"])), 201
+
+
 @bp.get("/")
 def index():
     return current_app.send_static_file("index.html")
 
 
-@bp.get("/api/charts")
-def list_charts():
-    return jsonify(db.list_charts(get_conn()))
+@bp.get("/healthz")
+def healthz():
+    get_conn().execute("SELECT 1")
+    return "ok"
 
 
 @bp.post("/api/charts")
@@ -49,23 +94,19 @@ def create_chart():
     data = body.get("data", {})
     if not isinstance(data, dict):
         return error("data must be an object", 400)
-    try:
-        chart = db.create_chart(get_conn(), name, data)
-    except db.DuplicateName:
-        return error(f"a chart named '{name}' already exists", 409)
-    return jsonify(chart), 201
+    return _create(name, data)
 
 
-@bp.get("/api/charts/<int:chart_id>")
-def get_chart(chart_id):
-    chart = db.get_chart(get_conn(), chart_id)
+@bp.get("/api/edit/<key>")
+def get_chart(key):
+    chart = db.get_by_edit_key(get_conn(), key)
     if chart is None:
         return error("not found", 404)
-    return jsonify(chart)
+    return jsonify(editable(chart, key))
 
 
-@bp.put("/api/charts/<int:chart_id>")
-def update_chart(chart_id):
+@bp.put("/api/edit/<key>")
+def update_chart(key):
     body = request.get_json(silent=True) or {}
     name = None
     if "name" in body:
@@ -75,34 +116,34 @@ def update_chart(chart_id):
     data = body.get("data")
     if data is not None and not isinstance(data, dict):
         return error("data must be an object", 400)
-    try:
-        chart = db.update_chart(get_conn(), chart_id, name=name, data=data)
-    except db.DuplicateName:
-        return error(f"a chart named '{name}' already exists", 409)
+    chart = db.update_chart(get_conn(), key, name=name, data=data)
     if chart is None:
         return error("not found", 404)
-    return jsonify(chart)
+    return jsonify(editable(chart, key))
 
 
-@bp.delete("/api/charts/<int:chart_id>")
-def delete_chart(chart_id):
-    if not db.delete_chart(get_conn(), chart_id):
+@bp.delete("/api/edit/<key>")
+def delete_chart(key):
+    if not db.delete_chart(get_conn(), key):
         return error("not found", 404)
     return "", 204
 
 
-@bp.post("/api/charts/<int:chart_id>/copy")
-def copy_chart(chart_id):
+@bp.get("/api/view/<key>")
+def view_chart(key):
+    chart = db.get_by_view_key(get_conn(), key)
+    if chart is None:
+        return error("not found", 404)
+    return jsonify(viewable(chart))
+
+
+@bp.post("/api/view/<key>/copy")
+def copy_chart(key):
     body = request.get_json(silent=True) or {}
     name = _clean_name(body.get("name"))
     if name is None:
         return error("name is required", 400)
-    conn = get_conn()
-    source = db.get_chart(conn, chart_id)
+    source = db.get_by_view_key(get_conn(), key)
     if source is None:
         return error("not found", 404)
-    try:
-        chart = db.create_chart(conn, name, source["data"])
-    except db.DuplicateName:
-        return error(f"a chart named '{name}' already exists", 409)
-    return jsonify(chart), 201
+    return _create(name, source["data"])

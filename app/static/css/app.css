@@ -211,3 +211,27 @@ input:focus, textarea:focus { outline: 2px solid var(--select); outline-offset: 
   padding: 6px 8px; line-height: 1.25; border: 2px solid var(--select); border-radius: 6px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, .18);
 }
+
+/* ---- links dialog ---- */
+.links-dialog { border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; max-width: 560px; width: calc(100% - 32px); box-sizing: border-box; }
+.links-dialog::backdrop { background: rgb(0 0 0 / .35); }
+.links-dialog h2 { margin-top: 0; }
+.links-dialog .warning { background: #fff7e6; border: 1px solid #f5d491; border-radius: 6px; padding: 8px 12px; }
+.link-row { margin: 14px 0; }
+.link-row p { margin: 4px 0 0; }
+.link-field { display: flex; gap: 8px; margin-top: 4px; }
+.link-input { flex: 1; min-width: 0; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.links-dialog form { text-align: right; }
+
+/* ---- view page: the chart as it prints, sized to the window ---- */
+.viewer { min-height: 100%; }
+.viewer .error { padding: 0 16px; }
+.view-sheet { background: #fff; max-width: 10.2in; margin: 16px auto 48px; padding: 16px; box-shadow: 0 1px 4px rgb(0 0 0 / .12); box-sizing: border-box; }
+.view-sheet .chart-svg { display: block; width: 100%; height: auto; aspect-ratio: 10.2 / 6.8; }
+.view-sheet.with-notes .chart-svg { aspect-ratio: 10.2 / 6; }
+.view-sheet.portrait { max-width: 7.7in; }
+.view-sheet.portrait .chart-svg { aspect-ratio: 7.7 / 9.3; }
+.view-sheet.portrait.with-notes .chart-svg { aspect-ratio: 7.7 / 8.5; }
+.view-sheet .print-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; border-bottom: 1px solid #999; margin-bottom: 8px; padding-bottom: 8px; }
+.view-sheet .print-title { font-size: 12px; color: #555; }
+.view-sheet .print-notes { border-top: 1px solid #999; padding-top: 8px; white-space: pre-wrap; font-size: 13px; }
