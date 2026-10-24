@@ -140,3 +140,9 @@ def test_index_served(client):
     resp = client.get("/")
     assert resp.status_code == 200
     assert b"Character Flow" in resp.data
+
+
+def test_www_redirects_to_bare_domain(client):
+    resp = client.get("/static/favicon.svg", base_url="https://www.characterflow.app")
+    assert resp.status_code == 301
+    assert resp.headers["Location"] == "https://characterflow.app/static/favicon.svg"

@@ -1,0 +1,33 @@
+# Fly.io: one small machine with a volume for SQLite, stopped when idle.
+# SQLite on a volume can't be shared, so this app must run exactly one machine.
+app = "characterflow"
+primary_region = "sjc"
+
+[env]
+  CHARFLOW_DB = "/data/charflow.db"
+  CHARFLOW_WAL = "1"
+  CHARFLOW_BASE_URL = "https://characterflow.app"
+  GUNICORN_WORKERS = "1"
+
+[mounts]
+  source = "charflow_data"
+  destination = "/data"
+  snapshot_retention = 30
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    path = "/healthz"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
