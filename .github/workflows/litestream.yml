@@ -1,0 +1,46 @@
+# Dependabot doesn't track the Litestream version in the Dockerfile's ARG, so
+# this checks for a new release monthly and opens an issue to update it (and
+# its pinned SHA-256s, #24). It skips the issue if one is already open.
+name: Litestream release check
+
+on:
+  schedule:
+    - cron: "0 9 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: check
+        run: |
+          tag=$(gh release view -R benbjohnson/litestream --json tagName -q .tagName)
+          python3 scripts/check_litestream.py "$tag" >> "$GITHUB_OUTPUT"
+      - if: steps.check.outputs.latest
+        env:
+          LATEST: ${{ steps.check.outputs.latest }}
+        run: |
+          title="Update Litestream to $LATEST"
+          if gh issue list --state open --limit 200 --json title -q '.[].title' | grep -Fxq "$title"; then
+            echo "Already open: $title"
+            exit 0
+          fi
+          cat > body.md <<EOF
+          Litestream v$LATEST is out: https://github.com/benbjohnson/litestream/releases/tag/v$LATEST
+
+          Update \`LITESTREAM_VERSION\` in the \`Dockerfile\`, plus both SHA-256 build args, from the release's checksums:
+
+          \`\`\`sh
+          gh release download v$LATEST -R benbjohnson/litestream -p checksums.txt -O - | grep -E 'linux-(x86_64|arm64)\.tar\.gz\$'
+          \`\`\`
+
+          Opened by the Litestream release check workflow.
+          EOF
+          gh issue create --title "$title" --body-file body.md
