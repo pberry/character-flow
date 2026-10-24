@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- An FAQ page at `/faq`, linked from the home page footer.
+- Static pages: drop an HTML file in `app/templates/pages/` and it's served at `/<name>` with the site's styles,
+  header, and footer.
+
 ## [1.0.2] - 2026-10-24
 
 ### Fixed

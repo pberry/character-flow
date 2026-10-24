@@ -229,3 +229,17 @@ def test_www_redirect_follows_base_url(client, app):
     assert resp.status_code == 301
     assert resp.headers["Location"] == "https://flow.example.org/x"
     assert client.get("/", base_url="https://www.characterflow.app").status_code == 200
+
+
+def test_static_page_uses_shared_layout(client):
+    resp = client.get("/faq")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "<title>FAQ · Character Flow</title>" in html
+    assert '/static/css/app.css' in html
+    assert "Content-Security-Policy" in resp.headers
+
+
+def test_unknown_or_odd_page_is_404(client):
+    for path in ("/nope", "/base", "/FAQ", "/faq.html", "/..%2Fbase"):
+        assert client.get(path).status_code == 404, path
