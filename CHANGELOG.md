@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- The home page shows a short looping video of a chart being built for Sable Quickfingers, a level 5 rogue. It
+  stays paused for players who prefer reduced motion. `scripts/record_demo.py` re-records it after UI changes.
+
 ### Security
 - Each client can make 20 new charts (creates and copies) an hour, so one script can't fill the server
   ([#19](https://github.com/pberry/character-flow/issues/19)). Past that it gets a 429 saying when to try again.

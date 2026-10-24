@@ -719,11 +719,30 @@ def test_home_page_explains_itself(page: Page, live_server):
     expect(page.get_by_role("heading", name="Character Flow")).to_be_visible()
     for heading in ("Start a chart", "How it works", "Who it's for", "No accounts. Your link is your key."):
         expect(page.get_by_role("heading", name=heading)).to_be_visible()
-    # Nothing from other people, and no empty media or recent sections.
+    # Nothing from other people, and no empty recent section.
     expect(page.locator(".recent")).to_be_hidden()
-    expect(page.locator(".media")).to_have_count(0)
     assert "Character Flow" in page.title()
     assert page.locator('meta[name="description"]').get_attribute("content")
+
+
+def test_home_page_demo_video(page: Page, live_server):
+    page.goto(live_server)
+    video = page.locator(".media video")
+    expect(video).to_have_attribute("src", "/static/media/demo.mp4")
+    expect(video).to_have_attribute("aria-label", re.compile("Sable Quickfingers"))
+    # Plays silently on a loop, like a GIF, and the files are actually served.
+    assert video.evaluate("v => v.muted && v.loop && v.autoplay")
+    page.wait_for_function("document.querySelector('.media video').readyState >= 2")
+    for path in ("/static/media/demo.mp4", "/static/media/demo.png"):
+        assert page.request.get(live_server + path).ok
+
+
+def test_home_page_demo_video_respects_reduced_motion(page: Page, live_server):
+    page.emulate_media(reduced_motion="reduce")
+    page.goto(live_server)
+    video = page.locator(".media video")
+    expect(video).to_have_attribute("poster", "/static/media/demo.png")
+    assert video.evaluate("v => !v.autoplay && v.paused")
 
 
 def test_faq_page_from_home_footer(page: Page, live_server):
