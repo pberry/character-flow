@@ -6,3 +6,8 @@
 tests
 node_modules
 backups
+*.db-wal
+*.db-shm
+test-results
+.github
+Meren abilities.pdf

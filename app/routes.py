@@ -5,7 +5,7 @@ write) or its view key (read and copy). Unknown keys are a plain 404, so the
 API never confirms whether a key exists.
 """
 
-from flask import Blueprint, current_app, g, jsonify, request
+from flask import Blueprint, current_app, g, jsonify, redirect, request
 
 from . import db
 
@@ -30,6 +30,12 @@ def close_conn(_exc):
     conn = g.pop("conn", None)
     if conn is not None:
         conn.close()
+
+
+@bp.before_app_request
+def drop_www():
+    if request.host.startswith("www."):
+        return redirect(request.url.replace("://www.", "://", 1), code=301)
 
 
 @bp.after_app_request

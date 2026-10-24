@@ -1,0 +1,60 @@
+# Deploys a release to Fly.io when a vX.Y.Z tag is pushed. Run it by hand with
+# an older tag to roll back.
+name: Deploy
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Tag to deploy (for a redeploy or rollback)
+        required: true
+
+concurrency: deploy-production
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ inputs.ref || github.ref }}
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      TAG: ${{ inputs.ref || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Check the tag matches pyproject.toml and CHANGELOG.md
+        run: |
+          version="${TAG#v}"
+          grep -qx "version = \"$version\"" pyproject.toml \
+            || { echo "::error::pyproject.toml version is not $version"; exit 1; }
+          grep -q "^## \[$version\]" CHANGELOG.md \
+            || { echo "::error::CHANGELOG.md has no section for $version"; exit 1; }
+
+      - uses: superfly/flyctl-actions/setup-flyctl@1.6
+
+      # Startup migrations touch the only copy of players' data, so every deploy
+      # gets a restore point first.
+      - name: Snapshot the data volume
+        run: |
+          vol=$(flyctl volumes list --json | jq -r '.[] | select(.name == "charflow_data") | .id' | head -1)
+          test -n "$vol" || { echo "::error::no charflow_data volume"; exit 1; }
+          flyctl volumes snapshots create "$vol"
+
+      - run: flyctl deploy --remote-only
+
+      - name: Smoke test
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-delay 5 --retry-all-errors https://characterflow.app/healthz
+          curl --fail --silent --show-error --output /dev/null https://characterflow.app/
