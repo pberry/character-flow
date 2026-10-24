@@ -5,6 +5,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Fixed
+- A request body that isn't a JSON object, or is nested too deeply to parse, is now refused with a 400 instead of
+  failing with a 500.
+
+### Security
+- The `www.` redirect only applies to the host in `CHARFLOW_BASE_URL`, so a forged `Host` header can't send
+  visitors to another site.
+- Responses over HTTPS send `Strict-Transport-Security`.
+- API responses send `Cache-Control: no-store`, so edit keys aren't kept in browser or proxy caches.
+- The Content-Security-Policy adds `object-src 'none'`, `base-uri 'none'`, and `form-action 'self'`.
+
 ## [1.0.1] - 2026-10-24
 
 ### Fixed

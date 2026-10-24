@@ -128,7 +128,46 @@ def test_security_headers(client):
     for resp in (client.get("/"), client.get("/api/view/nope")):
         assert resp.headers["Referrer-Policy"] == "no-referrer"
         assert resp.headers["X-Content-Type-Options"] == "nosniff"
-        assert "default-src 'self'" in resp.headers["Content-Security-Policy"]
+        csp = resp.headers["Content-Security-Policy"]
+        assert "default-src 'self'" in csp
+        assert "base-uri 'none'" in csp and "form-action 'self'" in csp and "object-src 'none'" in csp
+
+
+def test_hsts_only_over_https(client):
+    assert "Strict-Transport-Security" not in client.get("/").headers
+    secure = client.get("/", headers={"X-Forwarded-Proto": "https"})
+    assert secure.headers["Strict-Transport-Security"] == "max-age=31536000"
+
+
+def test_api_responses_are_not_cached(client):
+    chart = create(client)
+    for resp in (
+        client.get(f"/api/edit/{chart['edit_key']}"),
+        client.get(f"/api/view/{chart['view_key']}"),
+        client.get("/api/edit/nope"),
+    ):
+        assert resp.headers["Cache-Control"] == "no-store"
+    assert client.get("/").headers.get("Cache-Control") != "no-store"
+
+
+@pytest.mark.parametrize("body", ["[1]", '"x"', "3"])
+def test_non_object_body_is_400(client, body):
+    chart = create(client)
+    for method, url in (
+        ("post", "/api/charts"),
+        ("put", f"/api/edit/{chart['edit_key']}"),
+        ("post", f"/api/view/{chart['view_key']}/copy"),
+    ):
+        resp = getattr(client, method)(url, data=body, content_type="application/json")
+        assert resp.status_code == 400
+        assert resp.get_json() == {"error": "body must be a JSON object"}
+
+
+def test_deeply_nested_json_is_400_not_500(client):
+    deep = "[" * 100_000 + "]" * 100_000
+    resp = client.post("/api/charts", data=f'{{"name":"A","data":{{"x":{deep}}}}}', content_type="application/json")
+    assert resp.status_code == 400
+    assert resp.get_json() == {"error": "JSON is nested too deeply"}
 
 
 def test_healthz(client):
@@ -152,3 +191,22 @@ def test_www_redirect_keeps_https_behind_a_proxy(client):
     resp = client.get("/", base_url="http://www.characterflow.app", headers={"X-Forwarded-Proto": "https"})
     assert resp.status_code == 301
     assert resp.headers["Location"] == "https://characterflow.app/"
+
+
+def test_www_redirect_keeps_the_query(client):
+    resp = client.get("/?a=1&b=2", base_url="https://www.characterflow.app")
+    assert resp.headers["Location"] == "https://characterflow.app/?a=1&b=2"
+
+
+def test_www_redirect_ignores_other_hosts(client):
+    # The Host header must not choose where visitors are sent.
+    resp = client.get("/", base_url="https://www.evil.example")
+    assert resp.status_code == 200
+
+
+def test_www_redirect_follows_base_url(client, app):
+    app.config["BASE_URL"] = "https://flow.example.org"
+    resp = client.get("/x", base_url="http://www.flow.example.org")
+    assert resp.status_code == 301
+    assert resp.headers["Location"] == "https://flow.example.org/x"
+    assert client.get("/", base_url="https://www.characterflow.app").status_code == 200

@@ -5,7 +5,9 @@ write) or its view key (read and copy). Unknown keys are a plain 404, so the
 API never confirms whether a key exists.
 """
 
-from flask import Blueprint, current_app, g, jsonify, redirect, request
+from urllib.parse import urlsplit
+
+from flask import Blueprint, abort, current_app, g, jsonify, make_response, redirect, request
 
 from . import db
 
@@ -15,8 +17,13 @@ SECURITY_HEADERS = {
     "Referrer-Policy": "no-referrer",
     "X-Content-Type-Options": "nosniff",
     # print.js sets the @page size in a <style> element, so inline styles stay allowed.
-    "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'",
+    "Content-Security-Policy": (
+        "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none';"
+        " base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+    ),
 }
+# Only sent over https, so plain-http Docker on a LAN isn't pinned to https.
+HSTS = "max-age=31536000"
 
 
 def get_conn():
@@ -34,14 +41,21 @@ def close_conn(_exc):
 
 @bp.before_app_request
 def drop_www():
-    if request.host.startswith("www."):
-        return redirect(request.url.replace("://www.", "://", 1), code=301)
+    base = current_app.config["BASE_URL"]
+    if request.host == "www." + urlsplit(base).netloc:
+        query = request.query_string.decode()
+        return redirect(base + request.path + (f"?{query}" if query else ""), code=301)
 
 
 @bp.after_app_request
 def security_headers(resp):
     for name, value in SECURITY_HEADERS.items():
         resp.headers.setdefault(name, value)
+    if request.is_secure:
+        resp.headers.setdefault("Strict-Transport-Security", HSTS)
+    # Edit responses carry the edit key, so no API response is cached.
+    if request.path.startswith("/api/"):
+        resp.headers["Cache-Control"] = "no-store"
     return resp
 
 
@@ -52,6 +66,18 @@ def error(message, status):
 @bp.app_errorhandler(413)
 def too_large(_e):
     return error("chart is too large", 413)
+
+
+def json_body():
+    """The request's JSON object, or {} without one. A body that isn't an object,
+    or is nested too deeply for Python's parser, is a 400, not a 500."""
+    try:
+        body = request.get_json(silent=True)
+    except RecursionError:
+        abort(make_response(error("JSON is nested too deeply", 400)))
+    if body is not None and not isinstance(body, dict):
+        abort(make_response(error("body must be a JSON object", 400)))
+    return body or {}
 
 
 def _clean_name(value):
@@ -93,7 +119,7 @@ def healthz():
 
 @bp.post("/api/charts")
 def create_chart():
-    body = request.get_json(silent=True) or {}
+    body = json_body()
     name = _clean_name(body.get("name"))
     if name is None:
         return error("name is required", 400)
@@ -113,7 +139,7 @@ def get_chart(key):
 
 @bp.put("/api/edit/<key>")
 def update_chart(key):
-    body = request.get_json(silent=True) or {}
+    body = json_body()
     name = None
     if "name" in body:
         name = _clean_name(body["name"])
@@ -145,7 +171,7 @@ def view_chart(key):
 
 @bp.post("/api/view/<key>/copy")
 def copy_chart(key):
-    body = request.get_json(silent=True) or {}
+    body = json_body()
     name = _clean_name(body.get("name"))
     if name is None:
         return error("name is required", 400)

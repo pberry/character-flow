@@ -130,11 +130,12 @@ Links print with `CHARFLOW_BASE_URL` (default `https://characterflow.app`); pass
 | `CHARFLOW_DB` | `charflow.db` (`/data/charflow.db` in the image) | SQLite file |
 | `CHARFLOW_WAL` | off | `1` turns on SQLite WAL mode (needed by Litestream; set in `fly.toml`) |
 | `CHARFLOW_MAX_CHARTS` | 5000 | New charts are refused (503) past this many, to bound disk use |
-| `CHARFLOW_BASE_URL` | `https://characterflow.app` | Base for links printed by `app.admin` |
+| `CHARFLOW_BASE_URL` | `https://characterflow.app` | The public address: base for links printed by `app.admin`, and `www.` of its host redirects here |
 | `GUNICORN_WORKERS` | 2 | Gunicorn worker processes (1 on Fly's 256MB machine) |
 | `LITESTREAM_REPLICA_URL` | unset (Tigris bucket in `fly.toml`) | Turns on Litestream replication and restore. Keys come from `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` |
 
-Requests over 1MB are refused (413). Access logs leave out request paths, because paths contain chart keys.
+Requests over 1MB are refused (413). Access logs leave out request paths, because paths contain chart keys. API
+responses are never cached (`Cache-Control: no-store`), and responses over HTTPS send `Strict-Transport-Security`.
 
 ## Running locally without Docker
 
