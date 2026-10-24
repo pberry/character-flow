@@ -303,9 +303,8 @@ files under `/static/`, because the Content-Security-Policy blocks inline script
 ## Stats page
 
 `/stats` shows anonymous usage numbers across every chart on the server: totals, new charts per week, typical chart
-size, how often each feature, shape, and badge is used, the most common classes, and level ranges. It never shows
-names, chart text, or keys. Classes are grouped by their first word ("Monk (Warrior of the Elements)" counts as
-Monk) and a class is listed only once 5 or more charts share it. The numbers are computed in `app/stats.py` and
+size, how often each feature, shape, and badge is used, and character level ranges. It shows only numbers, never
+anything players type (chart or character names, classes, box or badge text) or keys. The numbers are computed in `app/stats.py` and
 reused for `CHARFLOW_STATS_TTL` seconds.
 
 ## Known limitations

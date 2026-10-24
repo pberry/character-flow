@@ -7,8 +7,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Added
 - A stats page at `/stats`, linked from the footer: how many charts have been made, new charts per week, typical
-  chart size, which features, shapes, and badges get used, and the most common classes and level ranges. It shows
-  counts only, never names or chart text, and lists a class only once 5 or more charts share it.
+  chart size, which features, shapes, and badges get used, and character level ranges. It shows numbers only, never anything
+  players type.
 
 ### Security
 - The Docker build checks the Litestream download against its pinned SHA-256 before installing it, and fails

@@ -1,22 +1,17 @@
 """Anonymous usage numbers for the public /stats page.
 
-Only counts leave this module: never a chart's name, text, or keys. Chart data
-is whatever clients sent, so every field is checked before it's counted. The
-one free-text field shown is the first word of the character's class, and only
-once at least MIN_GROUP charts share it, so no single chart can be picked out.
+Only numbers leave this module: never anything a player typed (chart names,
+character names or classes, box text, badge text) and never keys. Chart data
+is whatever clients sent, so every field is checked before it's counted.
 """
 
 import json
-import re
 import statistics
 import time
 from collections import Counter
 from datetime import date, datetime, timedelta
 
-MIN_GROUP = 5
 WEEKS = 12
-TOP_CLASSES = 10
-CLASS_WORD = re.compile(r"[a-z]{3,15}")
 LEVEL_TIERS = [("1–4", 1, 4), ("5–10", 5, 10), ("11–16", 11, 16), ("17–20", 17, 20)]
 SHAPES = {"rect": "Rectangle", "flag": "Flag", "diamond": "Diamond", "star": "Star", "document": "Document",
           "arrow-right": "Right arrow", "arrow-up": "Up arrow"}
@@ -29,14 +24,6 @@ def _list(value):
 
 def _dicts(value):
     return [v for v in _list(value) if isinstance(v, dict)]
-
-
-def _class_word(character):
-    value = character.get("class")
-    if not isinstance(value, str):
-        return None
-    m = CLASS_WORD.match(value.strip().lower())
-    return m.group() if m else None
 
 
 def _level(character):
@@ -84,7 +71,7 @@ def compute(conn, today=None):
     total = in_use = last7 = last30 = active7 = 0
     boxes, arrows, lanes = [], [], []
     features = Counter()
-    shapes, badges, classes, tiers = Counter(), Counter(), Counter(), Counter()
+    shapes, badges, tiers = Counter(), Counter(), Counter()
 
     for row in conn.execute("SELECT data, created_at, updated_at FROM charts"):
         total += 1
@@ -103,9 +90,7 @@ def compute(conn, today=None):
         if not isinstance(data, dict):
             continue
         character = data.get("character") if isinstance(data.get("character"), dict) else {}
-        word, level = _class_word(character), _level(character)
-        if word:
-            classes[word] += 1
+        level = _level(character)
         if level:
             tiers[next(label for label, lo, hi in LEVEL_TIERS if lo <= level <= hi)] += 1
 
@@ -129,9 +114,6 @@ def compute(conn, today=None):
         features["Arrow labels"] += any(isinstance(e.get("label"), str) and e["label"].strip() for e in chart_edges)
         features["Portrait printing"] += data.get("orientation") == "portrait"
 
-    shown = [(w, n) for w, n in classes.most_common() if n >= MIN_GROUP][:TOP_CLASSES]
-    other = sum(classes.values()) - sum(n for _, n in shown)
-    class_rows = _bars([(w.title(), n) for w, n in shown])
     weeks = [week0 + timedelta(weeks=i) for i in range(WEEKS)]
     return {
         "total": total,
@@ -150,10 +132,7 @@ def compute(conn, today=None):
                      for k in ("Badges", "Side column", "Groups", "Arrow labels", "Portrait printing")],
         "shapes": _rows(shapes, SHAPES),
         "badges": _rows(badges, BADGES),
-        "classes": class_rows,
-        "other_classes": other,
         "tiers": _bars([(f"Level {label}", tiers[label]) for label, _, _ in LEVEL_TIERS]),
-        "min_group": MIN_GROUP,
     }
 
 

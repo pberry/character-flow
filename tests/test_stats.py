@@ -62,15 +62,6 @@ def test_counts_charts_and_features(app, client):
     assert s["badges"] == [{"label": "Cost", "count": 2, "pct": 100}]
 
 
-def test_classes_need_a_crowd(app, client):
-    for i in range(stats.MIN_GROUP):
-        create(client, f"M{i}", chart(cls=["Monk", "monk (Warrior of the Elements)"][i % 2]))
-    create(client, "Rare", chart(cls="Zzyzxwarlock"))
-    s = compute(app)
-    assert s["classes"] == [{"label": "Monk", "count": stats.MIN_GROUP, "pct": 100}]
-    assert s["other_classes"] == 1
-
-
 def test_levels_are_bucketed_and_checked(app, client):
     for level in (1, 5, "7", 20, 99, True, "x"):
         create(client, f"L{level}", chart(level=level))
@@ -86,12 +77,12 @@ def test_odd_data_is_skipped_not_fatal(app, client):
     assert client.get("/stats").status_code == 200
 
 
-def test_page_shows_no_chart_content(client):
-    for i in range(stats.MIN_GROUP):
-        create(client, "Brakka the Bold", chart(cls="Barbarian"))
+def test_page_shows_nothing_players_typed(client):
+    for i in range(10):
+        create(client, "Brakka the Bold", chart(cls="Barbarian", edges=[{"id": "e1", "label": "Only if raging"}]))
     html = client.get("/stats").get_data(as_text=True)
-    assert "Barbarian" in html and "charts created" in html
-    for secret in ("Brakka", "Secret Name", "Private box text", "1 FP"):
+    assert "charts created" in html
+    for secret in ("Brakka", "Barbarian", "Secret Name", "Private box text", "1 FP", "raging"):
         assert secret not in html
 
 
