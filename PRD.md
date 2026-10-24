@@ -191,7 +191,6 @@ Tracked as GitHub issues:
 - [#23](https://github.com/pberry/character-flow/issues/23) Cap total stored bytes, not just the chart count
 - [#24](https://github.com/pberry/character-flow/issues/24) Verify the Litestream download's checksum
 - [#25](https://github.com/pberry/character-flow/issues/25) Pin GitHub Actions and base images by digest
-- [#19](https://github.com/pberry/character-flow/issues/19) Per-IP rate limiting for chart creation
 
 ## Constraints
 
