@@ -318,6 +318,14 @@ npm test                # frontend logic tests (Node 22+, no dependencies to ins
 
 No Chrome? Run `uv run playwright install chromium` and remove `--browser-channel chrome` from `pyproject.toml`.
 
+The home page video (`app/static/media/demo.mp4` and its `demo.png` poster) is recorded by a script. Re-record it
+after UI changes that show up in it:
+
+```sh
+uv run playwright install ffmpeg        # once; Playwright's own encoder for recording
+uv run python scripts/record_demo.py    # also needs ffmpeg on the PATH (brew install ffmpeg)
+```
+
 Project layout:
 
 | Path | Role |
@@ -330,6 +338,7 @@ Project layout:
 | `app/backup.py` | Database snapshots and rotation (`python -m app.backup`), run by the `backup` service |
 | `tests/test_api.py`, `tests/test_db.py`, `tests/test_admin.py` | API, storage and migration, and admin tests |
 | `tests/test_backup.py` | Backup and rotation tests |
+| `scripts/record_demo.py` | Records the home page demo video with Playwright and ffmpeg |
 | `tests/e2e/` | Playwright browser tests covering the full flow and print layout |
 | `tests/js/` | Node tests for the pure frontend modules |
 | `Dockerfile`, `compose.yaml` | Container image (gunicorn, Litestream, non-root), the app service, and the backup service |
