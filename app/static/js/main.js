@@ -17,8 +17,28 @@ let cleanup = null;
 // Screenshots or a video for the home page, e.g.
 //   { src: "/static/media/editor.png", alt: "The editor with Meren's chart", caption: "Build the chart" }
 //   { video: "/static/media/demo.mp4", poster: "/static/media/demo.png", alt: "…", caption: "…" }
-// The section is hidden while this is empty.
-const MEDIA = [];
+// The section is hidden while this is empty. Videos loop silently like a GIF, unless the
+// player prefers reduced motion. Re-record the demo with `uv run python scripts/record_demo.py`.
+const MEDIA = [
+  {
+    video: "/static/media/demo.mp4",
+    poster: "/static/media/demo.png",
+    alt: "Building a chart for Sable Quickfingers, a level 5 rogue: filling in the questionnaire, "
+      + "then dragging cards into the Start of turn and Attack lanes and connecting them with arrows",
+    caption: "Sable the rogue's Sneak Attack checks, from questionnaire to chart in under a minute.",
+  },
+];
+
+function mediaVideo(m) {
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const video = h("video", {
+    src: m.video, poster: m.poster, controls: true, loop: true, playsinline: true,
+    autoplay: !still, preload: still ? "none" : "auto", "aria-label": m.alt,
+  });
+  // Autoplay needs the muted property; the attribute alone doesn't set it on created elements.
+  video.muted = true;
+  return video;
+}
 
 const SOURCE_URL = "https://github.com/pberry/character-flow";
 // The chart created in this tab, whose links are shown once the editor opens.
@@ -132,7 +152,7 @@ function showHome() {
           "figure",
           {},
           m.video
-            ? h("video", { src: m.video, poster: m.poster, controls: true, preload: "metadata", "aria-label": m.alt })
+            ? mediaVideo(m)
             : h("img", { src: m.src, alt: m.alt, loading: "lazy" }),
           m.caption ? h("figcaption", {}, m.caption) : null,
         )))

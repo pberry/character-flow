@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- The home page shows a short looping video of a chart being built for Sable Quickfingers, a level 5 rogue. It
+  stays paused for players who prefer reduced motion. `scripts/record_demo.py` re-records it after UI changes.
+
 ### Security
 - GitHub Actions are pinned to commit SHAs and the Docker base images to digests, with Dependabot proposing
   updates monthly ([#25](https://github.com/pberry/character-flow/issues/25)).
