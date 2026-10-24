@@ -201,7 +201,6 @@ Tracked as GitHub issues:
 - [#8](https://github.com/pberry/character-flow/issues/8) Touch support
 - [#9](https://github.com/pberry/character-flow/issues/9) Undo and version history
 - [#23](https://github.com/pberry/character-flow/issues/23) Cap total stored bytes, not just the chart count
-- [#24](https://github.com/pberry/character-flow/issues/24) Verify the Litestream download's checksum
 
 ## Constraints
 

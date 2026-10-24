@@ -4,12 +4,20 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.14@sha256:1025398289b62de8269e70c45b91ffa3
 
 # Litestream streams the database to object storage on Fly.io (see litestream.yml).
 # Release assets call amd64 "x86_64".
+# Update both SHA-256s with the version, from the release's checksums.txt.
 ARG LITESTREAM_VERSION=0.5.17
+ARG LITESTREAM_SHA256_X86_64=cfb371176d164437ae869f8351cfde49bd1804ae71c61923f75c9cba9c9c006d
+ARG LITESTREAM_SHA256_ARM64=f8ca4a050095c1efbda2c4365172e61bf9d955ea0d9ac42f448b52e51819baa5
 ARG TARGETARCH
 RUN set -e; \
-    if [ "$TARGETARCH" = amd64 ]; then arch=x86_64; else arch="$TARGETARCH"; fi; \
+    case "$TARGETARCH" in \
+        amd64) arch=x86_64; sha="$LITESTREAM_SHA256_X86_64" ;; \
+        arm64) arch=arm64; sha="$LITESTREAM_SHA256_ARM64" ;; \
+        *) echo "no Litestream checksum for TARGETARCH=$TARGETARCH" >&2; exit 1 ;; \
+    esac; \
     url="https://github.com/benbjohnson/litestream/releases/download/v${LITESTREAM_VERSION}/litestream-${LITESTREAM_VERSION}-linux-${arch}.tar.gz"; \
     python -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], '/tmp/litestream.tar.gz')" "$url"; \
+    echo "$sha  /tmp/litestream.tar.gz" | sha256sum -c -; \
     tar -xzf /tmp/litestream.tar.gz -C /usr/local/bin litestream; \
     rm /tmp/litestream.tar.gz; \
     litestream version
