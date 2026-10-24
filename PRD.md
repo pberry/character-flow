@@ -1,7 +1,7 @@
 # Character Flow — Product Requirements
 
 > **Living document.** Update this file whenever a goal, decision, or requirement changes, in the same change
-> that implements it. Record *why* a decision was made, not just what. Last updated for **v0.10.0**.
+> that implements it. Record *why* a decision was made, not just what. Last updated for **v1.0.0**.
 
 ## Problem
 
@@ -157,6 +157,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-23 | Litestream to a Tigris bucket on Fly, plus Fly volume snapshots | The hourly backup container can't run on a machine that sleeps, and Litestream runs only while the app does. Tigris over Cloudflare R2: one account, and `fly storage create` sets the keys, at the cost of keeping backups with the same provider as the data |
 | 2026-10-23 | Deploy from release tags in GitHub Actions, with a volume snapshot first | Matches the existing release habit (check the docs, then tag). Migrations touch the only copy of players' data |
 | 2026-10-23 | SQLite WAL mode only when `CHARFLOW_WAL=1` | Litestream needs WAL, but the local backup container reads the database from a read-only mount, which WAL can break |
+| 2026-10-24 | Release public hosting as v1.0.0, not v0.11.0 | It's the first public release, and it breaks old `#/chart/<id>` links, so a major version marks both |
 | 2026-10-21 | Arrow keys nudge selected boxes within their lane (10px, Shift 50px); lanes and other selections don't nudge | Player request for fine positioning. Crossing lanes stays a drag so a stray keypress can't move a box to a different lane; multi-selections move as a unit so their spacing is kept |
 
 ## Roadmap
@@ -176,7 +177,7 @@ Shipped in v0.9.0, once real players were using it: automatic database backups
 
 Shipped in v0.10.0: portrait printing for tall charts ([#15](https://github.com/pberry/character-flow/issues/15)).
 
-Next release: public hosting at characterflow.app with secret edit and view links, a new home page, and
+Shipped in v1.0.0: public hosting at characterflow.app with secret edit and view links, a new home page, and
 arrow-key nudging for selected boxes ([#17](https://github.com/pberry/character-flow/issues/17)).
 
 Tracked as GitHub issues:
@@ -185,6 +186,7 @@ Tracked as GitHub issues:
 - [#7](https://github.com/pberry/character-flow/issues/7) Keep lane headers visible when panning
 - [#8](https://github.com/pberry/character-flow/issues/8) Touch support
 - [#9](https://github.com/pberry/character-flow/issues/9) Undo and version history
+- [#19](https://github.com/pberry/character-flow/issues/19) Per-IP rate limiting for chart creation
 
 ## Constraints
 
