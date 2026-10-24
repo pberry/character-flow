@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-24
+
 ### Added
 - A stats page at `/stats`, linked from the footer: how many charts have been made, new charts per week, typical
   chart size, which features, shapes, and badges get used, and character level ranges. It shows numbers only, never anything
