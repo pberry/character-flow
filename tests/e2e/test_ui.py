@@ -712,3 +712,15 @@ def test_no_html_injection_sinks():
         source = open(os.path.join(js, name)).read()
         for sink in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval("):
             assert sink not in source, f"{sink} in {name}"
+
+
+def test_home_page_explains_itself(page: Page, live_server):
+    page.goto(live_server)
+    expect(page.get_by_role("heading", name="Character Flow")).to_be_visible()
+    for heading in ("Start a chart", "How it works", "Who it's for", "No accounts. Your link is your key."):
+        expect(page.get_by_role("heading", name=heading)).to_be_visible()
+    # Nothing from other people, and no empty media or recent sections.
+    expect(page.locator(".recent")).to_be_hidden()
+    expect(page.locator(".media")).to_have_count(0)
+    assert "Character Flow" in page.title()
+    assert page.locator('meta[name="description"]').get_attribute("content")
