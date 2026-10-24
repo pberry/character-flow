@@ -25,6 +25,8 @@ def create_app(db_path=None, max_charts=None, create_limit=None):
     app.config["CLIENT_IP_HEADER"] = os.environ.get("CHARFLOW_CLIENT_IP_HEADER", "")
     # The public address: only its www. form is redirected, so the Host header can't pick the target.
     app.config["BASE_URL"] = os.environ.get("CHARFLOW_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
+    # Seconds the /stats numbers are reused before every chart is read again.
+    app.config["STATS_TTL"] = int(os.environ.get("CHARFLOW_STATS_TTL", 300))
     db.init(app.config["DB_PATH"], wal=os.environ.get("CHARFLOW_WAL") == "1")
     app.register_blueprint(bp)
     # Fly's proxy ends TLS and says so in X-Forwarded-Proto, so redirects keep https.

@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- A stats page at `/stats`, linked from the footer: how many charts have been made, new charts per week, typical
+  chart size, which features, shapes, and badges get used, and the most common classes and level ranges. It shows
+  counts only, never names or chart text, and lists a class only once 5 or more charts share it.
+
 ### Security
 - The Docker build checks the Litestream download against its pinned SHA-256 before installing it, and fails
   on a mismatch ([#24](https://github.com/pberry/character-flow/issues/24)).

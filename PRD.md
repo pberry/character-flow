@@ -110,6 +110,15 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 - Hand-written HTML pages (starting with an FAQ) share the app's styles, header, and footer.
 - Adding a page means adding one file; there is no CMS or in-app editing.
 
+### Stats page
+- A public page at `/stats`, linked from every footer, shows how the app is used: charts created (all time, last
+  7 and 30 days), charts edited in the last week, new charts per week for 12 weeks, typical chart size, how many
+  charts use each feature, box shapes, badge types, character classes, and level ranges.
+- **Anonymous by design.** It shows counts only: never chart names, character names, box text, or keys. The one
+  piece of player text it shows is a class's first word, and only once at least 5 charts share it.
+- Numbers are recomputed at most every 5 minutes (`CHARFLOW_STATS_TTL`), so the page can't be used to make the
+  server reread every chart on each request.
+
 ### Printing
 - The browser's Print button produces one letter page with a character summary header. Use
   "Save as PDF" in the print dialog to get a PDF.
@@ -173,6 +182,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-24 | Pin actions by commit SHA and base images by digest, updated by monthly Dependabot PRs | A moved tag in the deploy job could take over the app with `FLY_API_TOKEN`. Dependabot keeps the pins from going stale, so base-image security fixes still arrive, as reviewable PRs |
 | 2026-10-24 | Pin Litestream's SHA-256 per architecture, with a monthly workflow that opens an issue for new releases | The binary runs with the Tigris keys and reads the whole database, so a replaced release asset must fail the build ([#24](https://github.com/pberry/character-flow/issues/24)). Dependabot can't track a version in an `ARG`; an issue was chosen over a watch notification so the reminder lives with the repo, and over Renovate to avoid a second update bot |
 | 2026-10-24 | Limit new charts to 20 per client IP per sliding hour, counted in memory | One machine with one worker sees every request, so no new dependency or store is needed. The hour is generous enough for a GM making charts for a table on shared Wi-Fi, yet one IP can't fill the 5000-chart cap. The client IP header is trusted only when configured, so it can't be forged around the limit off Fly |
+| 2026-10-24 | Public `/stats` page with counts only, server-rendered with CSS bars, cached for 5 minutes | Owner request to see how many charts exist and how they're used, without tracking anyone. Counts come from the charts already stored, so there's no analytics service, cookie, or new table. Classes are free text, so one is shown only once 5 charts share its first word: a single chart can't be singled out and one person can't easily post arbitrary text to the page. CSS bars instead of a chart library keep the no-build, no-dependency rule |
 | 2026-10-21 | Arrow keys nudge selected boxes within their lane (10px, Shift 50px); lanes and other selections don't nudge | Player request for fine positioning. Crossing lanes stays a drag so a stray keypress can't move a box to a different lane; multi-selections move as a unit so their spacing is kept |
 
 ## Roadmap
