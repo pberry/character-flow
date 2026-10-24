@@ -11,7 +11,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
   **Make a copy**.
 - A home page that explains what Character Flow is, who it's for, and how links work, with page metadata and an
   icon.
-- Hosting on Fly.io at characterflow.app: a `fly.toml`, Litestream backups to Cloudflare R2, and GitHub Actions
+- Hosting on Fly.io at characterflow.app: a `fly.toml`, Litestream backups to a Tigris bucket, and GitHub Actions
   for CI on every pull request and deploys from release tags.
 - `python -m app.admin` lists charts and reissues lost edit links.
 - `/healthz` for health checks.

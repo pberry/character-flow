@@ -92,7 +92,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 ### Hosting and backups
 - Fly.io, one machine that stops when idle, with SQLite on a volume. Deploys run from GitHub Actions when a
   release tag is pushed, after the tests pass and a volume snapshot is taken.
-- Litestream streams the database to Cloudflare R2 and restores an empty volume from it. Fly keeps daily volume
+- Litestream streams the database to a Tigris bucket (Fly's object storage) and restores an empty volume from it. Fly keeps daily volume
   snapshots for 30 days.
 - Locally, the Docker setup still snapshots the database every hour into a host folder outside the data volume.
   Unchanged data isn't snapshotted again. The newest 48 snapshots are kept, plus the last one of each day for 90
@@ -154,7 +154,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-23 | Store only a hash of edit keys | A leaked database or backup can't be used to edit charts. The cost is that a lost link can be reissued but not recovered |
 | 2026-10-23 | Chart names are no longer unique; no global chart list | On a public site, one player's "Meren" must not block another's, and nobody should see other people's charts |
 | 2026-10-23 | The home page lists charts from the browser's local storage | Returning players find their charts without accounts or a server-side list |
-| 2026-10-23 | Litestream to Cloudflare R2, plus Fly volume snapshots | The hourly backup container can't run on a machine that sleeps. Litestream runs only while the app does, and R2's free tier covers it |
+| 2026-10-23 | Litestream to a Tigris bucket on Fly, plus Fly volume snapshots | The hourly backup container can't run on a machine that sleeps, and Litestream runs only while the app does. Tigris over Cloudflare R2: one account, and `fly storage create` sets the keys, at the cost of keeping backups with the same provider as the data |
 | 2026-10-23 | Deploy from release tags in GitHub Actions, with a volume snapshot first | Matches the existing release habit (check the docs, then tag). Migrations touch the only copy of players' data |
 | 2026-10-23 | SQLite WAL mode only when `CHARFLOW_WAL=1` | Litestream needs WAL, but the local backup container reads the database from a read-only mount, which WAL can break |
 | 2026-10-21 | Arrow keys nudge selected boxes within their lane (10px, Shift 50px); lanes and other selections don't nudge | Player request for fine positioning. Crossing lanes stays a drag so a stray keypress can't move a box to a different lane; multi-selections move as a unit so their spacing is kept |

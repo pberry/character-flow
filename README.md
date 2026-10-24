@@ -77,15 +77,14 @@ on the next request, which takes a second or two. SQLite lives on a Fly volume a
 ```sh
 fly launch --no-deploy --copy-config          # uses fly.toml; change `app` if the name is taken
 fly volumes create charflow_data --size 1     # in fly.toml's primary_region
-fly secrets set \
-  LITESTREAM_REPLICA_URL='s3://<bucket>/charflow.db?endpoint=https://<account-id>.r2.cloudflarestorage.com&region=auto' \
-  LITESTREAM_ACCESS_KEY_ID=<r2-access-key> LITESTREAM_SECRET_ACCESS_KEY=<r2-secret>
+fly storage create -n characterflow-backups   # Tigris bucket for Litestream; sets the AWS_* key secrets
 fly certs add characterflow.app && fly certs add www.characterflow.app   # then add the DNS records it prints
 fly tokens create deploy                      # store as FLY_API_TOKEN in the GitHub "production" environment
 ```
 
-Create the R2 bucket and an API token limited to that bucket in the Cloudflare dashboard first. Requests to
-`www.` redirect to the bare domain.
+Create the Tigris bucket before the first deploy: `fly.toml` turns Litestream on, and it can't start without
+the bucket's keys. If the bucket name is taken, use another and update `LITESTREAM_REPLICA_URL` in `fly.toml`.
+Requests to `www.` redirect to the bare domain.
 
 ### Releasing
 
@@ -105,9 +104,10 @@ CI (`.github/workflows/ci.yml`) runs both test suites and a Docker build on ever
 
 ### Backups on Fly
 
-- **Litestream** streams every change to the R2 bucket while the app runs. When the machine starts with an empty
-  volume, it restores the database from R2 first.
-- **Fly volume snapshots** are taken daily and kept for 30 days (`snapshot_retention` in `fly.toml`), plus one before
+- **Litestream** streams every change to the Tigris bucket while the app runs. When the machine starts with an
+  empty volume, it restores the database from the bucket first. The bucket keeps about a day of history
+  (Litestream's default retention), so it's for restoring the latest data.
+- **Fly volume snapshots** cover going further back. They're taken daily and kept for 30 days (`snapshot_retention` in `fly.toml`), plus one before
   every deploy.
 - The hourly `backup` service in `compose.yaml` is for local Docker only.
 
@@ -132,7 +132,7 @@ Links print with `CHARFLOW_BASE_URL` (default `https://characterflow.app`); pass
 | `CHARFLOW_MAX_CHARTS` | 5000 | New charts are refused (503) past this many, to bound disk use |
 | `CHARFLOW_BASE_URL` | `https://characterflow.app` | Base for links printed by `app.admin` |
 | `GUNICORN_WORKERS` | 2 | Gunicorn worker processes (1 on Fly's 256MB machine) |
-| `LITESTREAM_REPLICA_URL` and keys | unset | Turns on Litestream replication and restore |
+| `LITESTREAM_REPLICA_URL` | unset (Tigris bucket in `fly.toml`) | Turns on Litestream replication and restore. Keys come from `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` |
 
 Requests over 1MB are refused (413). Access logs leave out request paths, because paths contain chart keys.
 

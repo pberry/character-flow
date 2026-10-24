@@ -1,6 +1,7 @@
-# Streams the chart database to object storage (Cloudflare R2) on Fly.io.
-# Only used when LITESTREAM_REPLICA_URL is set; see docker-entrypoint.sh.
-# Credentials come from LITESTREAM_ACCESS_KEY_ID and LITESTREAM_SECRET_ACCESS_KEY.
+# Streams the chart database to object storage on Fly.io (a Tigris bucket).
+# Only used when LITESTREAM_REPLICA_URL is set (in fly.toml); see docker-entrypoint.sh.
+# Credentials come from the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY secrets
+# that `fly storage create` sets on the app.
 dbs:
   - path: ${CHARFLOW_DB}
     replica:
