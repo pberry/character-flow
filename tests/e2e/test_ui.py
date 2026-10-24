@@ -779,3 +779,9 @@ def test_faq_page_from_home_footer(page: Page, live_server):
     assert page.evaluate("getComputedStyle(document.body).backgroundColor") == "rgb(246, 245, 242)"
     page.get_by_role("link", name="Character Flow").click()
     expect(page.get_by_role("heading", name="Start a chart")).to_be_visible()
+
+
+def test_stats_page_from_home_footer(page: Page, live_server):
+    page.goto(live_server)
+    page.locator(".site-footer").get_by_role("link", name="Stats").click()
+    expect(page.get_by_role("heading", name="Stats", exact=True)).to_be_visible()

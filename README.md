@@ -144,6 +144,7 @@ Links print with `CHARFLOW_BASE_URL` (default `https://characterflow.app`); pass
 | `CHARFLOW_MAX_CHARTS` | 5000 | New charts are refused (503) past this many, to bound disk use |
 | `CHARFLOW_CREATE_LIMIT` | 20 | New charts (creates and copies) one client can make per hour; past it they get a 429. `0` turns it off |
 | `CHARFLOW_CLIENT_IP_HEADER` | unset (`Fly-Client-IP` in `fly.toml`) | Header holding the client's address for that limit. Set it only behind a proxy that sets it; otherwise the connection's address is used |
+| `CHARFLOW_STATS_TTL` | 300 | Seconds the `/stats` numbers are reused before every chart is read again |
 | `CHARFLOW_BASE_URL` | `https://characterflow.app` | The public address: base for links printed by `app.admin`, and `www.` of its host redirects here |
 | `GUNICORN_WORKERS` | 2 | Gunicorn worker processes (1 on Fly's 256MB machine) |
 | `LITESTREAM_REPLICA_URL` | unset (Tigris bucket in `fly.toml`) | Turns on Litestream replication and restore. Keys come from `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` |
@@ -299,6 +300,13 @@ stylesheet, header, and footer, and fills three blocks:
 No route is needed: add the file, link to it, and redeploy. Scripts on these pages must be
 files under `/static/`, because the Content-Security-Policy blocks inline scripts.
 
+## Stats page
+
+`/stats` shows anonymous usage numbers across every chart on the server: totals, new charts per week, typical chart
+size, how often each feature, shape, and badge is used, and character level ranges. It shows only numbers, never
+anything players type (chart or character names, classes, box or badge text) or keys. The numbers are computed in `app/stats.py` and
+reused for `CHARFLOW_STATS_TTL` seconds.
+
 ## Known limitations
 
 - Tested in Google Chrome. Safari and Firefox should work but haven't been checked.
@@ -345,12 +353,14 @@ Project layout:
 | --- | --- |
 | `app/__init__.py` | `create_app()` factory; reads the settings above |
 | `app/db.py` | SQLite schema, keys, and migration; each chart is a name plus a JSON document |
-| `app/routes.py` | JSON API (`/api/charts`, `/api/edit/<key>`, `/api/view/<key>`), security headers, static pages, `/healthz` |
-| `app/templates/` | `base.html` layout and static pages (`pages/<name>.html`, served at `/<name>`) |
+| `app/routes.py` | JSON API (`/api/charts`, `/api/edit/<key>`, `/api/view/<key>`), security headers, static pages, `/stats`, `/healthz` |
+| `app/stats.py` | Anonymous usage counts for the `/stats` page, with a short cache |
+| `app/templates/` | `base.html` layout, `stats.html`, and static pages (`pages/<name>.html`, served at `/<name>`) |
 | `app/admin.py` | Operator commands (`python -m app.admin list`, `reset-link`) |
 | `app/backup.py` | Database snapshots and rotation (`python -m app.backup`), run by the `backup` service |
 | `tests/test_api.py`, `tests/test_db.py`, `tests/test_admin.py` | API, storage and migration, and admin tests |
 | `tests/test_backup.py` | Backup and rotation tests |
+| `tests/test_stats.py` | Stats counts, anonymity, and caching tests |
 | `scripts/record_demo.py` | Records the home page demo video with Playwright and ffmpeg, and saves the example chart |
 | `scripts/check_litestream.py` | Says whether the `Dockerfile`'s Litestream is behind a release tag (used by `litestream.yml`) |
 | `tests/e2e/` | Playwright browser tests covering the full flow and print layout |

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Stats{% endblock %}
+{% block description %}How Character Flow is being used: anonymous counts across every chart.{% endblock %}
+{% macro bars(rows, unit="") %}
+<ul class="bars">
+  {% for row in rows %}
+  <li><span class="bar-label">{{ row.label }}</span>
+    <span class="bar-track"><span class="bar" style="width: {{ row.pct }}%"></span></span>
+    <span class="bar-value">{{ row.count }}{{ unit }}</span></li>
+  {% endfor %}
+</ul>
+{% endmacro %}
+{% block content %}
+<h1>Stats</h1>
+<p class="lead">Counts across every chart on this server. Only numbers: nothing players type (names, classes, box
+  text) ever appears here. Updated every few minutes.</p>
+
+{% if not stats.total %}
+<section class="panel"><p>No charts yet. <a href="/">Start the first one</a>.</p></section>
+{% else %}
+<section class="panel">
+  <div class="stat-tiles">
+    <div class="stat-tile"><span class="stat-value">{{ stats.total }}</span><span class="muted">charts created</span></div>
+    <div class="stat-tile"><span class="stat-value">{{ stats.last7 }}</span><span class="muted">new in the last 7 days</span></div>
+    <div class="stat-tile"><span class="stat-value">{{ stats.last30 }}</span><span class="muted">new in the last 30 days</span></div>
+    <div class="stat-tile"><span class="stat-value">{{ stats.active7 }}</span><span class="muted">edited in the last 7 days</span></div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>New charts per week</h2>
+  <div class="columns" role="list">
+    {% for week in stats.weekly %}
+    <div class="column" role="listitem" title="Week of {{ week.label }}: {{ week.count }}">
+      <span class="column-value">{{ week.count }}</span>
+      <span class="column-track"><span class="column-bar" style="height: {{ week.pct }}%"></span></span>
+      <span class="column-label muted">{{ week.label }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel">
+  <h2>What goes into a chart</h2>
+  <p>{{ stats.in_use }} chart{{ "s" if stats.in_use != 1 }} have at least one box, with {{ stats.total_boxes }} boxes
+    and {{ stats.total_arrows }} arrows between them. A typical one has <b>{{ stats.median_boxes }}</b> boxes,
+    <b>{{ stats.median_arrows }}</b> arrows, and <b>{{ stats.median_lanes }}</b> lanes (the median).</p>
+  {% if stats.in_use %}
+  <h3>Charts using each feature</h3>
+  {{ bars(stats.features, "%") }}
+  {% if stats.shapes %}<h3>Box shapes</h3>{{ bars(stats.shapes) }}{% endif %}
+  {% if stats.badges %}<h3>Badges</h3>{{ bars(stats.badges) }}{% endif %}
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Characters</h2>
+  <h3>Levels</h3>
+  {{ bars(stats.tiers) }}
+</section>
+{% endif %}
+{% endblock %}

@@ -12,7 +12,7 @@ from urllib.parse import urlsplit
 from flask import Blueprint, abort, current_app, g, jsonify, make_response, redirect, render_template, request
 from jinja2 import TemplateNotFound
 
-from . import db
+from . import db, stats
 
 bp = Blueprint("main", __name__)
 
@@ -154,6 +154,12 @@ def _create(name, data):
 @bp.get("/")
 def index():
     return current_app.send_static_file("index.html")
+
+
+@bp.get("/stats")
+def stats_page():
+    """Anonymous counts across all charts (see stats.py)."""
+    return render_template("stats.html", stats=stats.cached(current_app, get_conn()))
 
 
 @bp.get("/<slug>")
