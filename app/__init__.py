@@ -3,6 +3,7 @@
 import os
 
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from . import db
 from .routes import bp
@@ -16,4 +17,6 @@ def create_app(db_path=None, max_charts=None):
     app.config["MAX_CHARTS"] = max_charts or int(os.environ.get("CHARFLOW_MAX_CHARTS", 5000))
     db.init(app.config["DB_PATH"], wal=os.environ.get("CHARFLOW_WAL") == "1")
     app.register_blueprint(bp)
+    # Fly's proxy ends TLS and says so in X-Forwarded-Proto, so redirects keep https.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
     return app

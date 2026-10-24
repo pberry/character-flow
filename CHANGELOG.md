@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-24
+
+### Fixed
+- `www.characterflow.app` now redirects straight to `https://characterflow.app`, not to `http://` first.
+
 ## [1.0.0] - 2026-10-24
 
 ### Added
