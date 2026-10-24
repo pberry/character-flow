@@ -109,6 +109,11 @@ Actions are pinned to commit SHAs (the version is in a comment) and the `Dockerf
 moved tag can't change what runs with the Fly token. Dependabot (`.github/dependabot.yml`) opens a monthly pull
 request for each group of updates; review and merge those rather than editing the pins by hand.
 
+Dependabot doesn't track Litestream, which the `Dockerfile` downloads at `LITESTREAM_VERSION` and checks against
+pinned SHA-256s. A monthly workflow (`.github/workflows/litestream.yml`, also runnable by hand) opens an
+"Update Litestream to X" issue when a new release is out. Update the version and both hashes together; the issue
+has the command that prints them from the release's `checksums.txt`.
+
 ### Backups on Fly
 
 - **Litestream** streams every change to the Tigris bucket while the app runs. When the machine starts with an
@@ -347,12 +352,13 @@ Project layout:
 | `tests/test_api.py`, `tests/test_db.py`, `tests/test_admin.py` | API, storage and migration, and admin tests |
 | `tests/test_backup.py` | Backup and rotation tests |
 | `scripts/record_demo.py` | Records the home page demo video with Playwright and ffmpeg, and saves the example chart |
+| `scripts/check_litestream.py` | Says whether the `Dockerfile`'s Litestream is behind a release tag (used by `litestream.yml`) |
 | `tests/e2e/` | Playwright browser tests covering the full flow and print layout |
 | `tests/js/` | Node tests for the pure frontend modules |
 | `Dockerfile`, `compose.yaml` | Container image (gunicorn, Litestream, non-root), the app service, and the backup service |
 | `docker-entrypoint.sh`, `gunicorn.conf.py`, `litestream.yml` | Container startup, gunicorn settings, Litestream replica |
 | `fly.toml` | Fly.io app, volume, health check, and machine size |
-| `.github/workflows/` | CI (`ci.yml`) and tag-triggered deploys (`deploy.yml`) |
+| `.github/workflows/` | CI (`ci.yml`), tag-triggered deploys (`deploy.yml`), and the monthly Litestream release check (`litestream.yml`) |
 
 The frontend is plain ES modules + SVG with no build step, in `app/static/`:
 

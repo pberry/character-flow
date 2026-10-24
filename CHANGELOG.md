@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Security
+- The Docker build checks the Litestream download against its pinned SHA-256 before installing it, and fails
+  on a mismatch ([#24](https://github.com/pberry/character-flow/issues/24)).
+- A monthly workflow opens an issue when a new Litestream release is out, since Dependabot doesn't track it
+  and the version and checksums are updated by hand.
+
 ## [1.2.0] - 2026-10-24
 
 ### Added

@@ -21,7 +21,7 @@ findings are hardening.
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
 | 1 | Anonymous clients can fill the server (chart limit and disk) | Medium | Rate limit fixed (Unreleased): [#19](https://github.com/pberry/character-flow/issues/19). Byte budget open: [#23](https://github.com/pberry/character-flow/issues/23) |
-| 2 | The Litestream binary is downloaded without a checksum check | Medium | Open: [#24](https://github.com/pberry/character-flow/issues/24) |
+| 2 | The Litestream binary is downloaded without a checksum check | Medium | Fixed (Unreleased): [#24](https://github.com/pberry/character-flow/issues/24) |
 | 3 | Deeply nested JSON returns a 500 instead of a 400 | Low | Fixed in 1.0.2 |
 | 4 | The `www.` redirect trusts the `Host` header (open redirect) | Low | Fixed in 1.0.2 |
 | 5 | No `Strict-Transport-Security` header | Low | Fixed in 1.0.2 |
