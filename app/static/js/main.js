@@ -13,6 +13,14 @@ import { showView } from "./view.js";
 
 const app = document.getElementById("app");
 let cleanup = null;
+
+// Screenshots or a video for the home page, e.g.
+//   { src: "/static/media/editor.png", alt: "The editor with Meren's chart", caption: "Build the chart" }
+//   { video: "/static/media/demo.mp4", poster: "/static/media/demo.png", alt: "…", caption: "…" }
+// The section is hidden while this is empty.
+const MEDIA = [];
+
+const SOURCE_URL = "https://github.com/pberry/character-flow";
 // The chart created in this tab, whose links are shown once the editor opens.
 let justCreated = null;
 
@@ -91,12 +99,59 @@ function showHome() {
   app.replaceChildren(
     h(
       "div",
-      { class: "page" },
-      h("h1", { class: "brand" }, "Character Flow"),
-      h("p", { class: "lead" }, "Build a turn-by-turn combat flowchart for your character."),
-      h("section", { class: "panel" }, h("h2", {}, "New chart"), form),
-      error,
+      { class: "page home" },
+      h(
+        "header",
+        { class: "hero" },
+        h("h1", { class: "brand" }, "Character Flow"),
+        h("p", { class: "tagline" }, "A one-page combat flowchart for ", h("em", {}, "your"), " character, printed and kept at the table."),
+        h("p", { class: "lead" },
+          "Generic \u201cwhat can I do on my turn?\u201d charts don't fit a real character. Answer a few questions, "
+          + "lay out your options turn by turn, and print one sheet you can glance at when it's your go."),
+        h("section", { class: "panel start" }, h("h2", {}, "Start a chart"), form, error),
+      ),
       recentPanel,
+      h(
+        "section",
+        { class: "how" },
+        h("h2", {}, "How it works"),
+        h(
+          "ol",
+          { class: "steps" },
+          h("li", {}, h("b", {}, "Tell it about your character."),
+            " Name, class, level, ability scores, weapons, spells, and features, all as free text. Your answers become a palette of cards."),
+          h("li", {}, h("b", {}, "Lay out your turn."),
+            " Drag cards into swim lanes (start of turn, attack, bonus actions, reactions, and anything else) and connect them with arrows. "
+            + "Add shapes, colors, badges for costs and durations, and a side column for resources and conditions."),
+          h("li", {}, h("b", {}, "Print one page."),
+            " The chart prints on a single letter sheet, landscape or portrait, in color, with your character summary and notes."),
+        ),
+      ),
+      MEDIA.length
+        ? h("section", { class: "media" }, MEDIA.map((m) => h(
+          "figure",
+          {},
+          m.video
+            ? h("video", { src: m.video, poster: m.poster, controls: true, preload: "metadata", "aria-label": m.alt })
+            : h("img", { src: m.src, alt: m.alt, loading: "lazy" }),
+          m.caption ? h("figcaption", {}, m.caption) : null,
+        )))
+        : null,
+      h(
+        "div",
+        { class: "cards" },
+        h("section", { class: "panel" }, h("h2", {}, "Who it's for"),
+          h("p", {}, "Tabletop RPG players who freeze up when the spotlight lands on them: newer players, anyone with a character "
+            + "full of options, or a player coming back after a long break. Game masters can make one with a player or share one with the table."),
+          h("p", { class: "muted" }, "It works with any game or edition. It doesn't know the rules, so it never argues with your table's.")),
+        h("section", { class: "panel" }, h("h2", {}, "No accounts. Your link is your key."),
+          h("p", {}, "Every chart gets two secret links. The ", h("b", {}, "edit link"), " is yours: anyone with it can change the chart, so keep it private. "
+            + "The ", h("b", {}, "view link"), " is safe to share: people can look, print, and make their own copy, but never change yours."),
+          h("p", { class: "muted" }, "Bookmark your edit link. This browser remembers your charts too, but if you lose the link there's no password to reset.")),
+      ),
+      h("footer", { class: "site-footer muted" },
+        "Character Flow is a free hobby project. ",
+        h("a", { href: SOURCE_URL }, "Source on GitHub"), "."),
     ),
   );
   refresh();

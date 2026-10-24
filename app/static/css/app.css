@@ -235,3 +235,27 @@ input:focus, textarea:focus { outline: 2px solid var(--select); outline-offset: 
 .view-sheet .print-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; border-bottom: 1px solid #999; margin-bottom: 8px; padding-bottom: 8px; }
 .view-sheet .print-title { font-size: 12px; color: #555; }
 .view-sheet .print-notes { border-top: 1px solid #999; padding-top: 8px; white-space: pre-wrap; font-size: 13px; }
+
+/* ---- home page ---- */
+.home .hero { margin-bottom: 8px; }
+.home .brand { font-size: 40px; margin-bottom: 4px; }
+.tagline { font-size: 20px; margin: 0 0 12px; }
+.home .lead { max-width: 640px; }
+.home .start .error:empty { display: none; }
+.home h2 { margin-top: 0; }
+.how { margin: 32px 0; }
+.steps { padding-left: 1.4em; display: grid; gap: 10px; }
+.steps li { line-height: 1.5; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.cards .panel { margin-bottom: 0; }
+.cards p { line-height: 1.5; }
+.media { display: grid; gap: 16px; margin: 32px 0; }
+.media figure { margin: 0; }
+.media img, .media video { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 10px; background: #fff; }
+.media figcaption { color: var(--muted); font-size: 13px; margin-top: 6px; }
+.site-footer { margin-top: 40px; text-align: center; }
+.site-footer a { color: inherit; }
+@media (max-width: 560px) {
+  .new-chart { flex-direction: column; }
+  .home .brand { font-size: 32px; }
+}
