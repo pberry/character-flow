@@ -13,10 +13,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
   players type.
 
 ### Security
+- The server refuses new charts, copies, and saves that grow a chart (503, "out of space") once the database
+  reaches a 256 MiB budget, so the 1 GB Fly volume can't fill up ([#23](https://github.com/pberry/character-flow/issues/23)).
+  Saves that keep a chart the same size or smaller still work. Set `CHARFLOW_MAX_BYTES` to change it.
 - The Docker build checks the Litestream download against its pinned SHA-256 before installing it, and fails
   on a mismatch ([#24](https://github.com/pberry/character-flow/issues/24)).
 - A monthly workflow opens an issue when a new Litestream release is out, since Dependabot doesn't track it
   and the version and checksums are updated by hand.
+
+### Changed
+- Requests over 128 KiB are refused (413), down from 1 MiB. The largest real chart is about 11 KB.
 
 ## [1.2.0] - 2026-10-24
 

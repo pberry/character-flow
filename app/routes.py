@@ -134,6 +134,15 @@ def client_ip():
     return (header and request.headers.get(header)) or request.remote_addr
 
 
+OUT_OF_SPACE = "this server is out of space; please try again later"
+
+
+def _over_budget(conn, growth):
+    """Whether `growth` more bytes of chart data would take the database past MAX_BYTES.
+    Shrinking a chart is always allowed, so players can still save smaller charts."""
+    return growth > 0 and db.used_bytes(conn) + growth > current_app.config["MAX_BYTES"]
+
+
 def _create(name, data):
     limiter = current_app.extensions["create_limiter"]
     if limiter is not None:
@@ -147,6 +156,8 @@ def _create(name, data):
     conn = get_conn()
     if db.count_charts(conn) >= current_app.config["MAX_CHARTS"]:
         return error("this server is full; please try again later", 503)
+    if _over_budget(conn, db.data_size(data)):
+        return error(OUT_OF_SPACE, 503)
     chart = db.create_chart(conn, name, data)
     return jsonify(editable(chart, chart["edit_key"])), 201
 
@@ -210,7 +221,14 @@ def update_chart(key):
     data = body.get("data")
     if data is not None and not isinstance(data, dict):
         return error("data must be an object", 400)
-    chart = db.update_chart(get_conn(), key, name=name, data=data)
+    conn = get_conn()
+    if data is not None:
+        old = db.get_by_edit_key(conn, key)
+        if old is None:
+            return error("not found", 404)
+        if _over_budget(conn, db.data_size(data) - db.data_size(old["data"])):
+            return error(OUT_OF_SPACE, 503)
+    chart = db.update_chart(conn, key, name=name, data=data)
     if chart is None:
         return error("not found", 404)
     return jsonify(editable(chart, key))

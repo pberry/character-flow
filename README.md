@@ -142,6 +142,7 @@ Links print with `CHARFLOW_BASE_URL` (default `https://characterflow.app`); pass
 | `CHARFLOW_DB` | `charflow.db` (`/data/charflow.db` in the image) | SQLite file |
 | `CHARFLOW_WAL` | off | `1` turns on SQLite WAL mode (needed by Litestream; set in `fly.toml`) |
 | `CHARFLOW_MAX_CHARTS` | 5000 | New charts are refused (503) past this many, to bound disk use |
+| `CHARFLOW_MAX_BYTES` | 268435456 (256 MiB) | Database size budget. New charts, copies, and saves that make a chart bigger are refused (503) past it; saves that keep a chart the same size or smaller still work. Sized for Fly's 1 GB volume, leaving room for the WAL and Litestream |
 | `CHARFLOW_CREATE_LIMIT` | 20 | New charts (creates and copies) one client can make per hour; past it they get a 429. `0` turns it off |
 | `CHARFLOW_CLIENT_IP_HEADER` | unset (`Fly-Client-IP` in `fly.toml`) | Header holding the client's address for that limit. Set it only behind a proxy that sets it; otherwise the connection's address is used |
 | `CHARFLOW_STATS_TTL` | 300 | Seconds the `/stats` numbers are reused before every chart is read again |
@@ -150,7 +151,7 @@ Links print with `CHARFLOW_BASE_URL` (default `https://characterflow.app`); pass
 | `LITESTREAM_REPLICA_URL` | unset (Tigris bucket in `fly.toml`) | Turns on Litestream replication and restore. Keys come from `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` |
 
 The create limit is counted in memory, so it resets when the app restarts, and with several Gunicorn workers each
-keeps its own count. Requests over 1MB are refused (413), and so is JSON nested more than 64 levels deep (400). Access logs leave out request paths, because paths contain chart keys. API
+keeps its own count. Requests over 128 KiB are refused (413); the largest real chart is about 11 KB, and so is JSON nested more than 64 levels deep (400). Access logs leave out request paths, because paths contain chart keys. API
 responses are never cached (`Cache-Control: no-store`), and responses over HTTPS send `Strict-Transport-Security`.
 
 ## Running locally without Docker

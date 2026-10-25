@@ -109,6 +109,18 @@ def count_charts(conn):
     return conn.execute("SELECT count(*) FROM charts").fetchone()[0]
 
 
+def data_size(data):
+    """Bytes a chart's data takes as stored: json.dumps escapes to ASCII, so characters are bytes."""
+    return len(json.dumps(data))
+
+
+def used_bytes(conn):
+    """Bytes of the database file in use. Pages freed by deletes are reused, so
+    they don't count; the WAL isn't included."""
+    pages = conn.execute("PRAGMA page_count").fetchone()[0] - conn.execute("PRAGMA freelist_count").fetchone()[0]
+    return pages * conn.execute("PRAGMA page_size").fetchone()[0]
+
+
 def list_charts(conn):
     """Every chart, for the operator's admin CLI only."""
     rows = conn.execute(
