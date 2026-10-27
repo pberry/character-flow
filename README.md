@@ -21,6 +21,8 @@ button:
 - The **edit link** (`/#/edit/<key>`) opens the editor. Anyone with it can change or delete the chart, so keep it
   private.
 - The **view link** (`/#/view/<key>`) shows the chart read-only, with Print and **Make a copy**. Share this one.
+  Pasted into Slack, Discord, or a social site, it previews as the Character Flow card, not the chart itself:
+  link previewers never see the key after the `#`, and the server never does either.
 
 Keys are 128 random bits. The server stores only a hash of each edit key, so a copy of the database can't be used
 to edit charts. The home page lists the charts this browser has opened (kept in the browser's local storage, with
@@ -301,7 +303,9 @@ stylesheet, header, and footer, and fills three blocks:
 No route is needed: add the file, link to it, and redeploy. Scripts on these pages must be
 files under `/static/`, because the Content-Security-Policy blocks inline scripts.
 
-New pages are listed in `/sitemap.xml` automatically, along with the home page. `/robots.txt` points crawlers at
+`base.html` also fills in each page's canonical URL and link preview tags (Open Graph) from the `title` and
+`description` blocks, so keep descriptions under about 155 characters. New pages are listed in `/sitemap.xml`
+automatically, along with the home page. `/robots.txt` points crawlers at
 the sitemap and asks them not to crawl `/stats`. Both use `CHARFLOW_BASE_URL` for their absolute links.
 
 ## Stats page
@@ -349,7 +353,11 @@ that show up in them:
 ```sh
 uv run playwright install ffmpeg        # once; Playwright's own encoder for recording
 uv run python scripts/record_demo.py    # also needs ffmpeg on the PATH (brew install ffmpeg)
+uv run python scripts/make_social_card.py  # then redraw the link preview image from the new demo.png
 ```
+
+The link preview image (`app/static/media/social-card.png`, 1200×630) crops the chart out of `demo.png`. The home
+page and every static page point to it from their Open Graph tags, along with a canonical URL and description.
 
 Project layout:
 
@@ -366,6 +374,7 @@ Project layout:
 | `tests/test_backup.py` | Backup and rotation tests |
 | `tests/test_stats.py` | Stats counts, anonymity, and caching tests |
 | `scripts/record_demo.py` | Records the home page demo video with Playwright and ffmpeg, and saves the example chart |
+| `scripts/make_social_card.py` | Draws the link preview image from the demo's poster frame |
 | `scripts/check_litestream.py` | Says whether the `Dockerfile`'s Litestream is behind a release tag (used by `litestream.yml`) |
 | `tests/e2e/` | Playwright browser tests covering the full flow and print layout |
 | `tests/js/` | Node tests for the pure frontend modules |

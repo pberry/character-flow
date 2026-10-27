@@ -1,3 +1,6 @@
+import json
+import struct
+from html.parser import HTMLParser
 from xml.etree import ElementTree
 
 import pytest
@@ -242,6 +245,63 @@ def test_index_served(client):
     resp = client.get("/")
     assert resp.status_code == 200
     assert b"Character Flow" in resp.data
+
+
+class Head(HTMLParser):
+    """The <head>'s meta properties and names, link rels, and JSON-LD blocks."""
+
+    def __init__(self, html):
+        super().__init__()
+        self.meta, self.links, self.json_ld, self._in_ld = {}, {}, [], False
+        self.feed(html)
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "meta" and "content" in a:
+            self.meta[a.get("property") or a.get("name")] = a["content"]
+        elif tag == "link":
+            self.links[a["rel"]] = a["href"]
+        self._in_ld = tag == "script" and a.get("type") == "application/ld+json"
+
+    def handle_data(self, data):
+        if self._in_ld:
+            self.json_ld.append(json.loads(data))
+            self._in_ld = False
+
+
+def assert_preview(client, head, url):
+    """Link previews (Slack, Discord, social sites) have what they need, and the image is real."""
+    assert head.links["canonical"] == url and head.meta["og:url"] == url
+    for key in ("og:title", "og:description", "og:site_name", "og:image:alt", "description"):
+        assert head.meta[key].strip(), key
+    assert len(head.meta["description"]) <= 160, "search results cut longer descriptions"
+    assert head.meta["twitter:card"] == "summary_large_image"
+    image = head.meta["og:image"]
+    assert image.startswith("https://characterflow.app/static/")
+    resp = client.get(image.removeprefix("https://characterflow.app"))
+    assert resp.status_code == 200 and resp.mimetype == "image/png"
+    width, height = struct.unpack(">II", resp.data[16:24])
+    assert (width, height) == (int(head.meta["og:image:width"]), int(head.meta["og:image:height"])) == (1200, 630)
+
+
+def test_home_page_has_link_preview_and_structured_data(client):
+    head = Head(client.get("/").get_data(as_text=True))
+    assert_preview(client, head, "https://characterflow.app/")
+    [app_info] = head.json_ld
+    assert app_info["@type"] == "WebApplication" and app_info["url"] == "https://characterflow.app/"
+
+
+def test_static_pages_have_link_preview(client):
+    head = Head(client.get("/faq").get_data(as_text=True))
+    assert_preview(client, head, "https://characterflow.app/faq")
+    assert head.meta["og:title"] == "FAQ · Character Flow"
+
+
+def test_static_page_links_follow_base_url(client, app):
+    app.config["BASE_URL"] = "https://flow.example.org"
+    head = Head(client.get("/faq").get_data(as_text=True))
+    assert head.links["canonical"] == "https://flow.example.org/faq"
+    assert head.meta["og:image"] == "https://flow.example.org/static/media/social-card.png"
 
 
 def test_www_redirects_to_bare_domain(client):

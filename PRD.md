@@ -109,6 +109,9 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 ### Static pages
 - Hand-written HTML pages (starting with an FAQ) share the app's styles, header, and footer.
 - Adding a page means adding one file; there is no CMS or in-app editing.
+- Every public page (home, FAQ, other static pages) has a title, a search description under about 155
+  characters, a canonical URL, and Open Graph tags with a 1200×630 preview image, so links unfurl well in Slack,
+  Discord, and social sites. The home page also has schema.org `WebApplication` data.
 - `/sitemap.xml` lists the home page and every static page (including the FAQ) without a separate list to keep in
   sync. `/robots.txt` links to it and disallows `/stats`.
 
@@ -188,6 +191,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-24 | Public `/stats` page with counts only, server-rendered with CSS bars, cached for 5 minutes | Owner request to see how many charts exist and how they're used, without tracking anyone. Counts come from the charts already stored, so there's no analytics service, cookie, or new table. Nothing players type is shown, not even common class names behind a threshold (owner's call): one person could make enough charts to put their own text on a public page, and free text can identify a player. CSS bars instead of a chart library keep the no-build, no-dependency rule |
 | 2026-10-21 | Arrow keys nudge selected boxes within their lane (10px, Shift 50px); lanes and other selections don't nudge | Player request for fine positioning. Crossing lanes stays a drag so a stray keypress can't move a box to a different lane; multi-selections move as a unit so their spacing is kept |
 | 2026-10-27 | Sitemap built from `templates/pages/`; robots.txt disallows `/stats` | New pages can't be left out of the sitemap. Stats are changing numbers, not content worth indexing |
+| 2026-10-27 | Every view link previews as the same site card, not the chart | Unfurlers don't send the URL fragment, so a per-chart card would need path links like `/view/<key>`. That would put keys in server and proxy logs and in third-party unfurl services, reversing the "keys never reach the server" design. Owner chose to keep keys private |
 
 ## Roadmap
 
