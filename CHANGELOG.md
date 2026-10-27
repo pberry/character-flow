@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-27
+
 ### Added
 - Links to Character Flow now show a preview card (title, description, and a picture of a chart) when pasted into
   Slack, Discord, or social sites. View links get the same card; the chart itself stays private.
