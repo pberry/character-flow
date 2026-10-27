@@ -1,7 +1,7 @@
 # Character Flow — Product Requirements
 
 > **Living document.** Update this file whenever a goal, decision, or requirement changes, in the same change
-> that implements it. Record *why* a decision was made, not just what. Last updated for **v1.3.1**.
+> that implements it. Record *why* a decision was made, not just what. Last updated for **v1.4.0**.
 
 ## Problem
 
