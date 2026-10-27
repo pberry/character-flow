@@ -301,6 +301,9 @@ stylesheet, header, and footer, and fills three blocks:
 No route is needed: add the file, link to it, and redeploy. Scripts on these pages must be
 files under `/static/`, because the Content-Security-Policy blocks inline scripts.
 
+New pages are listed in `/sitemap.xml` automatically, along with the home page. `/robots.txt` points crawlers at
+the sitemap and asks them not to crawl `/stats`. Both use `CHARFLOW_BASE_URL` for their absolute links.
+
 ## Stats page
 
 `/stats` shows anonymous usage numbers across every chart on the server: totals, new charts per week, typical chart
@@ -354,7 +357,7 @@ Project layout:
 | --- | --- |
 | `app/__init__.py` | `create_app()` factory; reads the settings above |
 | `app/db.py` | SQLite schema, keys, and migration; each chart is a name plus a JSON document |
-| `app/routes.py` | JSON API (`/api/charts`, `/api/edit/<key>`, `/api/view/<key>`), security headers, static pages, `/stats`, `/healthz` |
+| `app/routes.py` | JSON API (`/api/charts`, `/api/edit/<key>`, `/api/view/<key>`), security headers, static pages, `/stats`, `/robots.txt`, `/sitemap.xml`, `/healthz` |
 | `app/stats.py` | Anonymous usage counts for the `/stats` page, with a short cache |
 | `app/templates/` | `base.html` layout, `stats.html`, and static pages (`pages/<name>.html`, served at `/<name>`) |
 | `app/admin.py` | Operator commands (`python -m app.admin list`, `reset-link`) |

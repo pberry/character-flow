@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- `/sitemap.xml` for search engines, listing the home page and every static page, including the FAQ. New pages
+  are added to it automatically.
+- `/robots.txt`, which points crawlers at the sitemap and asks them not to crawl `/stats`.
+
 ## [1.3.1] - 2026-10-25
 
 ### Security

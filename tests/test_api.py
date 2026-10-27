@@ -1,3 +1,5 @@
+from xml.etree import ElementTree
+
 import pytest
 
 from app import create_app, db
@@ -285,6 +287,36 @@ def test_static_page_uses_shared_layout(client):
 def test_unknown_or_odd_page_is_404(client):
     for path in ("/nope", "/base", "/FAQ", "/faq.html", "/..%2Fbase"):
         assert client.get(path).status_code == 404, path
+
+
+def test_robots_blocks_stats_and_points_to_sitemap(client):
+    resp = client.get("/robots.txt")
+    assert resp.status_code == 200
+    assert resp.mimetype == "text/plain"
+    lines = resp.get_data(as_text=True).splitlines()
+    assert lines[0] == "User-agent: *"
+    assert "Disallow: /stats" in lines
+    assert "Sitemap: https://characterflow.app/sitemap.xml" in lines
+
+
+def test_sitemap_lists_home_and_static_pages_but_not_stats(client):
+    resp = client.get("/sitemap.xml")
+    assert resp.status_code == 200
+    assert resp.mimetype == "application/xml"
+    ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    locs = [e.text for e in ElementTree.fromstring(resp.data).findall("s:url/s:loc", ns)]
+    assert locs[0] == "https://characterflow.app/"
+    assert "https://characterflow.app/faq" in locs
+    assert not any("stats" in loc for loc in locs)
+    # Every listed page is really served.
+    for loc in locs:
+        assert client.get(loc.removeprefix("https://characterflow.app")).status_code == 200, loc
+
+
+def test_sitemap_and_robots_follow_base_url(client, app):
+    app.config["BASE_URL"] = "https://flow.example.org"
+    assert b"Sitemap: https://flow.example.org/sitemap.xml" in client.get("/robots.txt").data
+    assert b"<loc>https://flow.example.org/faq</loc>" in client.get("/sitemap.xml").data
 
 
 @pytest.fixture

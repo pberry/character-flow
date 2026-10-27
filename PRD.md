@@ -109,6 +109,8 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 ### Static pages
 - Hand-written HTML pages (starting with an FAQ) share the app's styles, header, and footer.
 - Adding a page means adding one file; there is no CMS or in-app editing.
+- `/sitemap.xml` lists the home page and every static page (including the FAQ) without a separate list to keep in
+  sync. `/robots.txt` links to it and disallows `/stats`.
 
 ### Stats page
 - A public page at `/stats`, linked from every footer, shows how the app is used: charts created (all time, last
@@ -185,6 +187,7 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-24 | Limit new charts to 20 per client IP per sliding hour, counted in memory | One machine with one worker sees every request, so no new dependency or store is needed. The hour is generous enough for a GM making charts for a table on shared Wi-Fi, yet one IP can't fill the 5000-chart cap. The client IP header is trusted only when configured, so it can't be forged around the limit off Fly |
 | 2026-10-24 | Public `/stats` page with counts only, server-rendered with CSS bars, cached for 5 minutes | Owner request to see how many charts exist and how they're used, without tracking anyone. Counts come from the charts already stored, so there's no analytics service, cookie, or new table. Nothing players type is shown, not even common class names behind a threshold (owner's call): one person could make enough charts to put their own text on a public page, and free text can identify a player. CSS bars instead of a chart library keep the no-build, no-dependency rule |
 | 2026-10-21 | Arrow keys nudge selected boxes within their lane (10px, Shift 50px); lanes and other selections don't nudge | Player request for fine positioning. Crossing lanes stays a drag so a stray keypress can't move a box to a different lane; multi-selections move as a unit so their spacing is kept |
+| 2026-10-27 | Sitemap built from `templates/pages/`; robots.txt disallows `/stats` | New pages can't be left out of the sitemap. Stats are changing numbers, not content worth indexing |
 
 ## Roadmap
 

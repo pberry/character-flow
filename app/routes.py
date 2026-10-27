@@ -7,7 +7,9 @@ API never confirms whether a key exists.
 
 import math
 import re
+from pathlib import Path
 from urllib.parse import urlsplit
+from xml.sax.saxutils import escape
 
 from flask import Blueprint, abort, current_app, g, jsonify, make_response, redirect, render_template, request
 from jinja2 import TemplateNotFound
@@ -171,6 +173,34 @@ def index():
 def stats_page():
     """Anonymous counts across all charts (see stats.py)."""
     return render_template("stats.html", stats=stats.cached(current_app, get_conn()))
+
+
+# Crawlers may read everything else; /stats is numbers that change by the minute, not content.
+ROBOTS_DISALLOW = ["/stats"]
+
+
+def _page_slugs():
+    """The static pages under templates/pages/ that page() will serve."""
+    pages = Path(current_app.root_path, "templates", "pages")
+    return sorted(p.stem for p in pages.glob("*.html") if PAGE_SLUG.fullmatch(p.stem))
+
+
+@bp.get("/robots.txt")
+def robots():
+    lines = ["User-agent: *", *(f"Disallow: {path}" for path in ROBOTS_DISALLOW), "",
+             f"Sitemap: {current_app.config['BASE_URL']}/sitemap.xml", ""]
+    return current_app.response_class("\n".join(lines), mimetype="text/plain")
+
+
+@bp.get("/sitemap.xml")
+def sitemap():
+    """The home page and every static page. Charts are reached only by key, so none are listed."""
+    base = current_app.config["BASE_URL"]
+    urls = "".join(f"  <url><loc>{escape(base + path)}</loc></url>\n"
+                   for path in ["/", *(f"/{slug}" for slug in _page_slugs())])
+    xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + urls + "</urlset>\n")
+    return current_app.response_class(xml, mimetype="application/xml")
 
 
 @bp.get("/<slug>")
