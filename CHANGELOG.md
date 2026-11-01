@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- The Feedback link now appears in the home page footer too.
+
 ## [1.6.0] - 2026-10-31
 
 ### Added
