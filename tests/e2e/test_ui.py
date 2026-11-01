@@ -835,6 +835,16 @@ def test_missing_example_goes_home(page: Page, live_server):
     expect(page.get_by_role("heading", name="Start a chart")).to_be_visible()
 
 
+def test_home_footer_matches_the_other_pages(page: Page, live_server):
+    """The home page's footer is built in main.js, apart from base.html's."""
+    links = 'el => el.map(a => [a.textContent, a.getAttribute("href")])'
+    page.goto(live_server)
+    home = page.locator(".site-footer a").evaluate_all(links)
+    page.goto(live_server + "/faq")
+    assert home == page.locator(".site-footer a").evaluate_all(links)
+    assert ["Feedback", "mailto:feedback@characterflow.app?Subject=Feedback"] in home
+
+
 def test_faq_page_from_home_footer(page: Page, live_server):
     page.goto(live_server)
     page.locator(".site-footer").get_by_role("link", name="FAQ").click()

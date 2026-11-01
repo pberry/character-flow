@@ -197,6 +197,7 @@ function showHome() {
       h("footer", { class: "site-footer muted" },
         "Character Flow is a free hobby project. ",
         h("a", { href: "/faq" }, "FAQ"), " · ",
+        h("a", { href: "mailto:feedback@characterflow.app?Subject=Feedback" }, "Feedback"), " · ",
         h("a", { href: "/stats" }, "Stats"), " · ",
         h("a", { href: SOURCE_URL }, "Source on GitHub"), "."),
     ),
