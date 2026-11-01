@@ -5,6 +5,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+- **Export** in the editor downloads a chart as a JSON file, so you can keep your own backup. Files never include
+  the chart's edit or view links, so they're safe to share.
+- **Import a chart** on the home page turns an exported file back into a chart. It always makes a new chart with new
+  links, and a damaged file is refused with a message saying what's wrong, without creating anything.
+- A Feedback link in the footer of the FAQ and stats pages.
+
 ## [1.5.0] - 2026-10-27
 
 ### Added

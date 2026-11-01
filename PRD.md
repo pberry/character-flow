@@ -90,6 +90,16 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 - Abuse limits: request bodies up to 128 KiB, a cap on the total number of charts, a budget on the database's
   size, and a per-client hourly limit on new charts and copies.
 
+### Export and import
+- Players can keep their own backups, since there's no account to recover a chart from. Each chart exports from the
+  editor as its own JSON file, holding its name and data and **never its keys**.
+- Importing a file from the home page always creates a **new chart with new links**. It never overwrites a chart.
+- A file imports completely or not at all. Files are checked in the browser before anything is created, and the
+  player is told what's wrong. The server's usual limits (body size, chart count, hourly limit) still apply.
+- **Every exported file must keep importing, forever.** The chart's `version` is the file's version. Optional new
+  fields need no bump; a breaking change bumps `CHART_VERSION` and adds an upgrade from the old version, for files
+  and for charts already stored. A frozen version 2 fixture test fails if that's skipped.
+
 ### Hosting and backups
 - Fly.io, one machine that stops when idle, with SQLite on a volume. Deploys run from GitHub Actions when a
   release tag is pushed, after the tests pass and a volume snapshot is taken.
@@ -192,6 +202,11 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-21 | Arrow keys nudge selected boxes within their lane (10px, Shift 50px); lanes and other selections don't nudge | Player request for fine positioning. Crossing lanes stays a drag so a stray keypress can't move a box to a different lane; multi-selections move as a unit so their spacing is kept |
 | 2026-10-27 | Sitemap built from `templates/pages/`; robots.txt disallows `/stats` | New pages can't be left out of the sitemap. Stats are changing numbers, not content worth indexing |
 | 2026-10-27 | Every view link previews as the same site card, not the chart | Unfurlers don't send the URL fragment, so a per-chart card would need path links like `/view/<key>`. That would put keys in server and proxy logs and in third-party unfurl services, reversing the "keys never reach the server" design. Owner chose to keep keys private |
+| 2026-10-31 | One JSON file per chart for export, no whole-browser archive | Owner's call. It matches how charts are reached (one link each), and the file is useful only to Character Flow, so a simple, documented JSON shape is enough |
+| 2026-10-31 | Importing always creates a new chart with new links | Restoring must never overwrite anyone's chart, and a file is not proof of owning a chart: files omit keys so they can be shared |
+| 2026-10-31 | Exports carry no edit or view key | Players will pass files around, and an edit key in one would let anyone who sees it change or delete the original |
+| 2026-10-31 | Reuse `data.version` as the file's version, with a `format` marker, not a second version number | Stored charts and files are the same data, so two numbers would only drift. It was already written to every chart but never read. A newer file is refused with "reload this page", since a stale tab is the likely cause |
+| 2026-10-31 | Imports are validated strictly in the browser, not on the server | `normalizeChart` is forgiving by design, but it crashes on some bad data and silently drops other content, which is wrong for a backup: a player must find out the file is damaged, not lose boxes unnoticed. The API has always accepted any object and can only be used to spoil a caller's own new chart, so a server copy of the rules would be a second thing to keep in step with no safety gained |
 
 ## Roadmap
 
@@ -212,6 +227,8 @@ Shipped in v0.10.0: portrait printing for tall charts ([#15](https://github.com/
 
 Shipped in v1.0.0: public hosting at characterflow.app with secret edit and view links, a new home page, and
 arrow-key nudging for selected boxes ([#17](https://github.com/pberry/character-flow/issues/17)).
+
+Shipped after v1.5.0: chart export and import for players' own backups.
 
 Tracked as GitHub issues:
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
