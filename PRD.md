@@ -1,7 +1,7 @@
 # Character Flow — Product Requirements
 
 > **Living document.** Update this file whenever a goal, decision, or requirement changes, in the same change
-> that implements it. Record *why* a decision was made, not just what. Last updated for **v1.5.0**.
+> that implements it. Record *why* a decision was made, not just what. Last updated for **v1.6.0**.
 
 ## Problem
 
@@ -228,7 +228,7 @@ Shipped in v0.10.0: portrait printing for tall charts ([#15](https://github.com/
 Shipped in v1.0.0: public hosting at characterflow.app with secret edit and view links, a new home page, and
 arrow-key nudging for selected boxes ([#17](https://github.com/pberry/character-flow/issues/17)).
 
-Shipped after v1.5.0: chart export and import for players' own backups.
+Shipped in v1.6.0: chart export and import for players' own backups.
 
 Tracked as GitHub issues:
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature

@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-31
+
 ### Added
 - **Export** in the editor downloads a chart as a JSON file, so you can keep your own backup. Files never include
   the chart's edit or view links, so they're safe to share.
