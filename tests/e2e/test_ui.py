@@ -704,6 +704,70 @@ def test_deleted_chart_leaves_home_list(page: Page, live_server):
     expect(page.locator(".chart-link")).to_have_count(0)
 
 
+def export_file(page: Page):
+    with page.expect_download() as download:
+        page.get_by_role("button", name="Export").click()
+    return download.value
+
+
+def import_file(page: Page, base, name, content):
+    page.goto(base + "/#/")
+    page.get_by_label("Chart file to import").set_input_files(
+        {"name": name, "mimeType": "application/json", "buffer": content})
+
+
+def test_export_and_import_a_chart(page: Page, live_server):
+    edit_key = create_character(page, live_server)
+    page.get_by_text("Greataxe", exact=True).click()
+    expect(page.locator("[data-box]")).to_have_count(1)
+    view_key = page.evaluate("JSON.parse(localStorage['charflow.recent'])[0].view_key")
+
+    # Exports what's on screen at once, before autosave has run.
+    assert chart_data(live_server, edit_key)["boxes"] == []
+    download = export_file(page)
+    assert re.fullmatch(r"Brakka-\d{4}-\d{2}-\d{2}\.json", download.suggested_filename)
+    content = open(download.path(), "rb").read()
+    file = json.loads(content)
+    assert file["name"] == "Brakka"
+    assert [b["text"] for b in file["data"]["boxes"]] == ["Greataxe\n1d12+4"]
+    assert edit_key.encode() not in content and view_key.encode() not in content
+
+    # Importing makes a new chart with new links, and leaves the original alone.
+    import_file(page, live_server, download.suggested_filename, content)
+    expect(page.get_by_text("Bookmark your chart")).to_be_visible()
+    page.get_by_role("button", name="Done").click()
+    expect(page.locator(".chart-name")).to_have_text("Brakka")
+    expect(page.locator("[data-box]")).to_have_count(1)
+    new_key = page.url.rsplit("/", 1)[-1]
+    assert new_key != edit_key
+    assert chart_data(live_server, new_key)["boxes"] == file["data"]["boxes"]
+
+    page.goto(live_server + "/#/")
+    expect(page.locator(".chart-link", has_text="Brakka")).to_have_count(2)
+
+
+def test_import_refuses_a_broken_file(page: Page, live_server):
+    edit_key = create_character(page, live_server)
+    content = open(export_file(page).path(), "rb").read()
+
+    import_file(page, live_server, "cut-off.json", content[:40])
+    expect(page.locator(".error")).to_contain_text("isn't valid JSON")
+    import_file(page, live_server, "other.json", b'{"hello": "world"}')
+    expect(page.locator(".error")).to_contain_text("isn't a Character Flow chart file")
+    file = json.loads(content)
+    file["data"]["boxes"] = [None]
+    import_file(page, live_server, "damaged.json", json.dumps(file).encode())
+    expect(page.locator(".error")).to_contain_text("damaged")
+
+    # Nothing was created, and the same input still accepts a repaired file.
+    expect(page.locator(".chart-link")).to_have_count(1)
+    expect(page).to_have_url(live_server + "/#/")
+    page.get_by_label("Chart file to import").set_input_files(
+        {"name": "other.json", "mimeType": "application/json", "buffer": content})
+    expect(page.get_by_text("Bookmark your chart")).to_be_visible()
+    assert page.url.rsplit("/", 1)[-1] != edit_key
+
+
 def test_no_html_injection_sinks():
     """Chart text from strangers shows up on view pages, so it must never be
     parsed as HTML (it could read edit links from localStorage)."""

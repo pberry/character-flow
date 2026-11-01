@@ -1,0 +1,36 @@
+{
+  "format": "character-flow-chart",
+  "exported_at": "2026-10-31T12:00:00.000Z",
+  "name": "Brakka — default tactics",
+  "data": {
+    "version": 2,
+    "character": {
+      "name": "Brakka",
+      "class": "Barbarian",
+      "level": 3,
+      "abilities": [{ "name": "STR", "score": 18 }],
+      "weapons": [{ "name": "Greataxe", "notes": "1d12+4" }],
+      "spells": [],
+      "features": [{ "name": "Rage", "notes": "" }],
+      "notes": "Rage before moving."
+    },
+    "lanes": [
+      { "id": "l1", "name": "Start of turn", "color": "#bbf7d0", "badges": [{ "type": "cost", "text": "1" }] },
+      { "id": "l2", "name": "Attack", "color": "#fecaca", "badges": [] }
+    ],
+    "boxes": [
+      { "id": "b1", "lane": "l1", "x": 150, "y": 20, "w": 160, "h": 70, "text": "Rage?", "color": "#fde68a", "shape": "diamond", "badges": [] },
+      { "id": "b2", "lane": "l2", "x": 150, "y": 20, "w": 160, "h": 70, "text": "Greataxe\n1d12+4", "color": "#fecaca", "shape": "rect", "badges": [{ "type": "recharge", "text": "LR", "color": "#ffffff" }] }
+    ],
+    "edges": [
+      { "id": "e1", "from": { "box": "b1", "side": "bottom" }, "to": { "box": "b2", "side": "top" }, "label": "yes" }
+    ],
+    "sidebar": {
+      "sections": [
+        { "id": "s1", "name": "Resources", "items": [{ "id": "t1", "text": "Rage", "count": 3, "badges": [], "color": "#fde68a" }] }
+      ]
+    },
+    "groups": [{ "id": "g1", "boxes": ["b1", "b2"], "label": "While raging", "style": "outline" }],
+    "orientation": "portrait"
+  }
+}

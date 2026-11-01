@@ -9,6 +9,7 @@ import { ORIENTATIONS } from "./layout.js";
 import { showLinksDialog } from "./links.js";
 import { renderPalette } from "./palette.js";
 import { buildPrintSheet } from "./print.js";
+import { downloadChart } from "./transfer.js";
 import { rememberChart } from "./recent.js";
 import { SHAPES, shapePathD } from "./shapes.js";
 import { MAX_COUNT, getItem, getSection } from "./sidebar.js";
@@ -333,6 +334,7 @@ export function showEditor(container, chartRecord) {
       nameEl,
       h("a", { class: "btn", href: `#/edit/${chartRecord.edit_key}/intro` }, "Edit character"),
       h("button", { class: "btn", title: "Edit and view links for this chart", onclick: () => showLinksDialog(chartRecord) }, "Links"),
+      h("button", { class: "btn", title: "Download this chart as a file to keep as a backup", onclick: () => downloadChart(chartRecord) }, "Export"),
       h("span", { class: "spacer" }),
       status,
       h("button", { class: "btn", title: "Zoom out", onclick: () => canvas.zoomBy(1 / 1.2) }, "−"),

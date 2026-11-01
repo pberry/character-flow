@@ -9,6 +9,7 @@ import { renderIntro } from "./intro.js";
 import { showLinksDialog } from "./links.js";
 import { newChart, normalizeChart } from "./model.js";
 import { forgetChart, loadRecent, rememberChart } from "./recent.js";
+import { readChartFile } from "./transfer.js";
 import { showView } from "./view.js";
 
 const app = document.getElementById("app");
@@ -105,6 +106,23 @@ function showHome() {
     );
   }
 
+  // An imported chart is always a new chart, so it opens with its new links.
+  const fileInput = h("input", { type: "file", accept: ".json,application/json", hidden: true, "aria-label": "Chart file to import" });
+  fileInput.addEventListener("change", () => {
+    const [file] = fileInput.files;
+    if (!file) return;
+    run(async () => {
+      const { name, data } = await readChartFile(file);
+      const chart = await api.createChart(name, data);
+      rememberChart(chart);
+      justCreated = chart.edit_key;
+      go(`#/edit/${chart.edit_key}`);
+    }).finally(() => {
+      // Choosing the same file again (after fixing it) must fire another change.
+      fileInput.value = "";
+    });
+  });
+
   const form = h("form", { class: "new-chart" }, nameInput, h("button", { class: "btn primary", type: "submit" }, "Create chart"));
   form.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -132,6 +150,8 @@ function showHome() {
           h("p", { class: "example" }, "Rather not start from a blank page? ",
             h("a", { href: "#/example/sable" }, "See an example chart for Sable the rogue"),
             ", then make your own copy to edit."),
+          h("p", { class: "example" }, "Have a chart file you exported? ",
+            h("button", { class: "btn", type: "button", onclick: () => fileInput.click() }, "Import a chart"), fileInput),
           error),
       ),
       recentPanel,
@@ -171,7 +191,8 @@ function showHome() {
         h("section", { class: "panel" }, h("h2", {}, "No accounts. Your link is your key."),
           h("p", {}, "Every chart gets two secret links. The ", h("b", {}, "edit link"), " is yours: anyone with it can change the chart, so keep it private. "
             + "The ", h("b", {}, "view link"), " is safe to share: people can look, print, and make their own copy, but never change yours."),
-          h("p", { class: "muted" }, "Bookmark your edit link. This browser remembers your charts too, but if you lose the link there's no password to reset.")),
+          h("p", { class: "muted" }, "Bookmark your edit link. This browser remembers your charts too, but if you lose the link there's no password to reset. "
+            + "For a backup of your own, use Export in the editor.")),
       ),
       h("footer", { class: "site-footer muted" },
         "Character Flow is a free hobby project. ",

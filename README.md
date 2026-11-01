@@ -29,6 +29,24 @@ to edit charts. The home page lists the charts this browser has opened (kept in 
 Rename, Duplicate, and Delete). If an edit link is lost, the operator can issue a new one; see the admin commands
 below.
 
+## Exporting and importing
+
+**Export** in the editor downloads the chart as one JSON file, named after the chart and the date, including any
+changes that haven't autosaved yet. Keep it as your own backup. The file holds the chart but not its edit or view
+links, so it's safe to pass around.
+
+**Import a chart** on the home page turns a file back into a chart. Importing always makes a **new chart with new
+links**: it never overwrites anything, and any chart the file came from keeps its old links. It counts as a new chart
+toward the hourly limit.
+
+A file is checked before anything is created. If it's cut off, isn't a chart file, or has damaged contents (a box
+with no position, an arrow to a box that isn't there), the import stops and says what's wrong, rather than
+restoring part of a chart.
+
+Files carry the chart format's version in `data.version`. See `app/static/js/transfer.js` and the PRD before making
+a breaking change to the format: old files must keep importing, and `tests/js/fixtures/chart-v2.json` is there to
+prove it.
+
 ## Running with Docker (recommended)
 
 ```sh
@@ -321,6 +339,8 @@ reused for `CHARFLOW_STATS_TTL` seconds.
 - On touch screens, cards can't be dragged from the palette (tap a card to add it instead), and there's no pinch zoom.
 - No undo or version history yet. Use "Duplicate" on the home page to keep a snapshot before big changes.
 - Lose your edit link and only the operator can reissue it (`app.admin reset-link`); there's no self-service recovery.
+  An exported file gets the chart back as a new chart, with new links, but not the old links.
+- Export is only in the editor, so a view link can't export. "Make a copy" first.
 - The home page only lists charts opened in that browser. Clearing site data forgets them (the links still work).
 - If two people edit the same chart at once, the last save wins.
 - The limit on new charts is per IP address, so players sharing one network (a game store's Wi-Fi) share it too.
@@ -401,6 +421,7 @@ The frontend is plain ES modules + SVG with no build step, in `app/static/`:
 | `js/print.js` | Builds the one-page print layout |
 | `js/main.js` | Home page and hash routing between home, questionnaire, editor, and view page |
 | `js/recent.js` | Pure list of this browser's charts, kept in localStorage |
+| `js/transfer.js` | Export a chart to a JSON file, and read and check one for import |
 | `js/links.js` | The edit and view links dialog |
 | `js/view.js` | Read-only view page (reuses the print layout) |
 | `js/palette.js` | Sidebar character summary and palette cards |

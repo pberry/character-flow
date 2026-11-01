@@ -48,8 +48,12 @@ export function defaultCharacter() {
   };
 }
 
+// The format of a chart's data. See transfer.js before changing it: exported
+// files must keep importing, and stored charts would need upgrading too.
+export const CHART_VERSION = 2;
+
 export function newChart(character = defaultCharacter()) {
-  return { version: 2, character, lanes: defaultLanes(), boxes: [], edges: [], sidebar: null, groups: [], orientation: "landscape" };
+  return { version: CHART_VERSION, character, lanes: defaultLanes(), boxes: [], edges: [], sidebar: null, groups: [], orientation: "landscape" };
 }
 
 // Fill in anything missing from older or hand-edited data.
