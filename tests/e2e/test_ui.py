@@ -428,20 +428,21 @@ def test_box_tick_circles(page: Page, live_server):
 
     # Stepping keeps the same field focused, so it can be stepped again
     # (rebuilding the toolbar used to swap the field out mid-click).
+    # Keys go to whatever has focus (page.keyboard doesn't refocus the field),
+    # and a marker shows it's the very same element, not a rebuilt one. The
+    # spinner arrows themselves are drawn differently per platform, so they
+    # aren't clicked by position here.
     count = page.get_by_label("Tick circles")
-    count.press("ArrowUp")
-    count.press("ArrowUp")
-    expect(page.locator('[data-box="b1"] .tick')).to_have_count(7)
-    expect(count).to_be_focused()
-    bb = count.bounding_box()  # the spinner sits inside the field's 9px padding
-    up = (bb["x"] + bb["width"] - 17, bb["y"] + bb["height"] * 0.3)
-    down = (bb["x"] + bb["width"] - 17, bb["y"] + bb["height"] * 0.75)
-    for _ in range(3):
-        page.mouse.click(*up)
+    count.click()
+    count.evaluate("el => { el.dataset.marker = 'same' }")
+    for _ in range(5):
+        page.keyboard.press("ArrowUp")
     expect(page.locator('[data-box="b1"] .tick')).to_have_count(10)
-    page.mouse.click(*down)
+    page.keyboard.press("ArrowDown")
     expect(page.locator('[data-box="b1"] .tick')).to_have_count(9)
     expect(count).to_have_value("9")
+    expect(count).to_be_focused()
+    expect(count).to_have_attribute("data-marker", "same")
     count.fill("5")
     count.press("Enter")
     expect(page.locator('[data-box="b1"] .tick')).to_have_count(5)
