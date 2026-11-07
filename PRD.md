@@ -59,6 +59,9 @@ build a one-page, character-specific combat flowchart and print it to keep at th
   selected and given its own color; otherwise it uses its type's. Badges attach to boxes, tracker items, and lane
   headers. On shaped boxes they sit on the outline nearest their corner, and lanes grow to fit them. On a lane header
   they stack inward and the flag shrinks to keep them inside the lane.
+- **Tick circles on boxes** (off by default): a box can have up to 20 empty circles to mark uses in pencil, the same
+  as tracker items. They sit inside the outline under the text, in centered rows that fit the shape and step around
+  the corner badges, so they never meet an arrow. The box grows to fit them and keeps its room for text.
 - **Arrows** anchor only at the **midpoint of a box side**. You can add a label to an arrow (e.g. yes/no).
 - **Suggested arrows**: when a box is selected, faint dashed arrows to nearby boxes appear; one click makes a
   suggestion real. Suggestions that would cross another box are not offered.
@@ -206,6 +209,10 @@ build a one-page, character-specific combat flowchart and print it to keep at th
 | 2026-10-31 | Importing always creates a new chart with new links | Restoring must never overwrite anyone's chart, and a file is not proof of owning a chart: files omit keys so they can be shared |
 | 2026-10-31 | Exports carry no edit or view key | Players will pass files around, and an edit key in one would let anyone who sees it change or delete the original |
 | 2026-10-31 | Reuse `data.version` as the file's version, with a `format` marker, not a second version number | Stored charts and files are the same data, so two numbers would only drift. It was already written to every chart but never read. A newer file is refused with "reload this page", since a stale tab is the likely cause |
+| 2026-11-06 | Boxes can have tick circles, off by default, up to 20 like tracker items | Player request: track uses of an ability on the chart itself, not only in the side column. The same cap keeps a box readable and matches the column |
+| 2026-11-06 | Box tick circles go inside the box under the text, not outside on an edge | Arrows attach at all four side midpoints (top and bottom too, for vertical branch arrows) and badges hold the four corners, so no outside edge is free. Inside the outline nothing can overlap, and it matches the tracker items |
+| 2026-11-06 | Setting tick circles resizes the box; rows fit the shape and step around badges | A box keeps its room for text, and narrow shapes (diamond, star) get shorter rows instead of circles spilling over the outline |
+| 2026-11-06 | The count is typed into a number field, not set with +/− buttons | Arbitrary counts up to 20 are quicker to type, and the field's arrows still step by one |
 | 2026-10-31 | Imports are validated strictly in the browser, not on the server | `normalizeChart` is forgiving by design, but it crashes on some bad data and silently drops other content, which is wrong for a backup: a player must find out the file is damaged, not lose boxes unnoticed. The API has always accepted any object and can only be used to spoil a caller's own new chart, so a server copy of the rules would be a second thing to keep in step with no safety gained |
 
 ## Roadmap
@@ -229,6 +236,8 @@ Shipped in v1.0.0: public hosting at characterflow.app with secret edit and view
 arrow-key nudging for selected boxes ([#17](https://github.com/pberry/character-flow/issues/17)).
 
 Shipped in v1.6.0: chart export and import for players' own backups.
+
+Next release, from player feedback: tick circles on boxes.
 
 Tracked as GitHub issues:
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature
