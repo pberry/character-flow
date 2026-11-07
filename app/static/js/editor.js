@@ -82,8 +82,12 @@ function countInput(canvas, count) {
     class: "count-input", type: "number", min: 0, max: MAX_COUNT, step: 1, value: count || "", placeholder: "0",
     "aria-label": "Tick circles", title: `Circles to mark uses in pencil (up to ${MAX_COUNT})`,
   });
-  // Commit on change (Enter, blur, or the arrows); the toolbar re-renders after.
-  input.addEventListener("change", () => canvas.setCount(input.value));
+  // Commit on change (Enter, blur, or the arrows). The toolbar stays put, so
+  // show the stored count (e.g. 50 becomes 20) in this same field.
+  input.addEventListener("change", () => {
+    const n = canvas.setCount(input.value);
+    input.value = n ? String(n) : "";
+  });
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
   return [h("span", { class: "label" }, "Tick circles"), input];
 }
@@ -365,7 +369,7 @@ export function showEditor(container, chartRecord) {
   container.replaceChildren(editorEl);
 
   const canvas = new Canvas(wrap, chart, {
-    onChange: () => { markDirty(); renderToolbar(canvas.selection); },
+    onChange: ({ keepToolbar = false } = {}) => { markDirty(); if (!keepToolbar) renderToolbar(canvas.selection); },
     onSelect: (sel) => renderToolbar(sel),
   });
   renderPalette(palette, chart.character, (item) => canvas.addCard(item));

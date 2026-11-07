@@ -115,3 +115,25 @@ test("fitHeight finds the smallest grid height that leaves the text room", () =>
   assert.ok(layoutTicks({ ...box, h: h - 10 }).text.h < 50 - 0.5);
   assert.equal(fitHeight({ ...box, count: 0 }, 10, { minH: 30 }), 30);
 });
+
+test("stepping the count up and down always lands on the same height", () => {
+  for (const { id: shape } of SHAPES) {
+    for (const badges of [[], ALL_BADGES]) {
+      const chart = newChart();
+      const box = addBox(chart, { shape });
+      box.badges = badges.map((b) => ({ ...b }));
+      const h0 = box.h;
+      const heights = new Map();
+      const walk = [5, 6, 7, 10, 9, 5, 1, 20, 19, 3, 5, 0];
+      for (let n = 1; n <= MAX_COUNT; n++) walk.push(n);
+      for (let n = MAX_COUNT - 1; n >= 0; n--) walk.push(n);
+      for (const n of walk) {
+        setBoxCount(chart, box.id, n);
+        const where = `${shape} badges=${badges.length} n=${n}`;
+        if (heights.has(n)) assert.equal(box.h, heights.get(n), where);
+        else heights.set(n, box.h);
+        if (n === 0) assert.equal(box.h, h0, where);
+      }
+    }
+  }
+});

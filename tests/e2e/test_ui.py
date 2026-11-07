@@ -426,6 +426,26 @@ def test_box_tick_circles(page: Page, live_server):
     assert page.locator('[data-box="b1"] .box-rect').bounding_box()["height"] > h0
     expect(page.get_by_label("Tick circles")).to_have_value("5")
 
+    # Stepping keeps the same field focused, so it can be stepped again
+    # (rebuilding the toolbar used to swap the field out mid-click).
+    count = page.get_by_label("Tick circles")
+    count.press("ArrowUp")
+    count.press("ArrowUp")
+    expect(page.locator('[data-box="b1"] .tick')).to_have_count(7)
+    expect(count).to_be_focused()
+    bb = count.bounding_box()  # the spinner sits inside the field's 9px padding
+    up = (bb["x"] + bb["width"] - 17, bb["y"] + bb["height"] * 0.3)
+    down = (bb["x"] + bb["width"] - 17, bb["y"] + bb["height"] * 0.75)
+    for _ in range(3):
+        page.mouse.click(*up)
+    expect(page.locator('[data-box="b1"] .tick')).to_have_count(10)
+    page.mouse.click(*down)
+    expect(page.locator('[data-box="b1"] .tick')).to_have_count(9)
+    expect(count).to_have_value("9")
+    count.fill("5")
+    count.press("Enter")
+    expect(page.locator('[data-box="b1"] .tick')).to_have_count(5)
+
     # Clearing the field removes them and shrinks the box back.
     count = page.get_by_label("Tick circles")
     count.fill("")
@@ -439,6 +459,7 @@ def test_box_tick_circles(page: Page, live_server):
     count.fill("50")
     count.press("Enter")
     expect(page.locator('[data-box="b1"] .tick')).to_have_count(20)
+    expect(count).to_have_value("20")
     assert chart_data_after_save(page, live_server, chart_id)["boxes"][0]["count"] == 20
     page.reload()
     expect(page.locator('[data-box="b1"] .tick')).to_have_count(20)

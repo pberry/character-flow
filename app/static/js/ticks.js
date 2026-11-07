@@ -96,3 +96,25 @@ export function fitHeight(box, textH, { minH = 30, grid = 10 } = {}) {
   }
   return h;
 }
+
+// The height `box` should be with `count` circles instead of its current
+// ones. Each bare height (the box with no circles, on the grid) grows to the
+// smallest grid height that keeps its text room, nudged so a taller bare box
+// always grows taller. That makes the growth reversible: stepping the count up
+// and down lands on the same height for the same count, where keeping text
+// room step by step would creep from rounding to the grid.
+export function heightForCount(box, count, { minH = 30, grid = 10 } = {}) {
+  const opts = { minH, grid };
+  const old = clampCount(box.count), n = clampCount(count);
+  const fit = (bare, c) => fitHeight({ ...box, count: c }, layoutTicks({ ...box, h: bare, count: 0 }).text.h, opts);
+  const start = Math.ceil(minH / grid) * grid;
+  const bareNow = Math.max(start, Math.ceil(box.h / grid) * grid); // when there are no circles yet
+  let grownOld = -Infinity, grownNew = -Infinity;
+  for (let bare = start, i = 0; i < 1000; bare += grid, i++) {
+    grownOld = old ? Math.max(fit(bare, old), grownOld + grid) : bare;
+    grownNew = n ? Math.max(fit(bare, n), grownNew + grid) : bare;
+    // The current bare height: the first that grows to at least the box's height.
+    if (old ? grownOld >= box.h : bare >= bareNow) break;
+  }
+  return grownNew;
+}

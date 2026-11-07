@@ -4,7 +4,7 @@ import { normalizeBadges } from "./badges.js";
 import { forgetBox, normalizeGroups } from "./groups.js";
 import { isShape, minSize } from "./shapes.js";
 import { disableSidebar, enableSidebar, normalizeSidebar } from "./sidebar.js";
-import { clampCount, fitHeight, layoutTicks } from "./ticks.js";
+import { clampCount, fitHeight, heightForCount } from "./ticks.js";
 
 // Pure chart-state operations. Functions mutate the chart passed in and return
 // what they created, so the editor can keep a single mutable state object.
@@ -207,16 +207,15 @@ export function resizeBox(chart, id, w, h) {
 }
 
 // Set a box's tick circles (0 removes them). The box grows or shrinks so its
-// text keeps the same room above the circles.
+// text keeps the room it had without circles.
 export function setBoxCount(chart, id, count) {
   const box = getBox(chart, id);
   if (!box) return null;
   const n = clampCount(count);
   const old = box.count || 0;
   if (n === old) return box;
-  const textH = layoutTicks({ ...box, count: old }).text.h;
   const minH = Math.max(MIN_H, minSize(box.shape)?.h || 0);
-  box.h = fitHeight({ ...box, count: n }, textH, { minH, grid: GRID });
+  box.h = heightForCount(box, n, { minH, grid: GRID });
   if (n) box.count = n;
   else delete box.count;
   return box;

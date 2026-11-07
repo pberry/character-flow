@@ -347,10 +347,11 @@ export class Canvas {
     this.onSelect(selection);
   }
 
-  changed() {
+  // `keepToolbar`: the edit came from a toolbar field that must keep focus.
+  changed({ keepToolbar = false } = {}) {
     // An edit in between two clicks means they aren't a double-click.
     this.lastDown = null;
-    this.onChange();
+    this.onChange({ keepToolbar });
     this.render();
   }
 
@@ -592,14 +593,21 @@ export class Canvas {
     if (item && T.moveItem(this.chart, item.id, delta)) this.changed();
   }
 
-  // Tick circles on the selected tracker item or box.
+  // Tick circles on the selected tracker item or box. Returns the new count.
+  // A box's count comes from a number field, which the toolbar keeps so its
+  // arrows can be clicked again (rebuilding it would swap the field mid-click).
   setCount(count) {
     const item = this.selectedItem();
     const box = this.selectedBox();
-    if (item) T.updateItem(this.chart, item.id, { count });
-    else if (box) M.setBoxCount(this.chart, box.id, count);
-    else return;
-    this.changed();
+    if (item) {
+      T.updateItem(this.chart, item.id, { count });
+      this.changed();
+      return item.count;
+    }
+    if (!box) return null;
+    M.setBoxCount(this.chart, box.id, count);
+    this.changed({ keepToolbar: true });
+    return box.count || 0;
   }
 
   // Lane-relative y for a box whose top-left would be at absolute y.
