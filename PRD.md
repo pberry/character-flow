@@ -1,7 +1,7 @@
 # Character Flow — Product Requirements
 
 > **Living document.** Update this file whenever a goal, decision, or requirement changes, in the same change
-> that implements it. Record *why* a decision was made, not just what. Last updated for **v1.7.0**.
+> that implements it. Record *why* a decision was made, not just what. Last updated for **v1.8.0**.
 
 ## Problem
 
@@ -237,7 +237,7 @@ arrow-key nudging for selected boxes ([#17](https://github.com/pberry/character-
 
 Shipped in v1.6.0: chart export and import for players' own backups.
 
-Next release, from player feedback: tick circles on boxes.
+Shipped in v1.8.0, from player feedback: tick circles on boxes ([#41](https://github.com/pberry/character-flow/pull/41)).
 
 Tracked as GitHub issues:
 - [#5](https://github.com/pberry/character-flow/issues/5) Questionnaire: choose a lane per weapon, spell, or feature

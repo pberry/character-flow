@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-11-06
+
 ### Added
 - **Tick circles on boxes.** Select a box and type a number (up to 20) in "Tick circles" in the toolbar to print that
   many empty circles under its text, for marking uses in pencil. They're off by default. They stay inside the box,
