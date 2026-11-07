@@ -189,6 +189,7 @@ input:focus, textarea:focus { outline: 2px solid var(--select); outline-offset: 
 .add-lane:hover text { fill: var(--select); }
 .card.lane-colored { background: repeating-linear-gradient(45deg, #fff, #fff 6px, #f1efe9 6px, #f1efe9 12px); }
 .lane-name-input { width: 180px; }
+.count-input { width: 56px; }
 .btn:disabled { opacity: .4; cursor: default; }
 
 .interactive .box { cursor: move; }

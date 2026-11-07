@@ -197,6 +197,7 @@ Back up that file to back up your work.
 | Add the next step | Select a box, then click a palette card: the new box is placed to its right |
 | Edit text | Double-click a box (or select it and press Enter). Ctrl/Cmd+Enter or click away to finish, Escape to cancel. The first line is shown in bold |
 | Color / shape / delete | Select a box, use the toolbar at the top |
+| Tick circles on a box | Select a box and type a number (up to 20) in "Tick circles" in the toolbar, then press Enter. Clear it or type 0 to remove them |
 | Nudge | Select one or more boxes and press the arrow keys to move them 10px (Shift+arrow: 50px). Boxes stay in their lane; drag to change lanes |
 | Add the side column | With nothing selected, click "Add side column" in the toolbar |
 | Add a tracker item | Click a side-column section heading, then "Add item" (or select an item and "Add item below"); type its text |
@@ -262,6 +263,17 @@ example). Longer text wraps onto short lines. Lanes grow to fit badges that hang
 
 Lane headers (the flag at the start of each lane) can have badges too. They line up inward from their corners, and
 the flag shrinks to make room, so they stay inside the lane and the header column.
+
+## Tick circles on boxes
+
+A box can have up to 20 empty **tick circles** to mark uses in pencil at the table, like tracker items do (e.g. three
+for an ability you can use three times per long rest). Boxes have none until you add them: select a box and type a
+number in "Tick circles" in the toolbar.
+
+The circles sit inside the box, in centered rows under the text. Arrows attach at the middle of each side and badges
+sit on the corners, so keeping the circles inside means they never overlap either. Rows fit the box's shape and step
+around corner badges, so a diamond or star gets shorter rows. The box grows to fit the circles without losing room for
+its text, and shrinks back when you remove them. You can't resize a box too short for its circles.
 
 ## Groups
 
@@ -413,6 +425,7 @@ The frontend is plain ES modules + SVG with no build step, in `app/static/`:
 | `js/badges.js` | Pure badge types, sizes, text wrapping, and corner placement |
 | `js/groups.js` | Pure groups: membership, bracket and outline paths around boxes |
 | `js/sidebar.js` | Pure tracker side column: sections, items, tick circles, and stacking layout |
+| `js/ticks.js` | Pure tick circles: count limits, and where a box's circles go inside its outline |
 | `js/model.js` | Pure chart operations (boxes, edges, ids, palette, ability modifiers) |
 | `js/colors.js` | The color swatches and color validation |
 | `js/canvas.js` | SVG rendering and mouse interactions |

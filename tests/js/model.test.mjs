@@ -4,8 +4,9 @@ import {
   newChart, normalizeChart, abilityModifier, formatModifier, addBox, moveBox, resizeBox,
   deleteBox, addEdge, deleteEdge, updateEdge, nextId, paletteGroups, bringToFront, MIN_W,
   addLane, updateLane, moveLane, deleteLane, boxesInLane, defaultLanes, defaultCharacter, setShape, shapeSize, setSidebar,
-  nudgeBoxes,
+  nudgeBoxes, setBoxCount,
 } from "../../app/static/js/model.js";
+import { MAX_COUNT, layoutTicks } from "../../app/static/js/ticks.js";
 import { BOX_MAX_RIGHT } from "../../app/static/js/layout.js";
 
 test("ability modifiers", () => {
@@ -251,4 +252,62 @@ test("charts default to landscape printing; unknown orientations fall back to it
   assert.equal(normalizeChart({}).orientation, "landscape");
   assert.equal(normalizeChart({ orientation: "sideways" }).orientation, "landscape");
   assert.equal(normalizeChart({ orientation: "portrait" }).orientation, "portrait");
+});
+
+test("boxes have no tick circles by default", () => {
+  const c = newChart();
+  const b = addBox(c, {});
+  assert.equal(b.count, undefined);
+  assert.equal(normalizeChart(c).boxes[0].count, undefined);
+});
+
+test("setBoxCount grows the box so its text keeps its room, and shrinks it back", () => {
+  const c = newChart();
+  const b = addBox(c, {});
+  const h0 = b.h;
+  const text0 = layoutTicks(b).text.h;
+  setBoxCount(c, b.id, 3);
+  assert.equal(b.count, 3);
+  assert.ok(b.h > h0);
+  assert.ok(layoutTicks(b).text.h >= text0 - 0.5);
+  setBoxCount(c, b.id, 0);
+  assert.equal(b.count, undefined);
+  assert.equal(b.h, h0);
+  setBoxCount(c, b.id, 500);
+  assert.equal(b.count, MAX_COUNT);
+  setBoxCount(c, b.id, "4");
+  assert.equal(b.count, 4);
+  assert.equal(setBoxCount(c, "nope", 2), null);
+});
+
+test("a box with tick circles can't be resized too short for them", () => {
+  const c = newChart();
+  const b = addBox(c, {});
+  setBoxCount(c, b.id, MAX_COUNT);
+  resizeBox(c, b.id, 80, 10);
+  assert.equal(layoutTicks(b).ticks.length, MAX_COUNT);
+  assert.ok(layoutTicks(b).text.h >= 17.5);
+});
+
+test("changing shape keeps room for the tick circles", () => {
+  const c = newChart();
+  const b = addBox(c, {});
+  setBoxCount(c, b.id, 8);
+  setShape(c, b.id, "document");
+  assert.ok(layoutTicks(b).text.h >= 17.5);
+});
+
+test("normalizeChart cleans up box counts and fits them", () => {
+  const c = newChart();
+  const lane = c.lanes[0].id;
+  c.boxes = [
+    { id: "b1", lane, x: 20, y: 10, w: 160, h: 30, text: "", color: "#fff", count: 12.9 },
+    { id: "b2", lane, x: 220, y: 10, w: 160, h: 70, text: "", color: "#fff", count: -1 },
+    { id: "b3", lane, x: 420, y: 10, w: 160, h: 70, text: "", color: "#fff", count: 999 },
+  ];
+  const [b1, b2, b3] = normalizeChart(c).boxes;
+  assert.equal(b1.count, 12);
+  assert.ok(layoutTicks(b1).text.h >= 17.5);
+  assert.equal(b2.count, undefined);
+  assert.equal(b3.count, MAX_COUNT);
 });

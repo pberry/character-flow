@@ -9,6 +9,7 @@ import { HEADER_BADGES, HEADER_W, SLOT_GAP_X, boxMaxRight, endOfLane, findSlot, 
 import * as M from "./model.js";
 import { BADGE_FONT, LINE_H, addBadge, badgePathD, badgeType, layoutBadges, removeBadge, setBadgeColor, updateBadge } from "./badges.js";
 import { shapePathD, textArea } from "./shapes.js";
+import { TICK_R, layoutTicks } from "./ticks.js";
 import * as T from "./sidebar.js";
 import * as G from "./groups.js";
 
@@ -178,7 +179,7 @@ function drawSidebar(layout, { selection, interactive }) {
     ig.append(
       s("rect", { class: "item-rect", width: item.w, height: item.h, rx: 6, fill: item.color || "#fff" }),
       s("foreignObject", { x: 0, y: 0, width: item.w, height: item.textH }, boxText(item.text)),
-      ...item.ticks.map((t) => s("circle", { class: "tick", cx: t.x, cy: t.y, r: 5.5 })),
+      ...item.ticks.map((t) => s("circle", { class: "tick", cx: t.x, cy: t.y, r: TICK_R })),
       ...drawBadges(item, T.ITEM_BADGES, selection),
     );
     g.append(ig);
@@ -225,8 +226,9 @@ export function drawChart(g, chart, layout, opts = {}) {
     bg.append(d
       ? s("path", { class: "box-rect", d, fill: box.color })
       : s("rect", { class: "box-rect", width: box.w, height: box.h, rx: 6, fill: box.color }));
-    const ta = textArea(box.shape, box.w, box.h);
+    const { ticks, text: ta } = layoutTicks(box);
     bg.append(s("foreignObject", { x: ta.x, y: ta.y, width: ta.w, height: ta.h }, boxText(box.text)));
+    bg.append(...ticks.map((t) => s("circle", { class: "tick", cx: t.x, cy: t.y, r: TICK_R })));
     bg.append(...drawBadges(box, {}, selection));
     if (interactive) {
       const local = { x: 0, y: 0, w: box.w, h: box.h, shape: box.shape };
@@ -434,7 +436,14 @@ export class Canvas {
     if (!target || !t) return;
     const text = window.prompt(`${t.name} badge text (e.g. ${t.example}):`, t.example);
     if (text === null) return;
-    if (addBadge(target, type, text)) this.changed();
+    if (addBadge(target, type, text)) this.badgesChanged(target.id);
+  }
+
+  // Badges can push a box's tick circles into more rows: keep a line of text.
+  badgesChanged(ownerId) {
+    const box = M.getBox(this.chart, ownerId);
+    if (box?.count) M.resizeBox(this.chart, box.id, box.w, box.h);
+    this.changed();
   }
 
   editBadge(ownerId, index) {
@@ -445,13 +454,13 @@ export class Canvas {
     if (text === null) return;
     const removed = !updateBadge(target, index, text);
     if (removed && this.selection?.type === "badge" && this.selection.owner === ownerId) this.select(this.ownerSelection(ownerId));
-    this.changed();
+    this.badgesChanged(ownerId);
   }
 
   removeBadge(ownerId, index) {
     removeBadge(this.owner(ownerId), index);
     if (this.selection?.type === "badge" && this.selection.owner === ownerId) this.select(this.ownerSelection(ownerId));
-    this.changed();
+    this.badgesChanged(ownerId);
   }
 
   // The selection for a badge's owner (a box, tracker item, or lane).
@@ -478,8 +487,9 @@ export class Canvas {
   setBadgeText(text) {
     const found = this.selectedBadge();
     if (!found) return;
-    if (!updateBadge(found.target, found.index, text)) this.select(this.ownerSelection(this.selection.owner));
-    this.changed();
+    const ownerId = this.selection.owner;
+    if (!updateBadge(found.target, found.index, text)) this.select(this.ownerSelection(ownerId));
+    this.badgesChanged(ownerId);
   }
 
   // null goes back to the badge type's color.
@@ -582,10 +592,13 @@ export class Canvas {
     if (item && T.moveItem(this.chart, item.id, delta)) this.changed();
   }
 
+  // Tick circles on the selected tracker item or box.
   setCount(count) {
     const item = this.selectedItem();
-    if (!item) return;
-    T.updateItem(this.chart, item.id, { count });
+    const box = this.selectedBox();
+    if (item) T.updateItem(this.chart, item.id, { count });
+    else if (box) M.setBoxCount(this.chart, box.id, count);
+    else return;
     this.changed();
   }
 

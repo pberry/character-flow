@@ -50,15 +50,19 @@ def test_empty_server(client):
 def test_counts_charts_and_features(app, client):
     create(client, "A", chart(boxes=3, sidebar={"sections": []}, orientation="portrait",
                               edges=[{"id": "e1", "label": "yes"}], groups=[{"id": "g1", "boxes": ["b0"]}]))
-    create(client, "B", chart(boxes=1))
+    b = chart(boxes=2)
+    b["boxes"][0]["count"] = 3
+    b["boxes"][1]["count"] = True  # not a number: never counted
+    create(client, "B", b)
     create(client, "Empty", {})
     s = compute(app)
     assert (s["total"], s["in_use"], s["last7"], s["last30"], s["active7"]) == (3, 2, 3, 3, 3)
     assert s["weekly"][-1]["count"] == 3 and len(s["weekly"]) == stats.WEEKS
-    assert (s["total_boxes"], s["median_boxes"], s["median_lanes"]) == (4, 2, 1)
+    assert (s["total_boxes"], s["median_boxes"], s["median_lanes"]) == (5, 2.5, 1)
     features = {f["label"]: f["pct"] for f in s["features"]}
-    assert features == {"Badges": 100, "Side column": 50, "Groups": 50, "Arrow labels": 50, "Portrait printing": 50}
-    assert {r["label"]: r["count"] for r in s["shapes"]} == {"Rectangle": 2, "Diamond": 2}
+    assert features == {"Badges": 100, "Side column": 50, "Groups": 50, "Arrow labels": 50, "Portrait printing": 50,
+                        "Tick circles on boxes": 50}
+    assert {r["label"]: r["count"] for r in s["shapes"]} == {"Rectangle": 3, "Diamond": 2}
     assert s["badges"] == [{"label": "Cost", "count": 2, "pct": 100}]
 
 

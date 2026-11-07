@@ -410,6 +410,43 @@ def test_badges(page: Page, live_server):
     expect(page.locator("#print-sheet .badge-cost .badge-shape")).to_have_attribute("fill", "#bfdbfe")
 
 
+def test_box_tick_circles(page: Page, live_server):
+    chart_id = create_character(page, live_server)
+    lane_header(page, "l2").click()
+    page.locator(".card", has_text="Greataxe").click()
+    expect(page.locator('[data-box="b1"] .tick')).to_have_count(0)
+    h0 = page.locator('[data-box="b1"] .box-rect').bounding_box()["height"]
+
+    # Typed in the box toolbar; the box grows to fit them under its text.
+    count = page.get_by_label("Tick circles")
+    expect(count).to_have_value("")
+    count.fill("5")
+    count.press("Enter")
+    expect(page.locator('[data-box="b1"] .tick')).to_have_count(5)
+    assert page.locator('[data-box="b1"] .box-rect').bounding_box()["height"] > h0
+    expect(page.get_by_label("Tick circles")).to_have_value("5")
+
+    # Clearing the field removes them and shrinks the box back.
+    count = page.get_by_label("Tick circles")
+    count.fill("")
+    count.press("Enter")
+    expect(page.locator('[data-box="b1"] .tick')).to_have_count(0)
+    assert page.locator('[data-box="b1"] .box-rect').bounding_box()["height"] == h0
+    assert "count" not in chart_data_after_save(page, live_server, chart_id)["boxes"][0]
+
+    # The cap holds, and it all saves, reloads, and prints.
+    count = page.get_by_label("Tick circles")
+    count.fill("50")
+    count.press("Enter")
+    expect(page.locator('[data-box="b1"] .tick')).to_have_count(20)
+    assert chart_data_after_save(page, live_server, chart_id)["boxes"][0]["count"] == 20
+    page.reload()
+    expect(page.locator('[data-box="b1"] .tick')).to_have_count(20)
+    page.evaluate("window.print = () => {}")
+    page.get_by_role("button", name="Print").click()
+    expect(page.locator('#print-sheet [data-box="b1"] .tick')).to_have_count(20)
+
+
 def test_lane_header_badges(page: Page, live_server):
     chart_id = create_character(page, live_server)
     answers = []

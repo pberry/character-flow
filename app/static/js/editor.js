@@ -76,6 +76,18 @@ function badgeControls(canvas, box) {
   return [h("span", { class: "label" }, "Badges"), ...chips, ...adds];
 }
 
+// A box's tick circles: type a number or use the arrows. 0 or empty removes them.
+function countInput(canvas, count) {
+  const input = h("input", {
+    class: "count-input", type: "number", min: 0, max: MAX_COUNT, step: 1, value: count || "", placeholder: "0",
+    "aria-label": "Tick circles", title: `Circles to mark uses in pencil (up to ${MAX_COUNT})`,
+  });
+  // Commit on change (Enter, blur, or the arrows); the toolbar re-renders after.
+  input.addEventListener("change", () => canvas.setCount(input.value));
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
+  return [h("span", { class: "label" }, "Tick circles"), input];
+}
+
 // Returns a cleanup function that flushes pending saves and unhooks listeners.
 export function showEditor(container, chartRecord) {
   const chart = chartRecord.data;
@@ -151,6 +163,8 @@ export function showEditor(container, chartRecord) {
         ),
         h("span", { class: "sep" }),
         box ? badgeControls(canvas, box) : null,
+        h("span", { class: "sep" }),
+        box ? countInput(canvas, box.count || 0) : null,
         h("span", { class: "sep" }),
         h("button", { class: "btn", onclick: () => canvas.startEdit(selection.id) }, "Edit text"),
         h("button", { class: "btn danger", onclick: () => canvas.deleteSelection() }, "Delete box"),

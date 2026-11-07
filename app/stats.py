@@ -39,6 +39,11 @@ def _badges(items):
     return [b.get("type") for item in items for b in _dicts(item.get("badges"))]
 
 
+def _positive(n):
+    """A real positive number (bool is an int in Python, so it's ruled out)."""
+    return isinstance(n, (int, float)) and not isinstance(n, bool) and n > 0
+
+
 def _rows(counter, labels):
     """[(label, count)] for known keys, most used first, as bars scaled to the largest."""
     pairs = sorted(((labels[k], n) for k, n in counter.items() if k in labels), key=lambda p: -p[1])
@@ -113,6 +118,7 @@ def compute(conn, today=None):
         features["Groups"] += bool(_list(data.get("groups")))
         features["Arrow labels"] += any(isinstance(e.get("label"), str) and e["label"].strip() for e in chart_edges)
         features["Portrait printing"] += data.get("orientation") == "portrait"
+        features["Tick circles on boxes"] += any(_positive(b.get("count")) for b in chart_boxes)
 
     weeks = [week0 + timedelta(weeks=i) for i in range(WEEKS)]
     return {
@@ -129,7 +135,8 @@ def compute(conn, today=None):
         "total_boxes": sum(boxes),
         "total_arrows": sum(arrows),
         "features": [{"label": k, "count": features[k], "pct": _share(features[k], in_use)}
-                     for k in ("Badges", "Side column", "Groups", "Arrow labels", "Portrait printing")],
+                     for k in ("Badges", "Side column", "Groups", "Arrow labels", "Portrait printing",
+                               "Tick circles on boxes")],
         "shapes": _rows(shapes, SHAPES),
         "badges": _rows(badges, BADGES),
         "tiers": _bars([(f"Level {label}", tiers[label]) for label, _, _ in LEVEL_TIERS]),

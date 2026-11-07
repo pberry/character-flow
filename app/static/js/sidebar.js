@@ -6,9 +6,10 @@
 
 import { badgeOverhang, normalizeBadges } from "./badges.js";
 import { isColor } from "./colors.js";
+import { MAX_COUNT, TICK, clampCount } from "./ticks.js";
 
 export const SIDE_W = 200;   // the lanes give up this much width to the column
-export const MAX_COUNT = 20;
+export { MAX_COUNT, TICK };
 const DEFAULT_SECTIONS = ["Gear", "Resources", "Healing", "Conditions"];
 
 export const sideWidth = (chart) => (chart.sidebar ? SIDE_W : 0);
@@ -21,8 +22,6 @@ function newId(prefix, items) {
   }
   return `${prefix}${max + 1}`;
 }
-
-const clampCount = (n) => Math.max(0, Math.min(MAX_COUNT, Math.floor(Number(n)) || 0));
 
 // Fill in or drop anything malformed. Returns null for no column.
 export function normalizeSidebar(data) {
@@ -161,7 +160,6 @@ const SECTION_GAP = 10;
 const CHARS_PER_LINE = 19; // rough, slightly low fit for 13px text in an item
 // Badges on items stack inward: there's no room outward in the column.
 export const ITEM_BADGES = { inward: true };
-export const TICK = 16;    // spacing of the tick circles
 const TICKS_PER_ROW = Math.floor((ITEM_W - 16) / TICK);
 
 // Rough wrapped line count (layout is pure, so text can't be measured).

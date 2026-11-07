@@ -4,6 +4,7 @@ import { normalizeBadges } from "./badges.js";
 import { forgetBox, normalizeGroups } from "./groups.js";
 import { isShape, minSize } from "./shapes.js";
 import { disableSidebar, enableSidebar, normalizeSidebar } from "./sidebar.js";
+import { clampCount, fitHeight, layoutTicks } from "./ticks.js";
 
 // Pure chart-state operations. Functions mutate the chart passed in and return
 // what they created, so the editor can keep a single mutable state object.
@@ -72,6 +73,13 @@ export function normalizeChart(data) {
     const box = laneIds.has(b.lane) ? { ...b } : { ...b, lane: chart.lanes[0].id };
     if (!isShape(box.shape)) box.shape = "rect";
     box.badges = normalizeBadges(box.badges);
+    const count = clampCount(box.count);
+    if (count) {
+      box.count = count;
+      box.h = Math.max(box.h, tickMinHeight(box));
+    } else {
+      delete box.count;
+    }
     return box;
   });
   pullOntoPage(chart);
@@ -183,12 +191,35 @@ export function nudgeBoxes(chart, ids, dx, dy) {
 export const MIN_W = 60;
 export const MIN_H = 30;
 
-// Width stops at the page's right edge.
+// A box with tick circles keeps at least one line of text above them.
+const TEXT_LINE = 18;
+const tickMinHeight = (box, w = box.w) =>
+  box.count ? fitHeight({ ...box, w }, TEXT_LINE, { minH: MIN_H, grid: GRID }) : MIN_H;
+
+// Width stops at the page's right edge; height stays tall enough for the box's
+// tick circles.
 export function resizeBox(chart, id, w, h) {
   const box = getBox(chart, id);
   if (!box) return null;
   const maxW = Math.max(MIN_W, boxMaxRight(chart) - box.x);
-  return updateBox(chart, id, { w: Math.min(maxW, Math.max(MIN_W, snap(w))), h: Math.max(MIN_H, snap(h)) });
+  const nw = Math.min(maxW, Math.max(MIN_W, snap(w)));
+  return updateBox(chart, id, { w: nw, h: Math.max(MIN_H, snap(h), tickMinHeight(box, nw)) });
+}
+
+// Set a box's tick circles (0 removes them). The box grows or shrinks so its
+// text keeps the same room above the circles.
+export function setBoxCount(chart, id, count) {
+  const box = getBox(chart, id);
+  if (!box) return null;
+  const n = clampCount(count);
+  const old = box.count || 0;
+  if (n === old) return box;
+  const textH = layoutTicks({ ...box, count: old }).text.h;
+  const minH = Math.max(MIN_H, minSize(box.shape)?.h || 0);
+  box.h = fitHeight({ ...box, count: n }, textH, { minH, grid: GRID });
+  if (n) box.count = n;
+  else delete box.count;
+  return box;
 }
 
 // Changing shape grows the box to the shape's minimum size, never shrinks it.
@@ -197,7 +228,7 @@ export function setShape(chart, id, shape) {
   if (!box || !isShape(shape)) return null;
   box.shape = shape;
   const min = minSize(shape);
-  if (min) resizeBox(chart, id, Math.max(box.w, min.w), Math.max(box.h, min.h));
+  if (min || box.count) resizeBox(chart, id, Math.max(box.w, min?.w || 0), Math.max(box.h, min?.h || 0));
   return box;
 }
 
